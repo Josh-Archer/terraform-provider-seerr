@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-test:
@@ -30,3 +30,77 @@ jobs:
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
         with:
           version: v2.5.0
+
+  auto-tag:
+    name: Auto Tag
+    needs: build-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Determine next semver tag
+        id: semver
+        shell: pwsh
+        run: |
+          git fetch --tags --force
+
+          $headTags = git tag --points-at HEAD --list "v*"
+          if ($headTags) {
+            Write-Host "HEAD already tagged: $headTags"
+            "create=false" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+
+          $lastTag = (git tag --list "v*" --sort=-v:refname | Select-Object -First 1)
+          if (-not $lastTag) {
+            $lastTag = "v0.0.0"
+            $range = "HEAD"
+          } else {
+            $range = "$lastTag..HEAD"
+          }
+
+          $commitText = git log $range --format="%s%n%b"
+          if (-not $commitText.Trim()) {
+            Write-Host "No commits since $lastTag"
+            "create=false" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+
+          $bump = "patch"
+          if ($commitText -match "BREAKING CHANGE|!:\s") {
+            $bump = "major"
+          } elseif ($commitText -match "(?m)^feat(\(.+\))?:\s") {
+            $bump = "minor"
+          }
+
+          $parts = $lastTag.TrimStart("v").Split(".")
+          $major = [int]$parts[0]
+          $minor = [int]$parts[1]
+          $patch = [int]$parts[2]
+
+          switch ($bump) {
+            "major" { $major++; $minor = 0; $patch = 0 }
+            "minor" { $minor++; $patch = 0 }
+            default { $patch++ }
+          }
+
+          $nextTag = "v$major.$minor.$patch"
+          Write-Host "Last tag: $lastTag"
+          Write-Host "Bump: $bump"
+          Write-Host "Next tag: $nextTag"
+
+          "create=true" >> $env:GITHUB_OUTPUT
+          "tag=$nextTag" >> $env:GITHUB_OUTPUT
+
+      - name: Create and push tag
+        if: steps.semver.outputs.create == 'true'
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.semver.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a $tag -m "Release $tag"
+          git push origin $tag
