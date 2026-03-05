@@ -26,7 +26,11 @@ type APIResponse struct {
 }
 
 func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bool) *APIClient {
-	transport := http.DefaultTransport.(*http.Transport).Clone()
+	baseTransport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		baseTransport = &http.Transport{}
+	}
+	transport := baseTransport.Clone()
 	transport.TLSClientConfig = &tls.Config{
 		MinVersion:         tls.VersionTLS12,
 		InsecureSkipVerify: insecureSkipVerify,
