@@ -20,8 +20,16 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Detect signing availability
+        id: signing
+        run: |
+          if [ -n "${{ secrets.GPG_PRIVATE_KEY }}" ] && [ -n "${{ secrets.PASSPHRASE }}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Import GPG key
-        if: ${{ secrets.GPG_PRIVATE_KEY != '' && secrets.PASSPHRASE != '' }}
+        if: ${{ steps.signing.outputs.enabled == 'true' }}
         uses: crazy-max/ghaction-import-gpg@e89d40939c28e39f97cf32126055eeae86ba74ec # v6.3.0
         id: import_gpg
         with:
