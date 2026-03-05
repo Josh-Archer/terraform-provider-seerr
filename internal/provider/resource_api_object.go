@@ -28,10 +28,12 @@ type APIObjectModel struct {
 	Path             types.String `tfsdk:"path"`
 	Headers          types.Map    `tfsdk:"headers"`
 	RequestBodyJSON  types.String `tfsdk:"request_body_json"`
+	DeleteBodyJSON   types.String `tfsdk:"delete_body_json"`
 	ReadMethod       types.String `tfsdk:"read_method"`
 	CreateMethod     types.String `tfsdk:"create_method"`
 	UpdateMethod     types.String `tfsdk:"update_method"`
 	DeleteMethod     types.String `tfsdk:"delete_method"`
+	SkipDelete       types.Bool   `tfsdk:"skip_delete"`
 	SuppressNotFound types.Bool   `tfsdk:"suppress_not_found"`
 	ResponseBodyJSON types.String `tfsdk:"response_body_json"`
 	StatusCode       types.Int64  `tfsdk:"status_code"`
@@ -69,6 +71,10 @@ func (r *APIObjectResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				MarkdownDescription: "Optional request body JSON for create/update operations.",
 				Optional:            true,
 			},
+			"delete_body_json": schema.StringAttribute{
+				MarkdownDescription: "Optional request body JSON for delete operations.",
+				Optional:            true,
+			},
 			"read_method": schema.StringAttribute{
 				MarkdownDescription: "HTTP method used for read operations.",
 				Optional:            true,
@@ -92,6 +98,12 @@ func (r *APIObjectResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Optional:            true,
 				Computed:            true,
 				Default:             stringdefault.StaticString("DELETE"),
+			},
+			"skip_delete": schema.BoolAttribute{
+				MarkdownDescription: "If true, no HTTP call is made during delete. Useful for settings endpoints with no delete route.",
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
 			},
 			"suppress_not_found": schema.BoolAttribute{
 				MarkdownDescription: "If true, a 404 during read removes the resource from state.",
@@ -229,6 +241,9 @@ func (r *APIObjectResource) Delete(ctx context.Context, req resource.DeleteReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	if data.SkipDelete.ValueBool() {
+		return
+	}
 
 	headers, diags := mapFromTypesMap(ctx, data.Headers)
 	resp.Diagnostics.Append(diags...)
@@ -236,7 +251,7 @@ func (r *APIObjectResource) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	httpResp, err := r.client.Request(ctx, data.DeleteMethod.ValueString(), data.Path.ValueString(), "", headers)
+	httpResp, err := r.client.Request(ctx, data.DeleteMethod.ValueString(), data.Path.ValueString(), data.DeleteBodyJSON.ValueString(), headers)
 	if err != nil {
 		resp.Diagnostics.AddError("Delete Failed", err.Error())
 		return
