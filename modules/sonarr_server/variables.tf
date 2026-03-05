@@ -42,7 +42,8 @@ variable "active_directory" {
 }
 
 variable "active_anime_directory" {
-  type = string
+  type    = string
+  default = null
 }
 
 variable "tags" {
@@ -89,4 +90,3 @@ variable "extra_payload" {
   type    = map(any)
   default = {}
 }
-
