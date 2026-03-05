@@ -1,109 +1,128 @@
-// Copyright IBM Corp. 2021, 2025
-// SPDX-License-Identifier: MPL-2.0
-
 package provider
 
 import (
 	"context"
-	"net/http"
+	"fmt"
+	"net/url"
+	"regexp"
+	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework/action"
+	stringvalidator "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
-	"github.com/hashicorp/terraform-plugin-framework/function"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Ensure ScaffoldingProvider satisfies various provider interfaces.
-var _ provider.Provider = &ScaffoldingProvider{}
-var _ provider.ProviderWithFunctions = &ScaffoldingProvider{}
-var _ provider.ProviderWithEphemeralResources = &ScaffoldingProvider{}
-var _ provider.ProviderWithActions = &ScaffoldingProvider{}
+var _ provider.Provider = &SeerrProvider{}
 
-// ScaffoldingProvider defines the provider implementation.
-type ScaffoldingProvider struct {
-	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "test" when running acceptance
-	// testing.
+type SeerrProvider struct {
 	version string
 }
 
-// ScaffoldingProviderModel describes the provider data model.
-type ScaffoldingProviderModel struct {
-	Endpoint types.String `tfsdk:"endpoint"`
+type SeerrProviderModel struct {
+	URL                types.String `tfsdk:"url"`
+	APIKey             types.String `tfsdk:"api_key"`
+	InsecureSkipVerify types.Bool   `tfsdk:"insecure_skip_verify"`
+	UserAgent          types.String `tfsdk:"user_agent"`
 }
 
-func (p *ScaffoldingProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "scaffolding"
+func (p *SeerrProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "seerr"
 	resp.Version = p.version
 }
 
-func (p *ScaffoldingProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *SeerrProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "Provider for Seerr APIs.",
 		Attributes: map[string]schema.Attribute{
-			"endpoint": schema.StringAttribute{
-				MarkdownDescription: "Example provider attribute",
+			"url": schema.StringAttribute{
+				MarkdownDescription: "Base URL for Seerr, for example `https://seerr.example.com`.",
+				Required:            true,
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						urlRegex(),
+						"url must start with http:// or https://",
+					),
+				},
+			},
+			"api_key": schema.StringAttribute{
+				MarkdownDescription: "Seerr API key used as the `X-Api-Key` header.",
+				Required:            true,
+				Sensitive:           true,
+			},
+			"insecure_skip_verify": schema.BoolAttribute{
+				MarkdownDescription: "Skip TLS certificate verification.",
+				Optional:            true,
+			},
+			"user_agent": schema.StringAttribute{
+				MarkdownDescription: "Optional custom User-Agent header.",
 				Optional:            true,
 			},
 		},
 	}
 }
 
-func (p *ScaffoldingProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var data ScaffoldingProviderModel
-
+func (p *SeerrProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var data SeerrProviderModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Configuration values are now available.
-	// if data.Endpoint.IsNull() { /* ... */ }
+	baseURL := strings.TrimSpace(data.URL.ValueString())
+	apiKey := strings.TrimSpace(data.APIKey.ValueString())
+	if baseURL == "" || apiKey == "" {
+		return
+	}
 
-	// Example client configuration for data sources and resources
-	client := http.DefaultClient
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid URL", fmt.Sprintf("Cannot parse provider url %q: %s", baseURL, err))
+		return
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		resp.Diagnostics.AddError("Invalid URL Scheme", "Provider url must use http or https.")
+		return
+	}
+
+	userAgent := "terraform-provider-seerr/" + p.version
+	if !data.UserAgent.IsNull() && !data.UserAgent.IsUnknown() && strings.TrimSpace(data.UserAgent.ValueString()) != "" {
+		userAgent = strings.TrimSpace(data.UserAgent.ValueString())
+	}
+
+	insecure := false
+	if !data.InsecureSkipVerify.IsNull() && !data.InsecureSkipVerify.IsUnknown() {
+		insecure = data.InsecureSkipVerify.ValueBool()
+	}
+
+	client := NewClient(parsed, apiKey, userAgent, insecure)
 	resp.DataSourceData = client
 	resp.ResourceData = client
 }
 
-func (p *ScaffoldingProvider) Resources(ctx context.Context) []func() resource.Resource {
+func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewExampleResource,
+		NewAPIObjectResource,
 	}
 }
 
-func (p *ScaffoldingProvider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
-	return []func() ephemeral.EphemeralResource{
-		NewExampleEphemeralResource,
-	}
-}
-
-func (p *ScaffoldingProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewExampleDataSource,
-	}
-}
-
-func (p *ScaffoldingProvider) Functions(ctx context.Context) []func() function.Function {
-	return []func() function.Function{
-		NewExampleFunction,
-	}
-}
-
-func (p *ScaffoldingProvider) Actions(ctx context.Context) []func() action.Action {
-	return []func() action.Action{
-		NewExampleAction,
+		NewAPIRequestDataSource,
 	}
 }
 
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
-		return &ScaffoldingProvider{
+		return &SeerrProvider{
 			version: version,
 		}
 	}
+}
+
+func urlRegex() *regexp.Regexp {
+	return regexp.MustCompile(`^https?://`)
 }
