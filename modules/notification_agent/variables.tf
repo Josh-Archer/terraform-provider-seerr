@@ -9,14 +9,13 @@ variable "payload" {
 }
 
 variable "skip_delete" {
-  description = "Skip DELETE calls for notification settings endpoints."
+  description = "If true, do nothing on destroy. If false, send delete_body_json to disable the agent."
   type        = bool
   default     = true
 }
 
 variable "delete_body_json" {
-  description = "Optional POST payload to send on destroy if skip_delete is false."
+  description = "POST payload to send on destroy when skip_delete is false."
   type        = string
   default     = "{\"enabled\":false}"
 }
-
