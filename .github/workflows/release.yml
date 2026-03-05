@@ -21,15 +21,24 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Import GPG key
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' && secrets.PASSPHRASE != '' }}
         uses: crazy-max/ghaction-import-gpg@e89d40939c28e39f97cf32126055eeae86ba74ec # v6.3.0
         id: import_gpg
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
-      - name: Run GoReleaser
+      - name: Run GoReleaser (signed)
+        if: ${{ steps.import_gpg.outputs.fingerprint != '' }}
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
         with:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+      - name: Run GoReleaser (unsigned fallback)
+        if: ${{ steps.import_gpg.outputs.fingerprint == '' }}
+        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
+        with:
+          args: release --clean --skip=sign
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
