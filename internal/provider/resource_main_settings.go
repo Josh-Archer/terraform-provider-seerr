@@ -158,46 +158,46 @@ func (r *MainSettingsResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	payload := make(map[string]any)
-	if !data.AppTitle.IsNull() {
+	if !data.AppTitle.IsNull() && !data.AppTitle.IsUnknown() {
 		payload["appTitle"] = data.AppTitle.ValueString()
 	}
-	if !data.ApplicationURL.IsNull() {
+	if !data.ApplicationURL.IsNull() && !data.ApplicationURL.IsUnknown() {
 		payload["applicationUrl"] = data.ApplicationURL.ValueString()
 	}
-	if !data.TrustProxy.IsNull() {
+	if !data.TrustProxy.IsNull() && !data.TrustProxy.IsUnknown() {
 		payload["trustProxy"] = data.TrustProxy.ValueBool()
 	}
-	if !data.CSRFProtection.IsNull() {
+	if !data.CSRFProtection.IsNull() && !data.CSRFProtection.IsUnknown() {
 		payload["csrfProtection"] = data.CSRFProtection.ValueBool()
 	}
-	if !data.ImageProxy.IsNull() {
+	if !data.ImageProxy.IsNull() && !data.ImageProxy.IsUnknown() {
 		payload["imageProxy"] = data.ImageProxy.ValueBool()
 	}
-	if !data.Locale.IsNull() {
+	if !data.Locale.IsNull() && !data.Locale.IsUnknown() {
 		payload["locale"] = data.Locale.ValueString()
 	}
-	if !data.Region.IsNull() {
+	if !data.Region.IsNull() && !data.Region.IsUnknown() {
 		payload["region"] = data.Region.ValueString()
 	}
-	if !data.OriginalLanguage.IsNull() {
+	if !data.OriginalLanguage.IsNull() && !data.OriginalLanguage.IsUnknown() {
 		payload["originalLanguage"] = data.OriginalLanguage.ValueString()
 	}
-	if !data.HideAvailable.IsNull() {
+	if !data.HideAvailable.IsNull() && !data.HideAvailable.IsUnknown() {
 		payload["hideAvailable"] = data.HideAvailable.ValueBool()
 	}
-	if !data.PartialRequests.IsNull() {
+	if !data.PartialRequests.IsNull() && !data.PartialRequests.IsUnknown() {
 		payload["partialRequests"] = data.PartialRequests.ValueBool()
 	}
-	if !data.LocalLogin.IsNull() {
+	if !data.LocalLogin.IsNull() && !data.LocalLogin.IsUnknown() {
 		payload["localLogin"] = data.LocalLogin.ValueBool()
 	}
-	if !data.NewPlexLogin.IsNull() {
+	if !data.NewPlexLogin.IsNull() && !data.NewPlexLogin.IsUnknown() {
 		payload["newPlexLogin"] = data.NewPlexLogin.ValueBool()
 	}
-	if !data.MovieRequestLimit.IsNull() {
+	if !data.MovieRequestLimit.IsNull() && !data.MovieRequestLimit.IsUnknown() {
 		payload["movieRequestLimit"] = data.MovieRequestLimit.ValueInt64()
 	}
-	if !data.SeriesRequestLimit.IsNull() {
+	if !data.SeriesRequestLimit.IsNull() && !data.SeriesRequestLimit.IsUnknown() {
 		payload["seriesRequestLimit"] = data.SeriesRequestLimit.ValueInt64()
 	}
 
@@ -223,49 +223,51 @@ func (r *MainSettingsResource) Create(ctx context.Context, req resource.CreateRe
 
 	// Refresh state from response
 	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err == nil {
-		if v, ok := decoded["appTitle"].(string); ok {
-			data.AppTitle = types.StringValue(v)
-		}
-		if v, ok := decoded["applicationUrl"].(string); ok {
-			data.ApplicationURL = types.StringValue(v)
-		}
-		if v, ok := decoded["trustProxy"].(bool); ok {
-			data.TrustProxy = types.BoolValue(v)
-		}
-		if v, ok := decoded["csrfProtection"].(bool); ok {
-			data.CSRFProtection = types.BoolValue(v)
-		}
-		if v, ok := decoded["imageProxy"].(bool); ok {
-			data.ImageProxy = types.BoolValue(v)
-		}
-		if v, ok := decoded["locale"].(string); ok {
-			data.Locale = types.StringValue(v)
-		}
-		if v, ok := decoded["region"].(string); ok {
-			data.Region = types.StringValue(v)
-		}
-		if v, ok := decoded["originalLanguage"].(string); ok {
-			data.OriginalLanguage = types.StringValue(v)
-		}
-		if v, ok := decoded["hideAvailable"].(bool); ok {
-			data.HideAvailable = types.BoolValue(v)
-		}
-		if v, ok := decoded["partialRequests"].(bool); ok {
-			data.PartialRequests = types.BoolValue(v)
-		}
-		if v, ok := decoded["localLogin"].(bool); ok {
-			data.LocalLogin = types.BoolValue(v)
-		}
-		if v, ok := decoded["newPlexLogin"].(bool); ok {
-			data.NewPlexLogin = types.BoolValue(v)
-		}
-		if v, ok := decoded["movieRequestLimit"].(float64); ok {
-			data.MovieRequestLimit = types.Int64Value(int64(v))
-		}
-		if v, ok := decoded["seriesRequestLimit"].(float64); ok {
-			data.SeriesRequestLimit = types.Int64Value(int64(v))
-		}
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("failed to decode response: %s", err))
+		return
+	}
+	if v, ok := decoded["appTitle"].(string); ok {
+		data.AppTitle = types.StringValue(v)
+	}
+	if v, ok := decoded["applicationUrl"].(string); ok {
+		data.ApplicationURL = types.StringValue(v)
+	}
+	if v, ok := decoded["trustProxy"].(bool); ok {
+		data.TrustProxy = types.BoolValue(v)
+	}
+	if v, ok := decoded["csrfProtection"].(bool); ok {
+		data.CSRFProtection = types.BoolValue(v)
+	}
+	if v, ok := decoded["imageProxy"].(bool); ok {
+		data.ImageProxy = types.BoolValue(v)
+	}
+	if v, ok := decoded["locale"].(string); ok {
+		data.Locale = types.StringValue(v)
+	}
+	if v, ok := decoded["region"].(string); ok {
+		data.Region = types.StringValue(v)
+	}
+	if v, ok := decoded["originalLanguage"].(string); ok {
+		data.OriginalLanguage = types.StringValue(v)
+	}
+	if v, ok := decoded["hideAvailable"].(bool); ok {
+		data.HideAvailable = types.BoolValue(v)
+	}
+	if v, ok := decoded["partialRequests"].(bool); ok {
+		data.PartialRequests = types.BoolValue(v)
+	}
+	if v, ok := decoded["localLogin"].(bool); ok {
+		data.LocalLogin = types.BoolValue(v)
+	}
+	if v, ok := decoded["newPlexLogin"].(bool); ok {
+		data.NewPlexLogin = types.BoolValue(v)
+	}
+	if v, ok := decoded["movieRequestLimit"].(float64); ok {
+		data.MovieRequestLimit = types.Int64Value(int64(v))
+	}
+	if v, ok := decoded["seriesRequestLimit"].(float64); ok {
+		data.SeriesRequestLimit = types.Int64Value(int64(v))
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -338,6 +340,8 @@ func (r *MainSettingsResource) Read(ctx context.Context, req resource.ReadReques
 	if v, ok := decoded["seriesRequestLimit"].(float64); ok {
 		data.SeriesRequestLimit = types.Int64Value(int64(v))
 	}
+
+	data.ID = types.StringValue("main")
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

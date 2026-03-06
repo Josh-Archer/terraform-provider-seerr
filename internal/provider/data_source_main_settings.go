@@ -17,7 +17,6 @@ type MainSettingsDataSource struct {
 }
 
 type MainSettingsDataSourceModel struct {
-	ApiKey             types.String `tfsdk:"api_key"`
 	AppTitle           types.String `tfsdk:"app_title"`
 	ApplicationURL     types.String `tfsdk:"application_url"`
 	TrustProxy         types.Bool   `tfsdk:"trust_proxy"`
@@ -46,11 +45,6 @@ func (d *MainSettingsDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Read Seerr main settings via /api/v1/settings/main.",
 		Attributes: map[string]schema.Attribute{
-			"api_key": schema.StringAttribute{
-				MarkdownDescription: "The Seerr API key.",
-				Computed:            true,
-				Sensitive:           true,
-			},
 			"app_title": schema.StringAttribute{
 				MarkdownDescription: "The application title.",
 				Computed:            true,
@@ -157,9 +151,6 @@ func (d *MainSettingsDataSource) Read(ctx context.Context, req datasource.ReadRe
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
 
-	if v, ok := decoded["apiKey"].(string); ok {
-		data.ApiKey = types.StringValue(v)
-	}
 	if v, ok := decoded["appTitle"].(string); ok {
 		data.AppTitle = types.StringValue(v)
 	}

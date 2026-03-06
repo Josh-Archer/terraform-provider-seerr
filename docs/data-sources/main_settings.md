@@ -17,7 +17,6 @@ Read Seerr main settings via /api/v1/settings/main.
 
 ### Read-Only
 
-- `api_key` (String, Sensitive) The Seerr API key.
 - `app_title` (String) The application title.
 - `application_url` (String) The application URL.
 - `csrf_protection` (Boolean) Whether CSRF protection is enabled.
