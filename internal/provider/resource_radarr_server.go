@@ -238,7 +238,7 @@ func (r *RadarrServerResource) Create(ctx context.Context, req resource.CreateRe
 		resp.Diagnostics.AddError("Create Failed", "response did not include Radarr server id")
 		return
 	}
-	parsed, _ := requireServerID(id)
+	parsed, _ := requireInt64ID(id)
 	data.ServerID = types.Int64Value(parsed)
 	data.ID = types.StringValue(id)
 	data.ResponseJSON = types.StringValue(string(res.Body))
@@ -321,7 +321,7 @@ func (r *RadarrServerResource) Delete(ctx context.Context, req resource.DeleteRe
 
 func (r *RadarrServerResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	id, err := requireServerID(req.ID)
+	id, err := requireInt64ID(req.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("Import Failed", err.Error())
 		return

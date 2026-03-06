@@ -111,12 +111,21 @@ func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewNotificationAgentResource,
 		NewRadarrServerResource,
 		NewSonarrServerResource,
+		NewUserPermissionsResource,
+		NewUserWatchlistSettingsResource,
 	}
 }
 
 func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewAPIRequestDataSource,
+		NewMainSettingsDataSource,
+		NewPlexSettingsDataSource,
+		NewNotificationAgentDataSource,
+		NewRadarrServerDataSource,
+		NewSonarrServerDataSource,
+		NewUserPermissionsDataSource,
+		NewUserWatchlistSettingsDataSource,
 	}
 }
 
