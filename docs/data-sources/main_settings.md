@@ -17,5 +17,19 @@ Read Seerr main settings via /api/v1/settings/main.
 
 ### Read-Only
 
+- `app_title` (String) The application title.
+- `application_url` (String) The application URL.
+- `csrf_protection` (Boolean) Whether CSRF protection is enabled.
+- `hide_available` (Boolean) Whether to hide available media.
+- `image_proxy` (Boolean) Whether the image proxy is enabled.
+- `local_login` (Boolean) Whether local login is enabled.
+- `locale` (String) The application locale.
+- `movie_request_limit` (Number) The movie request limit.
+- `new_plex_login` (Boolean) Whether the new Plex login is enabled.
+- `original_language` (String) The original language.
+- `partial_requests` (Boolean) Whether partial requests are allowed.
+- `region` (String) The application region.
 - `response_json` (String) Raw JSON response body.
+- `series_request_limit` (Number) The series request limit.
 - `status_code` (Number) HTTP status code.
+- `trust_proxy` (Boolean) Whether to trust the proxy.
