@@ -23,8 +23,11 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: go mod download
+      - run: go generate ./...
       - run: gofmt -w .
-      - run: git diff --exit-code
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs(auto): regenerate provider documentation"
       - run: go build ./...
       - run: go test ./...
       - name: Run linters
