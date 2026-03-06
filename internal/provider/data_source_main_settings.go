@@ -73,5 +73,6 @@ func (d *MainSettingsDataSource) Read(ctx context.Context, req datasource.ReadRe
 
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
