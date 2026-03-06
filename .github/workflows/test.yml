@@ -42,75 +42,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine next semver tag
-        id: semver
-        shell: pwsh
-        run: |
-          git fetch --tags --force
-
-          $headTags = git tag --points-at HEAD --list "v*"
-          if ($headTags) {
-            Write-Host "HEAD already tagged: $headTags"
-            "create=false" >> $env:GITHUB_OUTPUT
-            exit 0
-          }
-
-          $lastTag = (git tag --list "v*" --sort=-v:refname | Select-Object -First 1)
-          if (-not $lastTag) {
-            $lastTag = "v0.0.0"
-            $range = "HEAD"
-          } else {
-            $range = "$lastTag..HEAD"
-          }
-
-          $commitText = git log $range --format="%s%n%b"
-          if (-not $commitText.Trim()) {
-            Write-Host "No commits since $lastTag"
-            "create=false" >> $env:GITHUB_OUTPUT
-            exit 0
-          }
-
-          $bump = "patch"
-          if ($commitText -match "BREAKING CHANGE|!:\s") {
-            $bump = "major"
-          } elseif ($commitText -match "(?m)^feat(\(.+\))?:\s|Merge pull request .* from .*/(feat|feature)/.+") {
-            $bump = "minor"
-          }
-
-          $parts = $lastTag.TrimStart("v").Split(".")
-          $major = [int]$parts[0]
-          $minor = [int]$parts[1]
-          $patch = [int]$parts[2]
-
-          switch ($bump) {
-            "major" { $major++; $minor = 0; $patch = 0 }
-            "minor" { $minor++; $patch = 0 }
-            default { $patch++ }
-          }
-
-          $nextTag = "v$major.$minor.$patch"
-          Write-Host "Last tag: $lastTag"
-          Write-Host "Bump: $bump"
-          Write-Host "Next tag: $nextTag"
-
-          "create=true" >> $env:GITHUB_OUTPUT
-          "tag=$nextTag" >> $env:GITHUB_OUTPUT
-
-      - name: Create and push tag
-        if: steps.semver.outputs.create == 'true'
-        shell: pwsh
-        run: |
-          $tag = "${{ steps.semver.outputs.tag }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a $tag -m "Release $tag"
-          git push origin $tag
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          create_annotated_tag: true
+          tag_prefix: v
 
       - name: Trigger release workflow for new tag
-        if: steps.semver.outputs.create == 'true'
+        if: steps.tag_version.outputs.new_tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: pwsh
-        run: |
-          $tag = "${{ steps.semver.outputs.tag }}"
-          gh workflow run release.yml --ref $tag
+        run: gh workflow run release.yml --ref ${{ steps.tag_version.outputs.new_tag }}
