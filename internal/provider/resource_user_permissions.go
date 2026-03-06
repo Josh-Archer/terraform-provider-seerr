@@ -181,7 +181,7 @@ func (r *UserPermissionsResource) Delete(_ context.Context, _ resource.DeleteReq
 }
 
 func (r *UserPermissionsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	id, err := requireServerID(req.ID)
+	id, err := requireInt64ID(req.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("Import Failed", err.Error())
 		return

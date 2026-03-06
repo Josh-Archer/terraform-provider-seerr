@@ -197,7 +197,7 @@ func (r *UserWatchlistSettingsResource) Delete(_ context.Context, _ resource.Del
 }
 
 func (r *UserWatchlistSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	id, err := requireServerID(req.ID)
+	id, err := requireInt64ID(req.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("Import Failed", err.Error())
 		return

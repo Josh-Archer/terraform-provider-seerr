@@ -68,10 +68,10 @@ func findByIDInJSONArray(body []byte, id int64) ([]byte, bool, error) {
 	return nil, false, nil
 }
 
-func requireServerID(raw string) (int64, error) {
+func requireInt64ID(raw string) (int64, error) {
 	var v int64
 	if _, err := fmt.Sscanf(raw, "%d", &v); err != nil {
-		return 0, fmt.Errorf("invalid server id %q", raw)
+		return 0, fmt.Errorf("invalid id %q", raw)
 	}
 	return v, nil
 }
