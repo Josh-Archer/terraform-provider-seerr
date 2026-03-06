@@ -111,6 +111,8 @@ func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewNotificationAgentResource,
 		NewRadarrServerResource,
 		NewSonarrServerResource,
+		NewUserPermissionsResource,
+		NewUserWatchlistSettingsResource,
 	}
 }
 
