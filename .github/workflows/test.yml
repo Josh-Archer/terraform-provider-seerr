@@ -73,7 +73,7 @@ jobs:
           $bump = "patch"
           if ($commitText -match "BREAKING CHANGE|!:\s") {
             $bump = "major"
-          } elseif ($commitText -match "(?m)^feat(\(.+\))?:\s") {
+          } elseif ($commitText -match "(?m)^feat(\(.+\))?:\s|Merge pull request .* from .*/(feat|feature)/.+") {
             $bump = "minor"
           }
 
