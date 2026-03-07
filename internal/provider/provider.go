@@ -114,6 +114,7 @@ func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewUserPermissionsResource,
 		NewUserWatchlistSettingsResource,
 		NewAPIKeyResource,
+		NewUserResource,
 	}
 }
 
