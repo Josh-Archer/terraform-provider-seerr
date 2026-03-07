@@ -1,8 +1,8 @@
 package provider
 
 import (
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	dschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 func notificationAgentResourceBlocks() map[string]schema.Block {

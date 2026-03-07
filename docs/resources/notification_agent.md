@@ -18,15 +18,142 @@ Manage Seerr notification agent settings via /api/v1/settings/notifications/{age
 ### Required
 
 - `agent` (String)
-- `payload_json` (String)
 
 ### Optional
 
-- `delete_payload_json` (String)
-- `disable_on_delete` (Boolean)
+- `discord` (Block, Optional) (see [below for nested schema](#nestedblock--discord))
+- `email` (Block, Optional) (see [below for nested schema](#nestedblock--email))
+- `enabled` (Boolean)
+- `gotify` (Block, Optional) (see [below for nested schema](#nestedblock--gotify))
+- `lunasea` (Block, Optional) (see [below for nested schema](#nestedblock--lunasea))
+- `pushbullet` (Block, Optional) (see [below for nested schema](#nestedblock--pushbullet))
+- `pushover` (Block, Optional) (see [below for nested schema](#nestedblock--pushover))
+- `slack` (Block, Optional) (see [below for nested schema](#nestedblock--slack))
+- `telegram` (Block, Optional) (see [below for nested schema](#nestedblock--telegram))
+- `types` (Number)
+- `webhook` (Block, Optional) (see [below for nested schema](#nestedblock--webhook))
+- `webpush` (Block, Optional) (see [below for nested schema](#nestedblock--webpush))
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-- `response_json` (String)
-- `status_code` (Number)
+
+<a id="nestedblock--discord"></a>
+### Nested Schema for `discord`
+
+Required:
+
+- `webhook_url` (String)
+
+Optional:
+
+- `bot_avatar_url` (String)
+- `bot_username` (String)
+- `enable_mentions` (Boolean)
+
+
+<a id="nestedblock--email"></a>
+### Nested Schema for `email`
+
+Required:
+
+- `email_from` (String)
+- `sender_name` (String)
+- `smtp_host` (String)
+- `smtp_port` (Number)
+
+Optional:
+
+- `allow_self_signed` (Boolean)
+- `auth_pass` (String, Sensitive)
+- `auth_user` (String)
+- `ignore_tls` (Boolean)
+- `pgp_password` (String, Sensitive)
+- `pgp_private_key` (String, Sensitive)
+- `require_tls` (Boolean)
+- `secure` (Boolean)
+
+
+<a id="nestedblock--gotify"></a>
+### Nested Schema for `gotify`
+
+Required:
+
+- `token` (String, Sensitive)
+- `url` (String)
+
+
+<a id="nestedblock--lunasea"></a>
+### Nested Schema for `lunasea`
+
+Required:
+
+- `webhook_url` (String)
+
+Optional:
+
+- `profile_name` (String)
+
+
+<a id="nestedblock--pushbullet"></a>
+### Nested Schema for `pushbullet`
+
+Required:
+
+- `access_token` (String, Sensitive)
+
+Optional:
+
+- `channel_tag` (String)
+
+
+<a id="nestedblock--pushover"></a>
+### Nested Schema for `pushover`
+
+Required:
+
+- `access_token` (String, Sensitive)
+- `user_token` (String, Sensitive)
+
+Optional:
+
+- `sound` (String)
+
+
+<a id="nestedblock--slack"></a>
+### Nested Schema for `slack`
+
+Required:
+
+- `webhook_url` (String)
+
+
+<a id="nestedblock--telegram"></a>
+### Nested Schema for `telegram`
+
+Required:
+
+- `bot_api` (String, Sensitive)
+- `chat_id` (String)
+
+Optional:
+
+- `bot_username` (String)
+- `send_silently` (Boolean)
+
+
+<a id="nestedblock--webhook"></a>
+### Nested Schema for `webhook`
+
+Required:
+
+- `json_payload` (String)
+- `webhook_url` (String)
+
+Optional:
+
+- `auth_header` (String, Sensitive)
+
+
+<a id="nestedblock--webpush"></a>
+### Nested Schema for `webpush`

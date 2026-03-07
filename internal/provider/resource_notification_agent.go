@@ -24,11 +24,11 @@ type NotificationAgentResource struct {
 }
 
 type NotificationAgentModel struct {
-	ID         types.String `tfsdk:"id"`
-	Agent      types.String `tfsdk:"agent"`
-	Enabled    types.Bool   `tfsdk:"enabled"`
-	TypesMask  types.Int64  `tfsdk:"types"`
-	
+	ID        types.String `tfsdk:"id"`
+	Agent     types.String `tfsdk:"agent"`
+	Enabled   types.Bool   `tfsdk:"enabled"`
+	TypesMask types.Int64  `tfsdk:"types"`
+
 	Discord    *NotificationAgentDiscordModel    `tfsdk:"discord"`
 	Slack      *NotificationAgentSlackModel      `tfsdk:"slack"`
 	Email      *NotificationAgentEmailModel      `tfsdk:"email"`
@@ -106,67 +106,133 @@ func buildPayload(data *NotificationAgentModel) (string, error) {
 		Types:   data.TypesMask.ValueInt64(),
 		Options: make(map[string]interface{}),
 	}
-	
+
 	switch data.Agent.ValueString() {
 	case "discord":
 		if data.Discord != nil {
-			if !data.Discord.BotUsername.IsNull() { payload.Options["botUsername"] = data.Discord.BotUsername.ValueString() }
-			if !data.Discord.BotAvatarUrl.IsNull() { payload.Options["botAvatarUrl"] = data.Discord.BotAvatarUrl.ValueString() }
-			if !data.Discord.WebhookUrl.IsNull() { payload.Options["webhookUrl"] = data.Discord.WebhookUrl.ValueString() }
-			if !data.Discord.EnableMentions.IsNull() { payload.Options["enableMentions"] = data.Discord.EnableMentions.ValueBool() }
+			if !data.Discord.BotUsername.IsNull() {
+				payload.Options["botUsername"] = data.Discord.BotUsername.ValueString()
+			}
+			if !data.Discord.BotAvatarUrl.IsNull() {
+				payload.Options["botAvatarUrl"] = data.Discord.BotAvatarUrl.ValueString()
+			}
+			if !data.Discord.WebhookUrl.IsNull() {
+				payload.Options["webhookUrl"] = data.Discord.WebhookUrl.ValueString()
+			}
+			if !data.Discord.EnableMentions.IsNull() {
+				payload.Options["enableMentions"] = data.Discord.EnableMentions.ValueBool()
+			}
 		}
 	case "slack":
 		if data.Slack != nil {
-			if !data.Slack.WebhookUrl.IsNull() { payload.Options["webhookUrl"] = data.Slack.WebhookUrl.ValueString() }
+			if !data.Slack.WebhookUrl.IsNull() {
+				payload.Options["webhookUrl"] = data.Slack.WebhookUrl.ValueString()
+			}
 		}
 	case "email":
 		if data.Email != nil {
-			if !data.Email.EmailFrom.IsNull() { payload.Options["emailFrom"] = data.Email.EmailFrom.ValueString() }
-			if !data.Email.SmtpHost.IsNull() { payload.Options["smtpHost"] = data.Email.SmtpHost.ValueString() }
-			if !data.Email.SmtpPort.IsNull() { payload.Options["smtpPort"] = data.Email.SmtpPort.ValueInt64() }
-			if !data.Email.Secure.IsNull() { payload.Options["secure"] = data.Email.Secure.ValueBool() }
-			if !data.Email.IgnoreTls.IsNull() { payload.Options["ignoreTls"] = data.Email.IgnoreTls.ValueBool() }
-			if !data.Email.RequireTls.IsNull() { payload.Options["requireTls"] = data.Email.RequireTls.ValueBool() }
-			if !data.Email.AuthUser.IsNull() { payload.Options["authUser"] = data.Email.AuthUser.ValueString() }
-			if !data.Email.AuthPass.IsNull() { payload.Options["authPass"] = data.Email.AuthPass.ValueString() }
-			if !data.Email.AllowSelfSigned.IsNull() { payload.Options["allowSelfSigned"] = data.Email.AllowSelfSigned.ValueBool() }
-			if !data.Email.SenderName.IsNull() { payload.Options["senderName"] = data.Email.SenderName.ValueString() }
-			if !data.Email.PgpPrivateKey.IsNull() { payload.Options["pgpPrivateKey"] = data.Email.PgpPrivateKey.ValueString() }
-			if !data.Email.PgpPassword.IsNull() { payload.Options["pgpPassword"] = data.Email.PgpPassword.ValueString() }
+			if !data.Email.EmailFrom.IsNull() {
+				payload.Options["emailFrom"] = data.Email.EmailFrom.ValueString()
+			}
+			if !data.Email.SmtpHost.IsNull() {
+				payload.Options["smtpHost"] = data.Email.SmtpHost.ValueString()
+			}
+			if !data.Email.SmtpPort.IsNull() {
+				payload.Options["smtpPort"] = data.Email.SmtpPort.ValueInt64()
+			}
+			if !data.Email.Secure.IsNull() {
+				payload.Options["secure"] = data.Email.Secure.ValueBool()
+			}
+			if !data.Email.IgnoreTls.IsNull() {
+				payload.Options["ignoreTls"] = data.Email.IgnoreTls.ValueBool()
+			}
+			if !data.Email.RequireTls.IsNull() {
+				payload.Options["requireTls"] = data.Email.RequireTls.ValueBool()
+			}
+			if !data.Email.AuthUser.IsNull() {
+				payload.Options["authUser"] = data.Email.AuthUser.ValueString()
+			}
+			if !data.Email.AuthPass.IsNull() {
+				payload.Options["authPass"] = data.Email.AuthPass.ValueString()
+			}
+			if !data.Email.AllowSelfSigned.IsNull() {
+				payload.Options["allowSelfSigned"] = data.Email.AllowSelfSigned.ValueBool()
+			}
+			if !data.Email.SenderName.IsNull() {
+				payload.Options["senderName"] = data.Email.SenderName.ValueString()
+			}
+			if !data.Email.PgpPrivateKey.IsNull() {
+				payload.Options["pgpPrivateKey"] = data.Email.PgpPrivateKey.ValueString()
+			}
+			if !data.Email.PgpPassword.IsNull() {
+				payload.Options["pgpPassword"] = data.Email.PgpPassword.ValueString()
+			}
 		}
 	case "lunasea":
 		if data.LunaSea != nil {
-			if !data.LunaSea.WebhookUrl.IsNull() { payload.Options["webhookUrl"] = data.LunaSea.WebhookUrl.ValueString() }
-			if !data.LunaSea.ProfileName.IsNull() { payload.Options["profileName"] = data.LunaSea.ProfileName.ValueString() }
+			if !data.LunaSea.WebhookUrl.IsNull() {
+				payload.Options["webhookUrl"] = data.LunaSea.WebhookUrl.ValueString()
+			}
+			if !data.LunaSea.ProfileName.IsNull() {
+				payload.Options["profileName"] = data.LunaSea.ProfileName.ValueString()
+			}
 		}
 	case "telegram":
 		if data.Telegram != nil {
-			if !data.Telegram.BotUsername.IsNull() { payload.Options["botUsername"] = data.Telegram.BotUsername.ValueString() }
-			if !data.Telegram.BotAPI.IsNull() { payload.Options["botAPI"] = data.Telegram.BotAPI.ValueString() }
-			if !data.Telegram.ChatId.IsNull() { payload.Options["chatId"] = data.Telegram.ChatId.ValueString() }
-			if !data.Telegram.SendSilently.IsNull() { payload.Options["sendSilently"] = data.Telegram.SendSilently.ValueBool() }
+			if !data.Telegram.BotUsername.IsNull() {
+				payload.Options["botUsername"] = data.Telegram.BotUsername.ValueString()
+			}
+			if !data.Telegram.BotAPI.IsNull() {
+				payload.Options["botAPI"] = data.Telegram.BotAPI.ValueString()
+			}
+			if !data.Telegram.ChatId.IsNull() {
+				payload.Options["chatId"] = data.Telegram.ChatId.ValueString()
+			}
+			if !data.Telegram.SendSilently.IsNull() {
+				payload.Options["sendSilently"] = data.Telegram.SendSilently.ValueBool()
+			}
 		}
 	case "pushbullet":
 		if data.Pushbullet != nil {
-			if !data.Pushbullet.AccessToken.IsNull() { payload.Options["accessToken"] = data.Pushbullet.AccessToken.ValueString() }
-			if !data.Pushbullet.ChannelTag.IsNull() { payload.Options["channelTag"] = data.Pushbullet.ChannelTag.ValueString() }
+			if !data.Pushbullet.AccessToken.IsNull() {
+				payload.Options["accessToken"] = data.Pushbullet.AccessToken.ValueString()
+			}
+			if !data.Pushbullet.ChannelTag.IsNull() {
+				payload.Options["channelTag"] = data.Pushbullet.ChannelTag.ValueString()
+			}
 		}
 	case "pushover":
 		if data.Pushover != nil {
-			if !data.Pushover.AccessToken.IsNull() { payload.Options["accessToken"] = data.Pushover.AccessToken.ValueString() }
-			if !data.Pushover.UserToken.IsNull() { payload.Options["userToken"] = data.Pushover.UserToken.ValueString() }
-			if !data.Pushover.Sound.IsNull() { payload.Options["sound"] = data.Pushover.Sound.ValueString() }
+			if !data.Pushover.AccessToken.IsNull() {
+				payload.Options["accessToken"] = data.Pushover.AccessToken.ValueString()
+			}
+			if !data.Pushover.UserToken.IsNull() {
+				payload.Options["userToken"] = data.Pushover.UserToken.ValueString()
+			}
+			if !data.Pushover.Sound.IsNull() {
+				payload.Options["sound"] = data.Pushover.Sound.ValueString()
+			}
 		}
 	case "webhook":
 		if data.Webhook != nil {
-			if !data.Webhook.WebhookUrl.IsNull() { payload.Options["webhookUrl"] = data.Webhook.WebhookUrl.ValueString() }
-			if !data.Webhook.JsonPayload.IsNull() { payload.Options["jsonPayload"] = data.Webhook.JsonPayload.ValueString() }
-			if !data.Webhook.AuthHeader.IsNull() { payload.Options["authHeader"] = data.Webhook.AuthHeader.ValueString() }
+			if !data.Webhook.WebhookUrl.IsNull() {
+				payload.Options["webhookUrl"] = data.Webhook.WebhookUrl.ValueString()
+			}
+			if !data.Webhook.JsonPayload.IsNull() {
+				payload.Options["jsonPayload"] = data.Webhook.JsonPayload.ValueString()
+			}
+			if !data.Webhook.AuthHeader.IsNull() {
+				payload.Options["authHeader"] = data.Webhook.AuthHeader.ValueString()
+			}
 		}
 	case "gotify":
 		if data.Gotify != nil {
-			if !data.Gotify.Url.IsNull() { payload.Options["url"] = data.Gotify.Url.ValueString() }
-			if !data.Gotify.Token.IsNull() { payload.Options["token"] = data.Gotify.Token.ValueString() }
+			if !data.Gotify.Url.IsNull() {
+				payload.Options["url"] = data.Gotify.Url.ValueString()
+			}
+			if !data.Gotify.Token.IsNull() {
+				payload.Options["token"] = data.Gotify.Token.ValueString()
+			}
 		}
 	case "webpush":
 		// no options
@@ -185,7 +251,7 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 	}
 	data.Enabled = types.BoolValue(payload.Enabled)
 	data.TypesMask = types.Int64Value(payload.Types)
-	
+
 	opt := payload.Options
 	getString := func(key string) types.String {
 		if v, ok := opt[key].(string); ok {
@@ -308,7 +374,7 @@ func (r *NotificationAgentResource) Create(ctx context.Context, req resource.Cre
 		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return
 	}
-	
+
 	data.ID = types.StringValue(data.Agent.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -333,7 +399,7 @@ func (r *NotificationAgentResource) Read(ctx context.Context, req resource.ReadR
 		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return
 	}
-	
+
 	if err := parsePayload(&data, res.Body); err != nil {
 		resp.Diagnostics.AddError("Parse Failed", err.Error())
 		return
@@ -372,9 +438,9 @@ func (r *NotificationAgentResource) Delete(ctx context.Context, req resource.Del
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	
+
 	path := notificationPath(data.Agent.ValueString())
-	
+
 	// Default disable payload upon deletion to clear it
 	disablePayload := `{"enabled":false,"types":0,"options":{}}`
 	res, err := r.client.Request(ctx, "POST", path, disablePayload, nil)
