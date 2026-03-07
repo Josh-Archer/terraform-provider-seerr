@@ -51,6 +51,14 @@ jobs:
         uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: 1.6.0
+      - name: Setup Dev Overrides
+        run: |
+          echo "provider_installation {
+            dev_overrides {
+              \"josh-archer/seerr\" = \"$GITHUB_WORKSPACE\"
+            }
+            direct {}
+          }" > ~/.tofurc
       - name: OpenTofu Init
         working-directory: tests
         run: tofu init
@@ -59,6 +67,7 @@ jobs:
         env:
           SEERR_URL: ${{ secrets.SEERR_URL }}
           SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
+          TF_CLI_CONFIG_FILE: ~/.tofurc
         run: |
           if [ -z "$SEERR_URL" ]; then
             echo "Skipping integration tests: SEERR_URL not set"
