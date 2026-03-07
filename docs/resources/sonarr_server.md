@@ -25,7 +25,9 @@ resource "seerr_sonarr_server" "shows" {
   quality_profile_id     = data.seerr_sonarr_quality_profile.shows.quality_profile_id
   active_directory       = "/media/tv"
   active_anime_directory = "/media/tv-anime"
+  enable_scan            = true
   enable_season_folders  = true
+  tag_requests_with_user = true
   is_default             = true
 }
 ```
@@ -37,11 +39,13 @@ Sonarr when `quality_profile_name` is omitted.
 
 ```terraform
 resource "seerr_sonarr_server" "shows" {
-  url                  = var.sonarr_url
-  api_key              = var.sonarr_api_key
-  quality_profile_id   = 4
-  quality_profile_name = "HD-1080p"
-  active_directory     = "/media/tv"
+  url                    = var.sonarr_url
+  api_key                = var.sonarr_api_key
+  quality_profile_id     = 4
+  quality_profile_name   = "HD-1080p"
+  active_directory       = "/media/tv"
+  enable_scan            = true
+  tag_requests_with_user = true
 }
 ```
 
@@ -61,6 +65,7 @@ resource "seerr_sonarr_server" "shows" {
 - `active_anime_directory` (String)
 - `anime_tags` (List of Number)
 - `base_url` (String)
+- `enable_scan` (Boolean)
 - `enable_season_folders` (Boolean)
 - `extra_payload_json` (String)
 - `hostname` (String)
@@ -71,7 +76,7 @@ resource "seerr_sonarr_server" "shows" {
 - `prevent_search` (Boolean)
 - `quality_profile_name` (String)
 - `sync_enabled` (Boolean)
-- `tag_requests` (Boolean)
+- `tag_requests_with_user` (Boolean)
 - `tags` (List of Number)
 - `url` (String)
 - `use_ssl` (Boolean)

@@ -20,12 +20,14 @@ data "seerr_radarr_quality_profile" "movies" {
 }
 
 resource "seerr_radarr_server" "movies" {
-  url                  = var.radarr_url
-  api_key              = var.radarr_api_key
-  quality_profile_id   = data.seerr_radarr_quality_profile.movies.quality_profile_id
-  active_directory     = "/media/movies"
-  minimum_availability = "announced"
-  is_default           = true
+  url                    = var.radarr_url
+  api_key                = var.radarr_api_key
+  quality_profile_id     = data.seerr_radarr_quality_profile.movies.quality_profile_id
+  active_directory       = "/media/movies"
+  minimum_availability   = "announced"
+  enable_scan            = true
+  tag_requests_with_user = true
+  is_default             = true
 }
 ```
 
@@ -36,11 +38,13 @@ Radarr when `quality_profile_name` is omitted.
 
 ```terraform
 resource "seerr_radarr_server" "movies" {
-  url                  = var.radarr_url
-  api_key              = var.radarr_api_key
-  quality_profile_id   = 4
-  quality_profile_name = "HD-1080p"
-  active_directory     = "/media/movies"
+  url                    = var.radarr_url
+  api_key                = var.radarr_api_key
+  quality_profile_id     = 4
+  quality_profile_name   = "HD-1080p"
+  active_directory       = "/media/movies"
+  enable_scan            = true
+  tag_requests_with_user = true
 }
 ```
 
@@ -60,6 +64,7 @@ resource "seerr_radarr_server" "movies" {
 - `base_url` (String)
 - `extra_payload_json` (String)
 - `hostname` (String)
+- `enable_scan` (Boolean)
 - `is_4k` (Boolean)
 - `is_default` (Boolean)
 - `minimum_availability` (String)
@@ -68,7 +73,7 @@ resource "seerr_radarr_server" "movies" {
 - `prevent_search` (Boolean)
 - `quality_profile_name` (String)
 - `sync_enabled` (Boolean)
-- `tag_requests` (Boolean)
+- `tag_requests_with_user` (Boolean)
 - `tags` (List of Number)
 - `url` (String)
 - `use_ssl` (Boolean)

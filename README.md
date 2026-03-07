@@ -80,10 +80,12 @@ data "seerr_radarr_quality_profile" "movies" {
 }
 
 resource "seerr_radarr_server" "movies" {
-  url                = radarr_system.this.url
-  api_key            = radarr_system.this.api_key
-  quality_profile_id = data.seerr_radarr_quality_profile.movies.quality_profile_id
-  active_directory   = "/media/movies"
+  url                    = radarr_system.this.url
+  api_key                = radarr_system.this.api_key
+  quality_profile_id     = data.seerr_radarr_quality_profile.movies.quality_profile_id
+  active_directory       = "/media/movies"
+  enable_scan            = true
+  tag_requests_with_user = true
 }
 
 data "seerr_sonarr_quality_profile" "shows" {
@@ -98,6 +100,8 @@ resource "seerr_sonarr_server" "shows" {
   quality_profile_id     = data.seerr_sonarr_quality_profile.shows.quality_profile_id
   active_directory       = "/media/tv"
   active_anime_directory = "/media/anime"
+  enable_scan            = true
+  tag_requests_with_user = true
 }
 ```
 

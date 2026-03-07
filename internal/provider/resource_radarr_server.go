@@ -42,9 +42,10 @@ type RadarrServerModel struct {
 	MinimumAvailability types.String `tfsdk:"minimum_availability"`
 	Tags                types.List   `tfsdk:"tags"`
 	IsDefault           types.Bool   `tfsdk:"is_default"`
+	EnableScan          types.Bool   `tfsdk:"enable_scan"`
 	SyncEnabled         types.Bool   `tfsdk:"sync_enabled"`
 	PreventSearch       types.Bool   `tfsdk:"prevent_search"`
-	TagRequests         types.Bool   `tfsdk:"tag_requests"`
+	TagRequestsWithUser types.Bool   `tfsdk:"tag_requests_with_user"`
 	ExtraPayloadJSON    types.String `tfsdk:"extra_payload_json"`
 	ResponseJSON        types.String `tfsdk:"response_json"`
 }
@@ -120,6 +121,11 @@ func (r *RadarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 				Computed: true,
 				Default:  booldefault.StaticBool(true),
 			},
+			"enable_scan": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				Default:  booldefault.StaticBool(true),
+			},
 			"sync_enabled": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
@@ -130,7 +136,7 @@ func (r *RadarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 				Computed: true,
 				Default:  booldefault.StaticBool(false),
 			},
-			"tag_requests": schema.BoolAttribute{
+			"tag_requests_with_user": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
 				Default:  booldefault.StaticBool(true),
@@ -229,9 +235,10 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 		"minimumAvailability": data.MinimumAvailability.ValueString(),
 		"tags":                tags,
 		"isDefault":           data.IsDefault.ValueBool(),
+		"enableScan":          data.EnableScan.ValueBool(),
 		"syncEnabled":         data.SyncEnabled.ValueBool(),
 		"preventSearch":       data.PreventSearch.ValueBool(),
-		"tagRequests":         data.TagRequests.ValueBool(),
+		"tagRequests":         data.TagRequestsWithUser.ValueBool(),
 	}
 	merged, err := mergeJSON(base, data.ExtraPayloadJSON.ValueString())
 	if err != nil {

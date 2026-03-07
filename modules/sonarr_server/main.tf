@@ -20,10 +20,11 @@ resource "seerr_sonarr_server" "this" {
   anime_tags             = var.anime_tags
   is_4k                  = var.is_4k
   is_default             = var.is_default
+  enable_scan            = var.enable_scan
   enable_season_folders  = var.enable_season_folders
   sync_enabled           = var.sync_enabled
   prevent_search         = var.prevent_search
-  tag_requests           = var.tag_requests
+  tag_requests_with_user = var.tag_requests_with_user
   extra_payload_json     = jsonencode(var.extra_payload)
   url                    = var.url
 }
