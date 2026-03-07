@@ -27,9 +27,11 @@ Read Seerr notification agent settings via /api/v1/settings/notifications/{agent
 
 - `discord` (Block, Read-only) (see [below for nested schema](#nestedblock--discord))
 - `email` (Block, Read-only) (see [below for nested schema](#nestedblock--email))
+- `embed_poster` (Boolean)
 - `enabled` (Boolean)
 - `gotify` (Block, Read-only) (see [below for nested schema](#nestedblock--gotify))
 - `lunasea` (Block, Read-only) (see [below for nested schema](#nestedblock--lunasea))
+- `ntfy` (Block, Read-only) (see [below for nested schema](#nestedblock--ntfy))
 - `pushbullet` (Block, Read-only) (see [below for nested schema](#nestedblock--pushbullet))
 - `pushover` (Block, Read-only) (see [below for nested schema](#nestedblock--pushover))
 - `slack` (Block, Read-only) (see [below for nested schema](#nestedblock--slack))
@@ -87,6 +89,21 @@ Read-Only:
 
 - `profile_name` (String)
 - `webhook_url` (String)
+
+
+<a id="nestedblock--ntfy"></a>
+### Nested Schema for `ntfy`
+
+Read-Only:
+
+- `auth_method_token` (Boolean)
+- `auth_method_username_password` (Boolean)
+- `password` (String, Sensitive)
+- `priority` (Number)
+- `token` (String, Sensitive)
+- `topic` (String)
+- `url` (String)
+- `username` (String)
 
 
 <a id="nestedblock--pushbullet"></a>

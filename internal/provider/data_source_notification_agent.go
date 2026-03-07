@@ -16,9 +16,10 @@ type NotificationAgentDataSource struct {
 }
 
 type NotificationAgentDataSourceModel struct {
-	Agent     types.String `tfsdk:"agent"`
-	Enabled   types.Bool   `tfsdk:"enabled"`
-	TypesMask types.Int64  `tfsdk:"types"`
+	Agent       types.String `tfsdk:"agent"`
+	Enabled     types.Bool   `tfsdk:"enabled"`
+	EmbedPoster types.Bool   `tfsdk:"embed_poster"`
+	TypesMask   types.Int64  `tfsdk:"types"`
 
 	Discord    *NotificationAgentDiscordModel    `tfsdk:"discord"`
 	Slack      *NotificationAgentSlackModel      `tfsdk:"slack"`
@@ -27,6 +28,7 @@ type NotificationAgentDataSourceModel struct {
 	Telegram   *NotificationAgentTelegramModel   `tfsdk:"telegram"`
 	Pushbullet *NotificationAgentPushbulletModel `tfsdk:"pushbullet"`
 	Pushover   *NotificationAgentPushoverModel   `tfsdk:"pushover"`
+	Ntfy       *NotificationAgentNtfyModel       `tfsdk:"ntfy"`
 	Webhook    *NotificationAgentWebhookModel    `tfsdk:"webhook"`
 	Gotify     *NotificationAgentGotifyModel     `tfsdk:"gotify"`
 	Webpush    *NotificationAgentWebpushModel    `tfsdk:"webpush"`
@@ -47,6 +49,9 @@ func (d *NotificationAgentDataSource) Schema(_ context.Context, _ datasource.Sch
 				Required:            true,
 			},
 			"enabled": schema.BoolAttribute{
+				Computed: true,
+			},
+			"embed_poster": schema.BoolAttribute{
 				Computed: true,
 			},
 			"types": schema.Int64Attribute{
@@ -96,6 +101,7 @@ func (d *NotificationAgentDataSource) Read(ctx context.Context, req datasource.R
 	}
 
 	data.Enabled = resourceData.Enabled
+	data.EmbedPoster = resourceData.EmbedPoster
 	data.TypesMask = resourceData.TypesMask
 	data.Discord = resourceData.Discord
 	data.Slack = resourceData.Slack
@@ -104,6 +110,7 @@ func (d *NotificationAgentDataSource) Read(ctx context.Context, req datasource.R
 	data.Telegram = resourceData.Telegram
 	data.Pushbullet = resourceData.Pushbullet
 	data.Pushover = resourceData.Pushover
+	data.Ntfy = resourceData.Ntfy
 	data.Webhook = resourceData.Webhook
 	data.Gotify = resourceData.Gotify
 	data.Webpush = resourceData.Webpush

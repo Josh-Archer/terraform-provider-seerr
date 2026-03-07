@@ -23,9 +23,11 @@ Manage Seerr notification agent settings via /api/v1/settings/notifications/{age
 
 - `discord` (Block, Optional) (see [below for nested schema](#nestedblock--discord))
 - `email` (Block, Optional) (see [below for nested schema](#nestedblock--email))
+- `embed_poster` (Boolean)
 - `enabled` (Boolean)
 - `gotify` (Block, Optional) (see [below for nested schema](#nestedblock--gotify))
 - `lunasea` (Block, Optional) (see [below for nested schema](#nestedblock--lunasea))
+- `ntfy` (Block, Optional) (see [below for nested schema](#nestedblock--ntfy))
 - `pushbullet` (Block, Optional) (see [below for nested schema](#nestedblock--pushbullet))
 - `pushover` (Block, Optional) (see [below for nested schema](#nestedblock--pushover))
 - `slack` (Block, Optional) (see [below for nested schema](#nestedblock--slack))
@@ -93,6 +95,24 @@ Required:
 Optional:
 
 - `profile_name` (String)
+
+
+<a id="nestedblock--ntfy"></a>
+### Nested Schema for `ntfy`
+
+Required:
+
+- `topic` (String)
+- `url` (String)
+
+Optional:
+
+- `auth_method_token` (Boolean)
+- `auth_method_username_password` (Boolean)
+- `password` (String, Sensitive)
+- `priority` (Number)
+- `token` (String, Sensitive)
+- `username` (String)
 
 
 <a id="nestedblock--pushbullet"></a>

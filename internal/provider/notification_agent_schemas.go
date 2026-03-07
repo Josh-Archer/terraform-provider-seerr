@@ -63,6 +63,18 @@ func notificationAgentResourceBlocks() map[string]schema.Block {
 				"sound":        schema.StringAttribute{Optional: true},
 			},
 		},
+		"ntfy": schema.SingleNestedBlock{
+			Attributes: map[string]schema.Attribute{
+				"url":                           schema.StringAttribute{Required: true},
+				"topic":                         schema.StringAttribute{Required: true},
+				"auth_method_username_password": schema.BoolAttribute{Optional: true},
+				"username":                      schema.StringAttribute{Optional: true},
+				"password":                      schema.StringAttribute{Optional: true, Sensitive: true},
+				"auth_method_token":             schema.BoolAttribute{Optional: true},
+				"token":                         schema.StringAttribute{Optional: true, Sensitive: true},
+				"priority":                      schema.Int64Attribute{Optional: true},
+			},
+		},
 		"webhook": schema.SingleNestedBlock{
 			Attributes: map[string]schema.Attribute{
 				"webhook_url":  schema.StringAttribute{Required: true},
@@ -138,6 +150,18 @@ func notificationAgentDataSourceBlocks() map[string]dschema.Block {
 				"access_token": dschema.StringAttribute{Computed: true, Sensitive: true},
 				"user_token":   dschema.StringAttribute{Computed: true, Sensitive: true},
 				"sound":        dschema.StringAttribute{Computed: true},
+			},
+		},
+		"ntfy": dschema.SingleNestedBlock{
+			Attributes: map[string]dschema.Attribute{
+				"url":                           dschema.StringAttribute{Computed: true},
+				"topic":                         dschema.StringAttribute{Computed: true},
+				"auth_method_username_password": dschema.BoolAttribute{Computed: true},
+				"username":                      dschema.StringAttribute{Computed: true},
+				"password":                      dschema.StringAttribute{Computed: true, Sensitive: true},
+				"auth_method_token":             dschema.BoolAttribute{Computed: true},
+				"token":                         dschema.StringAttribute{Computed: true, Sensitive: true},
+				"priority":                      dschema.Int64Attribute{Computed: true},
 			},
 		},
 		"webhook": dschema.SingleNestedBlock{
