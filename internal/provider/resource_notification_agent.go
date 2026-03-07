@@ -36,6 +36,7 @@ type NotificationAgentModel struct {
 	Telegram   *NotificationAgentTelegramModel   `tfsdk:"telegram"`
 	Pushbullet *NotificationAgentPushbulletModel `tfsdk:"pushbullet"`
 	Pushover   *NotificationAgentPushoverModel   `tfsdk:"pushover"`
+	Ntfy       *NotificationAgentNtfyModel       `tfsdk:"ntfy"`
 	Webhook    *NotificationAgentWebhookModel    `tfsdk:"webhook"`
 	Gotify     *NotificationAgentGotifyModel     `tfsdk:"gotify"`
 	Webpush    *NotificationAgentWebpushModel    `tfsdk:"webpush"`
@@ -213,6 +214,18 @@ func buildPayload(data *NotificationAgentModel) (string, error) {
 				payload.Options["sound"] = data.Pushover.Sound.ValueString()
 			}
 		}
+	case "ntfy":
+		if data.Ntfy != nil {
+			if !data.Ntfy.Url.IsNull() {
+				payload.Options["url"] = data.Ntfy.Url.ValueString()
+			}
+			if !data.Ntfy.Topic.IsNull() {
+				payload.Options["topic"] = data.Ntfy.Topic.ValueString()
+			}
+			if !data.Ntfy.AccessToken.IsNull() {
+				payload.Options["accessToken"] = data.Ntfy.AccessToken.ValueString()
+			}
+		}
 	case "webhook":
 		if data.Webhook != nil {
 			if !data.Webhook.WebhookUrl.IsNull() {
@@ -280,6 +293,7 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 	data.Telegram = nil
 	data.Pushbullet = nil
 	data.Pushover = nil
+	data.Ntfy = nil
 	data.Webhook = nil
 	data.Gotify = nil
 	data.Webpush = nil
@@ -333,6 +347,12 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 			AccessToken: getString("accessToken"),
 			UserToken:   getString("userToken"),
 			Sound:       getString("sound"),
+		}
+	case "ntfy":
+		data.Ntfy = &NotificationAgentNtfyModel{
+			Url:         getString("url"),
+			Topic:       getString("topic"),
+			AccessToken: getString("accessToken"),
 		}
 	case "webhook":
 		data.Webhook = &NotificationAgentWebhookModel{

@@ -63,6 +63,13 @@ func notificationAgentResourceBlocks() map[string]schema.Block {
 				"sound":        schema.StringAttribute{Optional: true},
 			},
 		},
+		"ntfy": schema.SingleNestedBlock{
+			Attributes: map[string]schema.Attribute{
+				"url":          schema.StringAttribute{Required: true},
+				"topic":        schema.StringAttribute{Required: true},
+				"access_token": schema.StringAttribute{Optional: true, Sensitive: true},
+			},
+		},
 		"webhook": schema.SingleNestedBlock{
 			Attributes: map[string]schema.Attribute{
 				"webhook_url":  schema.StringAttribute{Required: true},
@@ -138,6 +145,13 @@ func notificationAgentDataSourceBlocks() map[string]dschema.Block {
 				"access_token": dschema.StringAttribute{Computed: true, Sensitive: true},
 				"user_token":   dschema.StringAttribute{Computed: true, Sensitive: true},
 				"sound":        dschema.StringAttribute{Computed: true},
+			},
+		},
+		"ntfy": dschema.SingleNestedBlock{
+			Attributes: map[string]dschema.Attribute{
+				"url":          dschema.StringAttribute{Computed: true},
+				"topic":        dschema.StringAttribute{Computed: true},
+				"access_token": dschema.StringAttribute{Computed: true, Sensitive: true},
 			},
 		},
 		"webhook": dschema.SingleNestedBlock{

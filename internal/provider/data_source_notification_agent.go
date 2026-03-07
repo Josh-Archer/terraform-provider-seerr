@@ -27,6 +27,7 @@ type NotificationAgentDataSourceModel struct {
 	Telegram   *NotificationAgentTelegramModel   `tfsdk:"telegram"`
 	Pushbullet *NotificationAgentPushbulletModel `tfsdk:"pushbullet"`
 	Pushover   *NotificationAgentPushoverModel   `tfsdk:"pushover"`
+	Ntfy       *NotificationAgentNtfyModel       `tfsdk:"ntfy"`
 	Webhook    *NotificationAgentWebhookModel    `tfsdk:"webhook"`
 	Gotify     *NotificationAgentGotifyModel     `tfsdk:"gotify"`
 	Webpush    *NotificationAgentWebpushModel    `tfsdk:"webpush"`
@@ -104,6 +105,7 @@ func (d *NotificationAgentDataSource) Read(ctx context.Context, req datasource.R
 	data.Telegram = resourceData.Telegram
 	data.Pushbullet = resourceData.Pushbullet
 	data.Pushover = resourceData.Pushover
+	data.Ntfy = resourceData.Ntfy
 	data.Webhook = resourceData.Webhook
 	data.Gotify = resourceData.Gotify
 	data.Webpush = resourceData.Webpush
