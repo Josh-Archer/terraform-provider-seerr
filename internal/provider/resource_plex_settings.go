@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -21,7 +22,10 @@ type PlexSettingsResource struct {
 
 type PlexSettingsModel struct {
 	ID           types.String `tfsdk:"id"`
-	PayloadJSON  types.String `tfsdk:"payload_json"`
+	Name         types.String `tfsdk:"name"`
+	IP           types.String `tfsdk:"ip"`
+	Port         types.Int64  `tfsdk:"port"`
+	UseSSL       types.Bool   `tfsdk:"use_ssl"`
 	ResponseJSON types.String `tfsdk:"response_json"`
 	StatusCode   types.Int64  `tfsdk:"status_code"`
 }
@@ -42,11 +46,34 @@ func (r *PlexSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"payload_json": schema.StringAttribute{Required: true},
-			"response_json": schema.StringAttribute{
-				Computed: true,
+			"name": schema.StringAttribute{
+				MarkdownDescription: "The name of the Plex server.",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
-			"status_code": schema.Int64Attribute{Computed: true},
+			"ip": schema.StringAttribute{
+				MarkdownDescription: "The IP address or hostname of the Plex server.",
+				Required:            true,
+			},
+			"port": schema.Int64Attribute{
+				MarkdownDescription: "The port of the Plex server.",
+				Required:            true,
+			},
+			"use_ssl": schema.BoolAttribute{
+				MarkdownDescription: "Whether to use SSL for the connection.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"response_json": schema.StringAttribute{
+				MarkdownDescription: "Raw JSON response body from the latest operation.",
+				Computed:            true,
+			},
+			"status_code": schema.Int64Attribute{
+				MarkdownDescription: "HTTP status code from the latest operation.",
+				Computed:            true,
+			},
 		},
 	}
 }
@@ -69,7 +96,22 @@ func (r *PlexSettingsResource) Create(ctx context.Context, req resource.CreateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	res, err := r.client.Request(ctx, "POST", "/api/v1/settings/plex", data.PayloadJSON.ValueString(), nil)
+
+	payload := map[string]any{
+		"ip":   data.IP.ValueString(),
+		"port": data.Port.ValueInt64(),
+	}
+	if !data.UseSSL.IsNull() && !data.UseSSL.IsUnknown() {
+		payload["useSsl"] = data.UseSSL.ValueBool()
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("failed to marshal payload: %s", err))
+		return
+	}
+
+	res, err := r.client.Request(ctx, "POST", "/api/v1/settings/plex", string(body), nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
@@ -78,9 +120,30 @@ func (r *PlexSettingsResource) Create(ctx context.Context, req resource.CreateRe
 		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return
 	}
+
 	data.ID = types.StringValue("plex")
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
+
+	// Refresh state from response
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("failed to decode response: %s", err))
+		return
+	}
+	if v, ok := decoded["name"].(string); ok {
+		data.Name = types.StringValue(v)
+	}
+	if v, ok := decoded["ip"].(string); ok {
+		data.IP = types.StringValue(v)
+	}
+	if v, ok := decoded["port"].(float64); ok {
+		data.Port = types.Int64Value(int64(v))
+	}
+	if v, ok := decoded["useSsl"].(bool); ok {
+		data.UseSSL = types.BoolValue(v)
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -99,8 +162,30 @@ func (r *PlexSettingsResource) Read(ctx context.Context, req resource.ReadReques
 		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return
 	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("failed to decode response: %s", err))
+		return
+	}
+
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
+
+	if v, ok := decoded["name"].(string); ok {
+		data.Name = types.StringValue(v)
+	}
+	if v, ok := decoded["ip"].(string); ok {
+		data.IP = types.StringValue(v)
+	}
+	if v, ok := decoded["port"].(float64); ok {
+		data.Port = types.Int64Value(int64(v))
+	}
+	if v, ok := decoded["useSsl"].(bool); ok {
+		data.UseSSL = types.BoolValue(v)
+	}
+
+	data.ID = types.StringValue("plex")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -110,7 +195,22 @@ func (r *PlexSettingsResource) Update(ctx context.Context, req resource.UpdateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	res, err := r.client.Request(ctx, "POST", "/api/v1/settings/plex", data.PayloadJSON.ValueString(), nil)
+
+	payload := map[string]any{
+		"ip":   data.IP.ValueString(),
+		"port": data.Port.ValueInt64(),
+	}
+	if !data.UseSSL.IsNull() && !data.UseSSL.IsUnknown() {
+		payload["useSsl"] = data.UseSSL.ValueBool()
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("failed to marshal payload: %s", err))
+		return
+	}
+
+	res, err := r.client.Request(ctx, "POST", "/api/v1/settings/plex", string(body), nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Update Failed", err.Error())
 		return
@@ -119,9 +219,30 @@ func (r *PlexSettingsResource) Update(ctx context.Context, req resource.UpdateRe
 		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return
 	}
+
 	data.ID = types.StringValue("plex")
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
+
+	// Refresh state from response
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("failed to decode response: %s", err))
+		return
+	}
+	if v, ok := decoded["name"].(string); ok {
+		data.Name = types.StringValue(v)
+	}
+	if v, ok := decoded["ip"].(string); ok {
+		data.IP = types.StringValue(v)
+	}
+	if v, ok := decoded["port"].(float64); ok {
+		data.Port = types.Int64Value(int64(v))
+	}
+	if v, ok := decoded["useSsl"].(bool); ok {
+		data.UseSSL = types.BoolValue(v)
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
