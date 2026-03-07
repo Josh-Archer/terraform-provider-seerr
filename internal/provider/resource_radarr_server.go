@@ -192,11 +192,11 @@ func parseURLIntoModel(data *RadarrServerModel) {
 	}
 }
 
-func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerModel) (string, error) {
+func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerModel) (RadarrServerModel, string, error) {
 	parseURLIntoModel(&data)
 	tags, err := listInt64(ctx, data.Tags)
 	if err != nil {
-		return "", err
+		return data, "", err
 	}
 	profileName := ""
 	if !data.QualityProfileName.IsNull() && !data.QualityProfileName.IsUnknown() {
@@ -216,10 +216,11 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 			nil,
 		)
 		if lookupErr != nil {
-			return "", fmt.Errorf("resolve quality_profile_name: %w", lookupErr)
+			return data, "", fmt.Errorf("resolve quality_profile_name: %w", lookupErr)
 		}
 		profileName = profile.Name
 	}
+	data.QualityProfileName = types.StringValue(profileName)
 
 	base := map[string]any{
 		"name":                data.Name.ValueString(),
@@ -242,10 +243,13 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 	}
 	merged, err := mergeJSON(base, data.ExtraPayloadJSON.ValueString())
 	if err != nil {
-		return "", err
+		return data, "", err
 	}
 	b, err := json.Marshal(merged)
-	return string(b), err
+	if err != nil {
+		return data, "", err
+	}
+	return data, string(b), nil
 }
 
 func (r *RadarrServerResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -254,11 +258,12 @@ func (r *RadarrServerResource) Create(ctx context.Context, req resource.CreateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body, err := r.payload(ctx, data)
+	normalizedData, body, err := r.payload(ctx, data)
 	if err != nil {
 		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
 	}
+	data = normalizedData
 	res, err := r.client.Request(ctx, "POST", "/api/v1/settings/radarr", body, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Create Failed", err.Error())
@@ -314,11 +319,12 @@ func (r *RadarrServerResource) Update(ctx context.Context, req resource.UpdateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body, err := r.payload(ctx, data)
+	normalizedData, body, err := r.payload(ctx, data)
 	if err != nil {
 		resp.Diagnostics.AddError("Update Failed", err.Error())
 		return
 	}
+	data = normalizedData
 	path := fmt.Sprintf("/api/v1/settings/radarr/%d", data.ServerID.ValueInt64())
 	res, err := r.client.Request(ctx, "PUT", path, body, nil)
 	if err != nil {

@@ -207,15 +207,15 @@ func listInt64(ctx context.Context, l types.List) ([]int64, error) {
 	return vals, nil
 }
 
-func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerModel) (string, error) {
+func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerModel) (SonarrServerModel, string, error) {
 	parseSonarrURLIntoModel(&data)
 	tags, err := listInt64(ctx, data.Tags)
 	if err != nil {
-		return "", err
+		return data, "", err
 	}
 	animeTags, err := listInt64(ctx, data.AnimeTags)
 	if err != nil {
-		return "", err
+		return data, "", err
 	}
 	animeDir := data.ActiveAnimeDirectory.ValueString()
 	if animeDir == "" {
@@ -239,10 +239,11 @@ func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerMod
 			nil,
 		)
 		if lookupErr != nil {
-			return "", fmt.Errorf("resolve quality_profile_name: %w", lookupErr)
+			return data, "", fmt.Errorf("resolve quality_profile_name: %w", lookupErr)
 		}
 		profileName = profile.Name
 	}
+	data.QualityProfileName = types.StringValue(profileName)
 	base := map[string]any{
 		"name":                 data.Name.ValueString(),
 		"hostname":             data.Hostname.ValueString(),
@@ -266,10 +267,13 @@ func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerMod
 	}
 	merged, err := mergeJSON(base, data.ExtraPayloadJSON.ValueString())
 	if err != nil {
-		return "", err
+		return data, "", err
 	}
 	b, err := json.Marshal(merged)
-	return string(b), err
+	if err != nil {
+		return data, "", err
+	}
+	return data, string(b), nil
 }
 
 func (r *SonarrServerResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -278,11 +282,12 @@ func (r *SonarrServerResource) Create(ctx context.Context, req resource.CreateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body, err := r.payload(ctx, data)
+	normalizedData, body, err := r.payload(ctx, data)
 	if err != nil {
 		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
 	}
+	data = normalizedData
 	res, err := r.client.Request(ctx, "POST", "/api/v1/settings/sonarr", body, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Create Failed", err.Error())
@@ -338,11 +343,12 @@ func (r *SonarrServerResource) Update(ctx context.Context, req resource.UpdateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body, err := r.payload(ctx, data)
+	normalizedData, body, err := r.payload(ctx, data)
 	if err != nil {
 		resp.Diagnostics.AddError("Update Failed", err.Error())
 		return
 	}
+	data = normalizedData
 	path := fmt.Sprintf("/api/v1/settings/sonarr/%d", data.ServerID.ValueInt64())
 	res, err := r.client.Request(ctx, "PUT", path, body, nil)
 	if err != nil {
