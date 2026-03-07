@@ -2,14 +2,16 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -22,13 +24,27 @@ type NotificationAgentResource struct {
 }
 
 type NotificationAgentModel struct {
-	ID              types.String `tfsdk:"id"`
-	Agent           types.String `tfsdk:"agent"`
-	PayloadJSON     types.String `tfsdk:"payload_json"`
-	DeletePayload   types.String `tfsdk:"delete_payload_json"`
-	DisableOnDelete types.Bool   `tfsdk:"disable_on_delete"`
-	ResponseJSON    types.String `tfsdk:"response_json"`
-	StatusCode      types.Int64  `tfsdk:"status_code"`
+	ID         types.String `tfsdk:"id"`
+	Agent      types.String `tfsdk:"agent"`
+	Enabled    types.Bool   `tfsdk:"enabled"`
+	TypesMask  types.Int64  `tfsdk:"types"`
+	
+	Discord    *NotificationAgentDiscordModel    `tfsdk:"discord"`
+	Slack      *NotificationAgentSlackModel      `tfsdk:"slack"`
+	Email      *NotificationAgentEmailModel      `tfsdk:"email"`
+	LunaSea    *NotificationAgentLunaSeaModel    `tfsdk:"lunasea"`
+	Telegram   *NotificationAgentTelegramModel   `tfsdk:"telegram"`
+	Pushbullet *NotificationAgentPushbulletModel `tfsdk:"pushbullet"`
+	Pushover   *NotificationAgentPushoverModel   `tfsdk:"pushover"`
+	Webhook    *NotificationAgentWebhookModel    `tfsdk:"webhook"`
+	Gotify     *NotificationAgentGotifyModel     `tfsdk:"gotify"`
+	Webpush    *NotificationAgentWebpushModel    `tfsdk:"webpush"`
+}
+
+type notificationAgentPayload struct {
+	Enabled bool                   `json:"enabled"`
+	Types   int64                  `json:"types"`
+	Options map[string]interface{} `json:"options"`
 }
 
 func NewNotificationAgentResource() resource.Resource { return &NotificationAgentResource{} }
@@ -47,25 +63,24 @@ func (r *NotificationAgentResource) Schema(_ context.Context, _ resource.SchemaR
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"agent": schema.StringAttribute{Required: true},
-			"payload_json": schema.StringAttribute{
+			"agent": schema.StringAttribute{
 				Required: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
-			"delete_payload_json": schema.StringAttribute{
+			"enabled": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  stringdefault.StaticString("{\"enabled\":false}"),
+				Default:  booldefault.StaticBool(false),
 			},
-			"disable_on_delete": schema.BoolAttribute{
+			"types": schema.Int64Attribute{
 				Optional: true,
 				Computed: true,
-				Default:  booldefault.StaticBool(true),
+				Default:  int64default.StaticInt64(0),
 			},
-			"response_json": schema.StringAttribute{
-				Computed: true,
-			},
-			"status_code": schema.Int64Attribute{Computed: true},
 		},
+		Blocks: notificationAgentResourceBlocks(),
 	}
 }
 
@@ -85,6 +100,192 @@ func notificationPath(agent string) string {
 	return "/api/v1/settings/notifications/" + agent
 }
 
+func buildPayload(data *NotificationAgentModel) (string, error) {
+	payload := notificationAgentPayload{
+		Enabled: data.Enabled.ValueBool(),
+		Types:   data.TypesMask.ValueInt64(),
+		Options: make(map[string]interface{}),
+	}
+	
+	switch data.Agent.ValueString() {
+	case "discord":
+		if data.Discord != nil {
+			if !data.Discord.BotUsername.IsNull() { payload.Options["botUsername"] = data.Discord.BotUsername.ValueString() }
+			if !data.Discord.BotAvatarUrl.IsNull() { payload.Options["botAvatarUrl"] = data.Discord.BotAvatarUrl.ValueString() }
+			if !data.Discord.WebhookUrl.IsNull() { payload.Options["webhookUrl"] = data.Discord.WebhookUrl.ValueString() }
+			if !data.Discord.EnableMentions.IsNull() { payload.Options["enableMentions"] = data.Discord.EnableMentions.ValueBool() }
+		}
+	case "slack":
+		if data.Slack != nil {
+			if !data.Slack.WebhookUrl.IsNull() { payload.Options["webhookUrl"] = data.Slack.WebhookUrl.ValueString() }
+		}
+	case "email":
+		if data.Email != nil {
+			if !data.Email.EmailFrom.IsNull() { payload.Options["emailFrom"] = data.Email.EmailFrom.ValueString() }
+			if !data.Email.SmtpHost.IsNull() { payload.Options["smtpHost"] = data.Email.SmtpHost.ValueString() }
+			if !data.Email.SmtpPort.IsNull() { payload.Options["smtpPort"] = data.Email.SmtpPort.ValueInt64() }
+			if !data.Email.Secure.IsNull() { payload.Options["secure"] = data.Email.Secure.ValueBool() }
+			if !data.Email.IgnoreTls.IsNull() { payload.Options["ignoreTls"] = data.Email.IgnoreTls.ValueBool() }
+			if !data.Email.RequireTls.IsNull() { payload.Options["requireTls"] = data.Email.RequireTls.ValueBool() }
+			if !data.Email.AuthUser.IsNull() { payload.Options["authUser"] = data.Email.AuthUser.ValueString() }
+			if !data.Email.AuthPass.IsNull() { payload.Options["authPass"] = data.Email.AuthPass.ValueString() }
+			if !data.Email.AllowSelfSigned.IsNull() { payload.Options["allowSelfSigned"] = data.Email.AllowSelfSigned.ValueBool() }
+			if !data.Email.SenderName.IsNull() { payload.Options["senderName"] = data.Email.SenderName.ValueString() }
+			if !data.Email.PgpPrivateKey.IsNull() { payload.Options["pgpPrivateKey"] = data.Email.PgpPrivateKey.ValueString() }
+			if !data.Email.PgpPassword.IsNull() { payload.Options["pgpPassword"] = data.Email.PgpPassword.ValueString() }
+		}
+	case "lunasea":
+		if data.LunaSea != nil {
+			if !data.LunaSea.WebhookUrl.IsNull() { payload.Options["webhookUrl"] = data.LunaSea.WebhookUrl.ValueString() }
+			if !data.LunaSea.ProfileName.IsNull() { payload.Options["profileName"] = data.LunaSea.ProfileName.ValueString() }
+		}
+	case "telegram":
+		if data.Telegram != nil {
+			if !data.Telegram.BotUsername.IsNull() { payload.Options["botUsername"] = data.Telegram.BotUsername.ValueString() }
+			if !data.Telegram.BotAPI.IsNull() { payload.Options["botAPI"] = data.Telegram.BotAPI.ValueString() }
+			if !data.Telegram.ChatId.IsNull() { payload.Options["chatId"] = data.Telegram.ChatId.ValueString() }
+			if !data.Telegram.SendSilently.IsNull() { payload.Options["sendSilently"] = data.Telegram.SendSilently.ValueBool() }
+		}
+	case "pushbullet":
+		if data.Pushbullet != nil {
+			if !data.Pushbullet.AccessToken.IsNull() { payload.Options["accessToken"] = data.Pushbullet.AccessToken.ValueString() }
+			if !data.Pushbullet.ChannelTag.IsNull() { payload.Options["channelTag"] = data.Pushbullet.ChannelTag.ValueString() }
+		}
+	case "pushover":
+		if data.Pushover != nil {
+			if !data.Pushover.AccessToken.IsNull() { payload.Options["accessToken"] = data.Pushover.AccessToken.ValueString() }
+			if !data.Pushover.UserToken.IsNull() { payload.Options["userToken"] = data.Pushover.UserToken.ValueString() }
+			if !data.Pushover.Sound.IsNull() { payload.Options["sound"] = data.Pushover.Sound.ValueString() }
+		}
+	case "webhook":
+		if data.Webhook != nil {
+			if !data.Webhook.WebhookUrl.IsNull() { payload.Options["webhookUrl"] = data.Webhook.WebhookUrl.ValueString() }
+			if !data.Webhook.JsonPayload.IsNull() { payload.Options["jsonPayload"] = data.Webhook.JsonPayload.ValueString() }
+			if !data.Webhook.AuthHeader.IsNull() { payload.Options["authHeader"] = data.Webhook.AuthHeader.ValueString() }
+		}
+	case "gotify":
+		if data.Gotify != nil {
+			if !data.Gotify.Url.IsNull() { payload.Options["url"] = data.Gotify.Url.ValueString() }
+			if !data.Gotify.Token.IsNull() { payload.Options["token"] = data.Gotify.Token.ValueString() }
+		}
+	case "webpush":
+		// no options
+	default:
+		return "", fmt.Errorf("unsupported agent: %s", data.Agent.ValueString())
+	}
+
+	b, err := json.Marshal(payload)
+	return string(b), err
+}
+
+func parsePayload(data *NotificationAgentModel, body []byte) error {
+	var payload notificationAgentPayload
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return err
+	}
+	data.Enabled = types.BoolValue(payload.Enabled)
+	data.TypesMask = types.Int64Value(payload.Types)
+	
+	opt := payload.Options
+	getString := func(key string) types.String {
+		if v, ok := opt[key].(string); ok {
+			return types.StringValue(v)
+		}
+		return types.StringNull()
+	}
+	getBool := func(key string) types.Bool {
+		if v, ok := opt[key].(bool); ok {
+			return types.BoolValue(v)
+		}
+		return types.BoolNull()
+	}
+	getInt64 := func(key string) types.Int64 {
+		if v, ok := opt[key].(float64); ok {
+			return types.Int64Value(int64(v))
+		}
+		return types.Int64Null()
+	}
+
+	// Reset blocks to nil initially
+	data.Discord = nil
+	data.Slack = nil
+	data.Email = nil
+	data.LunaSea = nil
+	data.Telegram = nil
+	data.Pushbullet = nil
+	data.Pushover = nil
+	data.Webhook = nil
+	data.Gotify = nil
+	data.Webpush = nil
+
+	switch data.Agent.ValueString() {
+	case "discord":
+		data.Discord = &NotificationAgentDiscordModel{
+			BotUsername:    getString("botUsername"),
+			BotAvatarUrl:   getString("botAvatarUrl"),
+			WebhookUrl:     getString("webhookUrl"),
+			EnableMentions: getBool("enableMentions"),
+		}
+	case "slack":
+		data.Slack = &NotificationAgentSlackModel{
+			WebhookUrl: getString("webhookUrl"),
+		}
+	case "email":
+		data.Email = &NotificationAgentEmailModel{
+			EmailFrom:       getString("emailFrom"),
+			SmtpHost:        getString("smtpHost"),
+			SmtpPort:        getInt64("smtpPort"),
+			Secure:          getBool("secure"),
+			IgnoreTls:       getBool("ignoreTls"),
+			RequireTls:      getBool("requireTls"),
+			AuthUser:        getString("authUser"),
+			AuthPass:        getString("authPass"),
+			AllowSelfSigned: getBool("allowSelfSigned"),
+			SenderName:      getString("senderName"),
+			PgpPrivateKey:   getString("pgpPrivateKey"),
+			PgpPassword:     getString("pgpPassword"),
+		}
+	case "lunasea":
+		data.LunaSea = &NotificationAgentLunaSeaModel{
+			WebhookUrl:  getString("webhookUrl"),
+			ProfileName: getString("profileName"),
+		}
+	case "telegram":
+		data.Telegram = &NotificationAgentTelegramModel{
+			BotUsername:  getString("botUsername"),
+			BotAPI:       getString("botAPI"),
+			ChatId:       getString("chatId"),
+			SendSilently: getBool("sendSilently"),
+		}
+	case "pushbullet":
+		data.Pushbullet = &NotificationAgentPushbulletModel{
+			AccessToken: getString("accessToken"),
+			ChannelTag:  getString("channelTag"),
+		}
+	case "pushover":
+		data.Pushover = &NotificationAgentPushoverModel{
+			AccessToken: getString("accessToken"),
+			UserToken:   getString("userToken"),
+			Sound:       getString("sound"),
+		}
+	case "webhook":
+		data.Webhook = &NotificationAgentWebhookModel{
+			WebhookUrl:  getString("webhookUrl"),
+			JsonPayload: getString("jsonPayload"),
+			AuthHeader:  getString("authHeader"),
+		}
+	case "gotify":
+		data.Gotify = &NotificationAgentGotifyModel{
+			Url:   getString("url"),
+			Token: getString("token"),
+		}
+	case "webpush":
+		data.Webpush = &NotificationAgentWebpushModel{}
+	}
+
+	return nil
+}
+
 func (r *NotificationAgentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data NotificationAgentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
@@ -92,7 +293,13 @@ func (r *NotificationAgentResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 	path := notificationPath(data.Agent.ValueString())
-	res, err := r.client.Request(ctx, "POST", path, data.PayloadJSON.ValueString(), nil)
+	payloadStr, err := buildPayload(&data)
+	if err != nil {
+		resp.Diagnostics.AddError("Create Failed", err.Error())
+		return
+	}
+
+	res, err := r.client.Request(ctx, "POST", path, payloadStr, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
@@ -101,9 +308,8 @@ func (r *NotificationAgentResource) Create(ctx context.Context, req resource.Cre
 		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return
 	}
+	
 	data.ID = types.StringValue(data.Agent.ValueString())
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -119,12 +325,19 @@ func (r *NotificationAgentResource) Read(ctx context.Context, req resource.ReadR
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
+	if res.StatusCode == 404 {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 	if !StatusIsOK(res.StatusCode) {
 		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return
 	}
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
+	
+	if err := parsePayload(&data, res.Body); err != nil {
+		resp.Diagnostics.AddError("Parse Failed", err.Error())
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -135,7 +348,12 @@ func (r *NotificationAgentResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 	path := notificationPath(data.Agent.ValueString())
-	res, err := r.client.Request(ctx, "POST", path, data.PayloadJSON.ValueString(), nil)
+	payloadStr, err := buildPayload(&data)
+	if err != nil {
+		resp.Diagnostics.AddError("Update Failed", err.Error())
+		return
+	}
+	res, err := r.client.Request(ctx, "POST", path, payloadStr, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Update Failed", err.Error())
 		return
@@ -145,8 +363,6 @@ func (r *NotificationAgentResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 	data.ID = types.StringValue(data.Agent.ValueString())
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -156,17 +372,20 @@ func (r *NotificationAgentResource) Delete(ctx context.Context, req resource.Del
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if !data.DisableOnDelete.ValueBool() {
-		return
-	}
+	
 	path := notificationPath(data.Agent.ValueString())
-	res, err := r.client.Request(ctx, "POST", path, data.DeletePayload.ValueString(), nil)
+	
+	// Default disable payload upon deletion to clear it
+	disablePayload := `{"enabled":false,"types":0,"options":{}}`
+	res, err := r.client.Request(ctx, "POST", path, disablePayload, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Delete Failed", err.Error())
 		return
 	}
 	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Delete Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
+		if !strings.Contains(string(res.Body), "Unknown notification agent") && res.StatusCode != 404 {
+			resp.Diagnostics.AddWarning("Delete Error", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
+		}
 	}
 }
 

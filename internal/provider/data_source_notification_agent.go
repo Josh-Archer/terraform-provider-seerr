@@ -16,9 +16,20 @@ type NotificationAgentDataSource struct {
 }
 
 type NotificationAgentDataSourceModel struct {
-	Agent        types.String `tfsdk:"agent"`
-	ResponseJSON types.String `tfsdk:"response_json"`
-	StatusCode   types.Int64  `tfsdk:"status_code"`
+	Agent     types.String `tfsdk:"agent"`
+	Enabled   types.Bool   `tfsdk:"enabled"`
+	TypesMask types.Int64  `tfsdk:"types"`
+
+	Discord    *NotificationAgentDiscordModel    `tfsdk:"discord"`
+	Slack      *NotificationAgentSlackModel      `tfsdk:"slack"`
+	Email      *NotificationAgentEmailModel      `tfsdk:"email"`
+	LunaSea    *NotificationAgentLunaSeaModel    `tfsdk:"lunasea"`
+	Telegram   *NotificationAgentTelegramModel   `tfsdk:"telegram"`
+	Pushbullet *NotificationAgentPushbulletModel `tfsdk:"pushbullet"`
+	Pushover   *NotificationAgentPushoverModel   `tfsdk:"pushover"`
+	Webhook    *NotificationAgentWebhookModel    `tfsdk:"webhook"`
+	Gotify     *NotificationAgentGotifyModel     `tfsdk:"gotify"`
+	Webpush    *NotificationAgentWebpushModel    `tfsdk:"webpush"`
 }
 
 func NewNotificationAgentDataSource() datasource.DataSource { return &NotificationAgentDataSource{} }
@@ -35,15 +46,14 @@ func (d *NotificationAgentDataSource) Schema(_ context.Context, _ datasource.Sch
 				MarkdownDescription: "Notification agent name (e.g. `email`, `discord`, `slack`).",
 				Required:            true,
 			},
-			"response_json": schema.StringAttribute{
-				MarkdownDescription: "Raw JSON response body.",
-				Computed:            true,
+			"enabled": schema.BoolAttribute{
+				Computed: true,
 			},
-			"status_code": schema.Int64Attribute{
-				MarkdownDescription: "HTTP status code.",
-				Computed:            true,
+			"types": schema.Int64Attribute{
+				Computed: true,
 			},
 		},
+		Blocks: notificationAgentDataSourceBlocks(),
 	}
 }
 
@@ -77,7 +87,26 @@ func (d *NotificationAgentDataSource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
+	// Reuse the resource model parsing logic by adapting types
+	var resourceData NotificationAgentModel
+	resourceData.Agent = data.Agent
+	if err := parsePayload(&resourceData, res.Body); err != nil {
+		resp.Diagnostics.AddError("Parse Failed", err.Error())
+		return
+	}
+
+	data.Enabled = resourceData.Enabled
+	data.TypesMask = resourceData.TypesMask
+	data.Discord = resourceData.Discord
+	data.Slack = resourceData.Slack
+	data.Email = resourceData.Email
+	data.LunaSea = resourceData.LunaSea
+	data.Telegram = resourceData.Telegram
+	data.Pushbullet = resourceData.Pushbullet
+	data.Pushover = resourceData.Pushover
+	data.Webhook = resourceData.Webhook
+	data.Gotify = resourceData.Gotify
+	data.Webpush = resourceData.Webpush
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
