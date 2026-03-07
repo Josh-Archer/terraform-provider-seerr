@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -16,6 +17,11 @@ type PlexSettingsDataSource struct {
 }
 
 type PlexSettingsDataSourceModel struct {
+	ID           types.String `tfsdk:"id"`
+	Name         types.String `tfsdk:"name"`
+	IP           types.String `tfsdk:"ip"`
+	Port         types.Int64  `tfsdk:"port"`
+	UseSSL       types.Bool   `tfsdk:"use_ssl"`
 	ResponseJSON types.String `tfsdk:"response_json"`
 	StatusCode   types.Int64  `tfsdk:"status_code"`
 }
@@ -30,6 +36,25 @@ func (d *PlexSettingsDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Read Seerr Plex settings via /api/v1/settings/plex.",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "The name of the Plex server.",
+				Computed:            true,
+			},
+			"ip": schema.StringAttribute{
+				MarkdownDescription: "The IP address or hostname of the Plex server.",
+				Computed:            true,
+			},
+			"port": schema.Int64Attribute{
+				MarkdownDescription: "The port of the Plex server.",
+				Computed:            true,
+			},
+			"use_ssl": schema.BoolAttribute{
+				MarkdownDescription: "Whether to use SSL for the connection.",
+				Computed:            true,
+			},
 			"response_json": schema.StringAttribute{
 				MarkdownDescription: "Raw JSON response body.",
 				Computed:            true,
@@ -73,5 +98,26 @@ func (d *PlexSettingsDataSource) Read(ctx context.Context, req datasource.ReadRe
 
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
+
+	// Refresh state from response
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("failed to decode response: %s", err))
+		return
+	}
+	if v, ok := decoded["name"].(string); ok {
+		data.Name = types.StringValue(v)
+	}
+	if v, ok := decoded["ip"].(string); ok {
+		data.IP = types.StringValue(v)
+	}
+	if v, ok := decoded["port"].(float64); ok {
+		data.Port = types.Int64Value(int64(v))
+	}
+	if v, ok := decoded["useSsl"].(bool); ok {
+		data.UseSSL = types.BoolValue(v)
+	}
+
+	data.ID = types.StringValue("plex")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
