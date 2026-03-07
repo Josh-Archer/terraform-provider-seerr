@@ -61,6 +61,11 @@ variable "is_default" {
   default = true
 }
 
+variable "enable_scan" {
+  type    = bool
+  default = false
+}
+
 variable "sync_enabled" {
   type    = bool
   default = true
@@ -71,7 +76,7 @@ variable "prevent_search" {
   default = false
 }
 
-variable "tag_requests" {
+variable "tag_requests_with_user" {
   type    = bool
   default = true
 }

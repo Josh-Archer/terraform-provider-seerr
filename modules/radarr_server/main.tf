@@ -19,9 +19,10 @@ resource "seerr_radarr_server" "this" {
   minimum_availability = var.minimum_availability
   tags                 = var.tags
   is_default           = var.is_default
+  enable_scan          = var.enable_scan
   sync_enabled         = var.sync_enabled
   prevent_search       = var.prevent_search
-  tag_requests         = var.tag_requests
+  tag_requests_with_user = var.tag_requests_with_user
   extra_payload_json   = jsonencode(var.extra_payload)
   url                  = var.url
 }

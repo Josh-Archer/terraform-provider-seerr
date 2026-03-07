@@ -24,6 +24,7 @@ Manage Seerr Radarr server settings via /api/v1/settings/radarr.
 ### Optional
 
 - `base_url` (String)
+- `enable_scan` (Boolean)
 - `extra_payload_json` (String)
 - `hostname` (String)
 - `is_4k` (Boolean)
@@ -34,7 +35,7 @@ Manage Seerr Radarr server settings via /api/v1/settings/radarr.
 - `prevent_search` (Boolean)
 - `quality_profile_name` (String)
 - `sync_enabled` (Boolean)
-- `tag_requests` (Boolean)
+- `tag_requests_with_user` (Boolean)
 - `tags` (List of Number)
 - `url` (String)
 - `use_ssl` (Boolean)
