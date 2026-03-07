@@ -57,38 +57,42 @@ func (r *NotificationAgentResource) Metadata(_ context.Context, req resource.Met
 }
 
 func (r *NotificationAgentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manage Seerr notification agent settings via /api/v1/settings/notifications/{agent}.",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"agent": schema.StringAttribute{
-				Required: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"enabled": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
-				Default:  booldefault.StaticBool(false),
-			},
-			"embed_poster": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
-				Default:  booldefault.StaticBool(false),
-			},
-			"types": schema.Int64Attribute{
-				Optional: true,
-				Computed: true,
-				Default:  int64default.StaticInt64(0),
+	attributes := map[string]schema.Attribute{
+		"id": schema.StringAttribute{
+			Computed: true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		Blocks: notificationAgentResourceBlocks(),
+		"agent": schema.StringAttribute{
+			Required: true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+		},
+		"enabled": schema.BoolAttribute{
+			Optional: true,
+			Computed: true,
+			Default:  booldefault.StaticBool(false),
+		},
+		"embed_poster": schema.BoolAttribute{
+			Optional: true,
+			Computed: true,
+			Default:  booldefault.StaticBool(false),
+		},
+		"types": schema.Int64Attribute{
+			Optional: true,
+			Computed: true,
+			Default:  int64default.StaticInt64(0),
+		},
+	}
+	for name, attr := range notificationAgentResourceAttributes() {
+		attributes[name] = attr
+	}
+
+	resp.Schema = schema.Schema{
+		MarkdownDescription: "Manage Seerr notification agent settings via /api/v1/settings/notifications/{agent}.",
+		Attributes:          attributes,
 	}
 }
 

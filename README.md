@@ -135,7 +135,7 @@ resource "seerr_notification_agent" "ntfy" {
   embed_poster = true
   types        = 1023
 
-  ntfy {
+  ntfy = {
     url               = "https://ntfy.example.com"
     topic             = "media"
     auth_method_token = true
@@ -150,7 +150,7 @@ resource "seerr_notification_agent" "pushover" {
   embed_poster = true
   types        = 1023
 
-  pushover {
+  pushover = {
     access_token = var.pushover_access_token
     user_token   = var.pushover_user_token
     sound        = "pushover"

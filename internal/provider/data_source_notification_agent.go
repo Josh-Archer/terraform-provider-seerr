@@ -41,24 +41,28 @@ func (d *NotificationAgentDataSource) Metadata(_ context.Context, req datasource
 }
 
 func (d *NotificationAgentDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	attributes := map[string]schema.Attribute{
+		"agent": schema.StringAttribute{
+			MarkdownDescription: "Notification agent name (e.g. `email`, `discord`, `slack`).",
+			Required:            true,
+		},
+		"enabled": schema.BoolAttribute{
+			Computed: true,
+		},
+		"embed_poster": schema.BoolAttribute{
+			Computed: true,
+		},
+		"types": schema.Int64Attribute{
+			Computed: true,
+		},
+	}
+	for name, attr := range notificationAgentDataSourceAttributes() {
+		attributes[name] = attr
+	}
+
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Read Seerr notification agent settings via /api/v1/settings/notifications/{agent}.",
-		Attributes: map[string]schema.Attribute{
-			"agent": schema.StringAttribute{
-				MarkdownDescription: "Notification agent name (e.g. `email`, `discord`, `slack`).",
-				Required:            true,
-			},
-			"enabled": schema.BoolAttribute{
-				Computed: true,
-			},
-			"embed_poster": schema.BoolAttribute{
-				Computed: true,
-			},
-			"types": schema.Int64Attribute{
-				Computed: true,
-			},
-		},
-		Blocks: notificationAgentDataSourceBlocks(),
+		Attributes:          attributes,
 	}
 }
 

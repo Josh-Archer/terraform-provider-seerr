@@ -5,9 +5,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
-func notificationAgentResourceBlocks() map[string]schema.Block {
-	return map[string]schema.Block{
-		"discord": schema.SingleNestedBlock{
+func notificationAgentResourceAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"discord": schema.SingleNestedAttribute{
+			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"bot_username":    schema.StringAttribute{Optional: true},
 				"bot_avatar_url":  schema.StringAttribute{Optional: true},
@@ -15,12 +16,14 @@ func notificationAgentResourceBlocks() map[string]schema.Block {
 				"enable_mentions": schema.BoolAttribute{Optional: true},
 			},
 		},
-		"slack": schema.SingleNestedBlock{
+		"slack": schema.SingleNestedAttribute{
+			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"webhook_url": schema.StringAttribute{Required: true},
 			},
 		},
-		"email": schema.SingleNestedBlock{
+		"email": schema.SingleNestedAttribute{
+			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"email_from":        schema.StringAttribute{Required: true},
 				"smtp_host":         schema.StringAttribute{Required: true},
@@ -36,13 +39,15 @@ func notificationAgentResourceBlocks() map[string]schema.Block {
 				"pgp_password":      schema.StringAttribute{Optional: true, Sensitive: true},
 			},
 		},
-		"lunasea": schema.SingleNestedBlock{
+		"lunasea": schema.SingleNestedAttribute{
+			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"webhook_url":  schema.StringAttribute{Required: true},
 				"profile_name": schema.StringAttribute{Optional: true},
 			},
 		},
-		"telegram": schema.SingleNestedBlock{
+		"telegram": schema.SingleNestedAttribute{
+			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"bot_username":  schema.StringAttribute{Optional: true},
 				"bot_api":       schema.StringAttribute{Required: true, Sensitive: true},
@@ -50,20 +55,23 @@ func notificationAgentResourceBlocks() map[string]schema.Block {
 				"send_silently": schema.BoolAttribute{Optional: true},
 			},
 		},
-		"pushbullet": schema.SingleNestedBlock{
+		"pushbullet": schema.SingleNestedAttribute{
+			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"access_token": schema.StringAttribute{Required: true, Sensitive: true},
 				"channel_tag":  schema.StringAttribute{Optional: true},
 			},
 		},
-		"pushover": schema.SingleNestedBlock{
+		"pushover": schema.SingleNestedAttribute{
+			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"access_token": schema.StringAttribute{Required: true, Sensitive: true},
 				"user_token":   schema.StringAttribute{Required: true, Sensitive: true},
 				"sound":        schema.StringAttribute{Optional: true},
 			},
 		},
-		"ntfy": schema.SingleNestedBlock{
+		"ntfy": schema.SingleNestedAttribute{
+			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"url":                           schema.StringAttribute{Required: true},
 				"topic":                         schema.StringAttribute{Required: true},
@@ -75,28 +83,32 @@ func notificationAgentResourceBlocks() map[string]schema.Block {
 				"priority":                      schema.Int64Attribute{Optional: true},
 			},
 		},
-		"webhook": schema.SingleNestedBlock{
+		"webhook": schema.SingleNestedAttribute{
+			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"webhook_url":  schema.StringAttribute{Required: true},
 				"json_payload": schema.StringAttribute{Required: true},
 				"auth_header":  schema.StringAttribute{Optional: true, Sensitive: true},
 			},
 		},
-		"gotify": schema.SingleNestedBlock{
+		"gotify": schema.SingleNestedAttribute{
+			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"url":   schema.StringAttribute{Required: true},
 				"token": schema.StringAttribute{Required: true, Sensitive: true},
 			},
 		},
-		"webpush": schema.SingleNestedBlock{
+		"webpush": schema.SingleNestedAttribute{
+			Optional:   true,
 			Attributes: map[string]schema.Attribute{},
 		},
 	}
 }
 
-func notificationAgentDataSourceBlocks() map[string]dschema.Block {
-	return map[string]dschema.Block{
-		"discord": dschema.SingleNestedBlock{
+func notificationAgentDataSourceAttributes() map[string]dschema.Attribute {
+	return map[string]dschema.Attribute{
+		"discord": dschema.SingleNestedAttribute{
+			Computed: true,
 			Attributes: map[string]dschema.Attribute{
 				"bot_username":    dschema.StringAttribute{Computed: true},
 				"bot_avatar_url":  dschema.StringAttribute{Computed: true},
@@ -104,12 +116,14 @@ func notificationAgentDataSourceBlocks() map[string]dschema.Block {
 				"enable_mentions": dschema.BoolAttribute{Computed: true},
 			},
 		},
-		"slack": dschema.SingleNestedBlock{
+		"slack": dschema.SingleNestedAttribute{
+			Computed: true,
 			Attributes: map[string]dschema.Attribute{
 				"webhook_url": dschema.StringAttribute{Computed: true},
 			},
 		},
-		"email": dschema.SingleNestedBlock{
+		"email": dschema.SingleNestedAttribute{
+			Computed: true,
 			Attributes: map[string]dschema.Attribute{
 				"email_from":        dschema.StringAttribute{Computed: true},
 				"smtp_host":         dschema.StringAttribute{Computed: true},
@@ -125,13 +139,15 @@ func notificationAgentDataSourceBlocks() map[string]dschema.Block {
 				"pgp_password":      dschema.StringAttribute{Computed: true, Sensitive: true},
 			},
 		},
-		"lunasea": dschema.SingleNestedBlock{
+		"lunasea": dschema.SingleNestedAttribute{
+			Computed: true,
 			Attributes: map[string]dschema.Attribute{
 				"webhook_url":  dschema.StringAttribute{Computed: true},
 				"profile_name": dschema.StringAttribute{Computed: true},
 			},
 		},
-		"telegram": dschema.SingleNestedBlock{
+		"telegram": dschema.SingleNestedAttribute{
+			Computed: true,
 			Attributes: map[string]dschema.Attribute{
 				"bot_username":  dschema.StringAttribute{Computed: true},
 				"bot_api":       dschema.StringAttribute{Computed: true, Sensitive: true},
@@ -139,20 +155,23 @@ func notificationAgentDataSourceBlocks() map[string]dschema.Block {
 				"send_silently": dschema.BoolAttribute{Computed: true},
 			},
 		},
-		"pushbullet": dschema.SingleNestedBlock{
+		"pushbullet": dschema.SingleNestedAttribute{
+			Computed: true,
 			Attributes: map[string]dschema.Attribute{
 				"access_token": dschema.StringAttribute{Computed: true, Sensitive: true},
 				"channel_tag":  dschema.StringAttribute{Computed: true},
 			},
 		},
-		"pushover": dschema.SingleNestedBlock{
+		"pushover": dschema.SingleNestedAttribute{
+			Computed: true,
 			Attributes: map[string]dschema.Attribute{
 				"access_token": dschema.StringAttribute{Computed: true, Sensitive: true},
 				"user_token":   dschema.StringAttribute{Computed: true, Sensitive: true},
 				"sound":        dschema.StringAttribute{Computed: true},
 			},
 		},
-		"ntfy": dschema.SingleNestedBlock{
+		"ntfy": dschema.SingleNestedAttribute{
+			Computed: true,
 			Attributes: map[string]dschema.Attribute{
 				"url":                           dschema.StringAttribute{Computed: true},
 				"topic":                         dschema.StringAttribute{Computed: true},
@@ -164,20 +183,23 @@ func notificationAgentDataSourceBlocks() map[string]dschema.Block {
 				"priority":                      dschema.Int64Attribute{Computed: true},
 			},
 		},
-		"webhook": dschema.SingleNestedBlock{
+		"webhook": dschema.SingleNestedAttribute{
+			Computed: true,
 			Attributes: map[string]dschema.Attribute{
 				"webhook_url":  dschema.StringAttribute{Computed: true},
 				"json_payload": dschema.StringAttribute{Computed: true},
 				"auth_header":  dschema.StringAttribute{Computed: true, Sensitive: true},
 			},
 		},
-		"gotify": dschema.SingleNestedBlock{
+		"gotify": dschema.SingleNestedAttribute{
+			Computed: true,
 			Attributes: map[string]dschema.Attribute{
 				"url":   dschema.StringAttribute{Computed: true},
 				"token": dschema.StringAttribute{Computed: true, Sensitive: true},
 			},
 		},
-		"webpush": dschema.SingleNestedBlock{
+		"webpush": dschema.SingleNestedAttribute{
+			Computed:   true,
 			Attributes: map[string]dschema.Attribute{},
 		},
 	}
