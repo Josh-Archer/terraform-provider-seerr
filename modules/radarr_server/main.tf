@@ -13,7 +13,7 @@ resource "seerr_radarr_server" "this" {
   api_key              = var.api_key
   use_ssl              = var.use_ssl
   base_url             = var.base_url
-  active_profile_id    = var.active_profile_id
+  quality_profile_id   = var.quality_profile_id
   active_directory     = var.active_directory
   is_4k                = var.is_4k
   minimum_availability = var.minimum_availability

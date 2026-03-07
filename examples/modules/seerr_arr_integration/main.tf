@@ -12,22 +12,34 @@ locals {
   sonarr_api_key = var.sonarr_api_key
 }
 
+data "seerr_radarr_quality_profile" "movies" {
+  url     = local.radarr_url
+  api_key = local.radarr_api_key
+  name    = var.radarr_quality_profile_name
+}
+
+data "seerr_sonarr_quality_profile" "shows" {
+  url     = local.sonarr_url
+  api_key = local.sonarr_api_key
+  name    = var.sonarr_quality_profile_name
+}
+
 module "radarr_server" {
   source = "../../../modules/radarr_server"
 
-  url               = local.radarr_url
-  api_key           = local.radarr_api_key
-  active_profile_id = var.radarr_profile_id
-  active_directory  = var.radarr_root
+  url                = local.radarr_url
+  api_key            = local.radarr_api_key
+  quality_profile_id = data.seerr_radarr_quality_profile.movies.quality_profile_id
+  active_directory   = var.radarr_root
 }
 
 module "sonarr_server" {
   source = "../../../modules/sonarr_server"
 
-  url               = local.sonarr_url
-  api_key           = local.sonarr_api_key
-  active_profile_id = var.sonarr_profile_id
-  active_directory  = var.sonarr_root
+  url                = local.sonarr_url
+  api_key            = local.sonarr_api_key
+  quality_profile_id = data.seerr_sonarr_quality_profile.shows.quality_profile_id
+  active_directory   = var.sonarr_root
 }
 
 module "ntfy_notification" {
@@ -87,8 +99,8 @@ variable "radarr_api_key" {
   sensitive = true
 }
 
-variable "radarr_profile_id" {
-  type = number
+variable "radarr_quality_profile_name" {
+  type = string
 }
 
 variable "radarr_root" {
@@ -104,8 +116,8 @@ variable "sonarr_api_key" {
   sensitive = true
 }
 
-variable "sonarr_profile_id" {
-  type = number
+variable "sonarr_quality_profile_name" {
+  type = string
 }
 
 variable "sonarr_root" {

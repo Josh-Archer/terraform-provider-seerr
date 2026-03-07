@@ -33,7 +33,7 @@ variable "base_url" {
   default = ""
 }
 
-variable "active_profile_id" {
+variable "quality_profile_id" {
   type = number
 }
 

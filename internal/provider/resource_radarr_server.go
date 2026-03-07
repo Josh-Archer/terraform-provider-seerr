@@ -35,7 +35,8 @@ type RadarrServerModel struct {
 	APIKey              types.String `tfsdk:"api_key"`
 	UseSSL              types.Bool   `tfsdk:"use_ssl"`
 	BaseURL             types.String `tfsdk:"base_url"`
-	ActiveProfileID     types.Int64  `tfsdk:"active_profile_id"`
+	QualityProfileID    types.Int64  `tfsdk:"quality_profile_id"`
+	QualityProfileName  types.String `tfsdk:"quality_profile_name"`
 	ActiveDirectory     types.String `tfsdk:"active_directory"`
 	Is4K                types.Bool   `tfsdk:"is_4k"`
 	MinimumAvailability types.String `tfsdk:"minimum_availability"`
@@ -94,8 +95,12 @@ func (r *RadarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 				Computed: true,
 				Default:  stringdefault.StaticString(""),
 			},
-			"active_profile_id": schema.Int64Attribute{Required: true},
-			"active_directory":  schema.StringAttribute{Required: true},
+			"quality_profile_id": schema.Int64Attribute{Required: true},
+			"quality_profile_name": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+			},
+			"active_directory": schema.StringAttribute{Required: true},
 			"is_4k": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
@@ -187,6 +192,25 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 	if err != nil {
 		return "", err
 	}
+	profileName := ""
+	if !data.QualityProfileName.IsNull() && !data.QualityProfileName.IsUnknown() {
+		profileName = strings.TrimSpace(data.QualityProfileName.ValueString())
+	}
+	if profileName == "" {
+		profileName, err = resolveArrProfileNameByID(
+			ctx,
+			data.URL.ValueString(),
+			data.Hostname.ValueString(),
+			data.Port.ValueInt64(),
+			data.UseSSL.ValueBool(),
+			data.BaseURL.ValueString(),
+			data.APIKey.ValueString(),
+			data.QualityProfileID.ValueInt64(),
+		)
+		if err != nil {
+			return "", fmt.Errorf("resolve quality_profile_name: %w", err)
+		}
+	}
 
 	base := map[string]any{
 		"name":                data.Name.ValueString(),
@@ -195,7 +219,8 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 		"apiKey":              data.APIKey.ValueString(),
 		"useSsl":              data.UseSSL.ValueBool(),
 		"baseUrl":             data.BaseURL.ValueString(),
-		"activeProfileId":     data.ActiveProfileID.ValueInt64(),
+		"activeProfileId":     data.QualityProfileID.ValueInt64(),
+		"activeProfileName":   profileName,
 		"activeDirectory":     data.ActiveDirectory.ValueString(),
 		"is4k":                data.Is4K.ValueBool(),
 		"minimumAvailability": data.MinimumAvailability.ValueString(),

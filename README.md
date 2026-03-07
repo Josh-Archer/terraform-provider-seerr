@@ -22,6 +22,35 @@ The provider supports two usage styles:
 - `modules/radarr_server`
 - `modules/sonarr_server`
 
+## Object reference
+
+Resources:
+- `seerr_api_key`: regenerate and read the current Seerr API key.
+- `seerr_api_object`: manage arbitrary Seerr endpoints with explicit HTTP methods.
+- `seerr_main_settings`: manage core Seerr application settings.
+- `seerr_notification_agent`: manage a named notification agent payload.
+- `seerr_plex_settings`: manage Plex integration settings.
+- `seerr_radarr_server`: manage a Radarr server integration in Seerr.
+- `seerr_sonarr_server`: manage a Sonarr server integration in Seerr.
+- `seerr_user_permissions`: manage a user's Seerr permissions bitmask.
+- `seerr_user_watchlist_settings`: manage a user's Plex watchlist sync flags.
+
+Data sources:
+- `seerr_api_key`: read the current Seerr API key.
+- `seerr_api_request`: issue an arbitrary read request to the Seerr API.
+- `seerr_main_settings`: read current main settings.
+- `seerr_notification_agent`: read a named notification agent payload.
+- `seerr_plex_settings`: read current Plex settings.
+- `seerr_radarr_quality_profile`: resolve a Radarr quality profile name to its numeric ID.
+- `seerr_radarr_server`: read a configured Radarr server by Seerr server ID.
+- `seerr_sonarr_quality_profile`: resolve a Sonarr quality profile name to its numeric ID.
+- `seerr_sonarr_server`: read a configured Sonarr server by Seerr server ID.
+- `seerr_user_permissions`: read a user's permissions bitmask.
+- `seerr_user_watchlist_settings`: read a user's watchlist sync settings.
+
+Each resource and data source has a dedicated page under [`docs/resources`](./docs/resources)
+or [`docs/data-sources`](./docs/data-sources) with at least one example usage block.
+
 ## Requirements
 
 - Go `1.25+`
@@ -44,21 +73,54 @@ You cannot pass another provider "object" directly. Terraform/OpenTofu providers
 ```hcl
 # Example values from other providers/modules.
 # Replace resource names with your actual radarr/sonarr resources.
+data "seerr_radarr_quality_profile" "movies" {
+  url     = radarr_system.this.url
+  api_key = radarr_system.this.api_key
+  name    = "HD-1080p"
+}
+
 resource "seerr_radarr_server" "movies" {
-  url               = radarr_system.this.url
-  api_key           = radarr_system.this.api_key
-  active_profile_id = 4
-  active_directory  = "/media/movies"
+  url                = radarr_system.this.url
+  api_key            = radarr_system.this.api_key
+  quality_profile_id = data.seerr_radarr_quality_profile.movies.quality_profile_id
+  active_directory   = "/media/movies"
+}
+
+data "seerr_sonarr_quality_profile" "shows" {
+  url     = sonarr_system.this.url
+  api_key = sonarr_system.this.api_key
+  name    = "HD-1080p"
 }
 
 resource "seerr_sonarr_server" "shows" {
   url                    = sonarr_system.this.url
   api_key                = sonarr_system.this.api_key
-  active_profile_id      = 6
+  quality_profile_id     = data.seerr_sonarr_quality_profile.shows.quality_profile_id
   active_directory       = "/media/tv"
   active_anime_directory = "/media/anime"
 }
 ```
+
+### Quality profile resolution
+
+Seerr server create/update calls require both `activeProfileId` and
+`activeProfileName`.
+
+- `quality_profile_id` is the resource input. The recommended way to get it is
+  via `seerr_radarr_quality_profile` or `seerr_sonarr_quality_profile`, using
+  the ARR quality-profile name as the lookup key.
+- If `quality_profile_name` is set on `seerr_radarr_server` or
+  `seerr_sonarr_server`, the provider uses that value directly in the Seerr
+  payload.
+- If `quality_profile_name` is omitted, the provider resolves the profile name
+  by querying the target ARR API (`/api/v3/qualityprofile`) using the provided
+  `url`/`hostname`, `port`, `use_ssl`, and `api_key`.
+
+Operational note:
+
+- OpenTofu execution context must be able to reach Radarr/Sonarr for automatic
+  quality-profile lookup and automatic name resolution. If connectivity is
+  limited, set `quality_profile_name` explicitly.
 
 ## Example: notification settings
 

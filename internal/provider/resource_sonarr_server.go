@@ -35,7 +35,8 @@ type SonarrServerModel struct {
 	APIKey               types.String `tfsdk:"api_key"`
 	UseSSL               types.Bool   `tfsdk:"use_ssl"`
 	BaseURL              types.String `tfsdk:"base_url"`
-	ActiveProfileID      types.Int64  `tfsdk:"active_profile_id"`
+	QualityProfileID     types.Int64  `tfsdk:"quality_profile_id"`
+	QualityProfileName   types.String `tfsdk:"quality_profile_name"`
 	ActiveDirectory      types.String `tfsdk:"active_directory"`
 	ActiveAnimeDirectory types.String `tfsdk:"active_anime_directory"`
 	Tags                 types.List   `tfsdk:"tags"`
@@ -93,7 +94,11 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 				Computed: true,
 				Default:  stringdefault.StaticString(""),
 			},
-			"active_profile_id":      schema.Int64Attribute{Required: true},
+			"quality_profile_id": schema.Int64Attribute{Required: true},
+			"quality_profile_name": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+			},
 			"active_directory":       schema.StringAttribute{Required: true},
 			"active_anime_directory": schema.StringAttribute{Optional: true},
 			"tags": schema.ListAttribute{
@@ -210,6 +215,25 @@ func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerMod
 	if animeDir == "" {
 		animeDir = data.ActiveDirectory.ValueString()
 	}
+	profileName := ""
+	if !data.QualityProfileName.IsNull() && !data.QualityProfileName.IsUnknown() {
+		profileName = strings.TrimSpace(data.QualityProfileName.ValueString())
+	}
+	if profileName == "" {
+		profileName, err = resolveArrProfileNameByID(
+			ctx,
+			data.URL.ValueString(),
+			data.Hostname.ValueString(),
+			data.Port.ValueInt64(),
+			data.UseSSL.ValueBool(),
+			data.BaseURL.ValueString(),
+			data.APIKey.ValueString(),
+			data.QualityProfileID.ValueInt64(),
+		)
+		if err != nil {
+			return "", fmt.Errorf("resolve quality_profile_name: %w", err)
+		}
+	}
 	base := map[string]any{
 		"name":                 data.Name.ValueString(),
 		"hostname":             data.Hostname.ValueString(),
@@ -217,7 +241,8 @@ func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerMod
 		"apiKey":               data.APIKey.ValueString(),
 		"useSsl":               data.UseSSL.ValueBool(),
 		"baseUrl":              data.BaseURL.ValueString(),
-		"activeProfileId":      data.ActiveProfileID.ValueInt64(),
+		"activeProfileId":      data.QualityProfileID.ValueInt64(),
+		"activeProfileName":    profileName,
 		"activeDirectory":      data.ActiveDirectory.ValueString(),
 		"activeAnimeDirectory": animeDir,
 		"tags":                 tags,
