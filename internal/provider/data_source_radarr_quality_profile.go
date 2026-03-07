@@ -2,8 +2,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -111,8 +109,9 @@ func (d *RadarrQualityProfileDataSource) Read(ctx context.Context, req datasourc
 	if !data.BaseURL.IsNull() && !data.BaseURL.IsUnknown() {
 		baseURL = data.BaseURL.ValueString()
 	}
+	profileName := data.Name.ValueString()
 
-	profiles, _, err := fetchArrProfiles(
+	profile, err := findArrProfile(
 		ctx,
 		data.URL.ValueString(),
 		hostname,
@@ -120,47 +119,16 @@ func (d *RadarrQualityProfileDataSource) Read(ctx context.Context, req datasourc
 		useSSL,
 		baseURL,
 		data.APIKey.ValueString(),
+		nil,
+		&profileName,
 	)
 	if err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
 
-	needle := strings.TrimSpace(data.Name.ValueString())
-	for _, profile := range profiles {
-		name, ok := profile["name"].(string)
-		if !ok || strings.TrimSpace(name) != needle {
-			continue
-		}
-		rawID, ok := profile["id"]
-		if !ok {
-			resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("quality profile %q has no id", needle))
-			return
-		}
-
-		var id int64
-		switch v := rawID.(type) {
-		case float64:
-			id = int64(v)
-		case int64:
-			id = v
-		default:
-			resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("quality profile %q returned unsupported id type", needle))
-			return
-		}
-
-		body, err := json.Marshal(profile)
-		if err != nil {
-			resp.Diagnostics.AddError("Read Failed", err.Error())
-			return
-		}
-
-		data.QualityProfileID = types.Int64Value(id)
-		data.StatusCode = types.Int64Value(200)
-		data.ResponseJSON = types.StringValue(string(body))
-		resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-		return
-	}
-
-	resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("Radarr quality profile %q not found", needle))
+	data.QualityProfileID = types.Int64Value(profile.ID)
+	data.StatusCode = types.Int64Value(200)
+	data.ResponseJSON = types.StringValue(string(profile.Body))
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
