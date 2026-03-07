@@ -53,11 +53,15 @@ jobs:
         uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: 1.6.0
-      - name: Setup Dev Overrides
+      - name: Setup Provider Mirror
         run: |
+          MIRROR_PATH="${{ github.workspace }}/provider-mirror/registry.opentofu.org/josh-archer/seerr/99.99.99/linux_amd64"
+          mkdir -p "$MIRROR_PATH"
+          cp terraform-provider-seerr "$MIRROR_PATH/"
           echo "provider_installation {
-            dev_overrides {
-              \"josh-archer/seerr\" = \"${{ github.workspace }}\"
+            filesystem_mirror {
+              path    = \"${{ github.workspace }}/provider-mirror\"
+              include = [\"josh-archer/seerr\"]
             }
             direct {}
           }" > ${{ github.workspace }}/.tofurc
