@@ -53,6 +53,7 @@ type UserModel struct {
 	ID                   types.String                   `tfsdk:"id"`
 	Email                types.String                   `tfsdk:"email"`
 	Username             types.String                   `tfsdk:"username"`
+	PlexID               types.String                   `tfsdk:"plex_id"`
 	Permissions          types.Int64                    `tfsdk:"permissions"`
 	NotificationSettings *UserNotificationSettingsModel `tfsdk:"notification_settings"`
 }
@@ -83,8 +84,15 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				},
 			},
 			"username": schema.StringAttribute{
-				MarkdownDescription: "User's display name.",
+				MarkdownDescription: "User's display name. Can be imported from Plex if `plex_id` is provided.",
 				Required:            true,
+			},
+			"plex_id": schema.StringAttribute{
+				MarkdownDescription: "Optional Plex ID to import a user directly from Plex.",
+				Optional:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"permissions": schema.Int64Attribute{
 				MarkdownDescription: "Permissions bitmask.",
@@ -150,28 +158,79 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	// Create User
-	createBody, _ := json.Marshal(map[string]any{
-		"email":       data.Email.ValueString(),
-		"username":    data.Username.ValueString(),
-		"permissions": data.Permissions.ValueInt64(),
-	})
+	var userIDStr string
 
-	res, err := r.client.Request(ctx, "POST", "/api/v1/user", string(createBody), nil)
-	if err != nil {
-		resp.Diagnostics.AddError("Create Failed", err.Error())
-		return
-	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("Status %d: %s", res.StatusCode, string(res.Body)))
-		return
+	// Create or Import User
+	if !data.PlexID.IsNull() && !data.PlexID.IsUnknown() && data.PlexID.ValueString() != "" {
+		// Import from Plex
+		importBody, _ := json.Marshal(map[string]any{
+			"plexIds": []string{data.PlexID.ValueString()},
+		})
+		res, err := r.client.Request(ctx, "POST", "/api/v1/user/import-from-plex", string(importBody), nil)
+		if err != nil {
+			resp.Diagnostics.AddError("Import Plex User Failed", err.Error())
+			return
+		}
+		if !StatusIsOK(res.StatusCode) {
+			resp.Diagnostics.AddError("Import Plex User Failed", fmt.Sprintf("Status %d: %s", res.StatusCode, string(res.Body)))
+			return
+		}
+
+		// Response should be an array of imported users. We need to find the ID of the new user.
+		var importedUsers []map[string]any
+		if err := json.Unmarshal(res.Body, &importedUsers); err != nil {
+			resp.Diagnostics.AddError("Import Plex User Failed", "Failed to parse API response: "+err.Error())
+			return
+		}
+
+		if len(importedUsers) == 0 {
+			resp.Diagnostics.AddError("Import Plex User Failed", "API returned an empty array of imported users.")
+			return
+		}
+
+		importedIDRaw := importedUsers[0]["id"]
+		switch v := importedIDRaw.(type) {
+		case float64:
+			userIDStr = fmt.Sprintf("%.0f", v)
+		case string:
+			userIDStr = v
+		default:
+			resp.Diagnostics.AddError("Import Plex User Failed", "Could not extract user ID from import response.")
+			return
+		}
+
+		// Immediately after import, update the permissions to match what Terraform expects (since import might not set them)
+		updateBody, _ := json.Marshal(map[string]any{
+			"permissions": data.Permissions.ValueInt64(),
+		})
+		_, _ = r.client.Request(ctx, "PUT", "/api/v1/user/"+userIDStr, string(updateBody), nil)
+
+	} else {
+		// Create Local User
+		createBody, _ := json.Marshal(map[string]any{
+			"email":       data.Email.ValueString(),
+			"username":    data.Username.ValueString(),
+			"permissions": data.Permissions.ValueInt64(),
+		})
+
+		res, err := r.client.Request(ctx, "POST", "/api/v1/user", string(createBody), nil)
+		if err != nil {
+			resp.Diagnostics.AddError("Create Failed", err.Error())
+			return
+		}
+		if !StatusIsOK(res.StatusCode) {
+			resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("Status %d: %s", res.StatusCode, string(res.Body)))
+			return
+		}
+
+		extractedID, ok := ExtractIDFromJSON(res.Body)
+		if !ok {
+			resp.Diagnostics.AddError("Create Failed", "Could not extract user ID from response")
+			return
+		}
+		userIDStr = extractedID
 	}
 
-	userIDStr, ok := ExtractIDFromJSON(res.Body)
-	if !ok {
-		resp.Diagnostics.AddError("Create Failed", "Could not extract user ID from response")
-		return
-	}
 	data.ID = types.StringValue(userIDStr)
 
 	// Update Notification Settings if provided

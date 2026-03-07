@@ -4,6 +4,19 @@ Manage Seerr users and their notification settings.
 
 ## Example Usage
 
+### Import User from Plex
+
+```terraform
+# Look up the Plex ID from the Plex users settings endpoint, or use a known Plex ID.
+resource "seerr_user" "plex_imported" {
+  username = "plex_user"
+  email    = "plex@example.com"
+  plex_id  = "12345678" # This triggers parsing from Plex
+
+  permissions = 0
+}
+```
+
 ### Basic Local User
 
 ```terraform
@@ -80,12 +93,13 @@ resource "seerr_user" "pushover_user" {
 ### Required
 
 - `email` (String) User's email address. Field is ForceNew because Overseerr API doesn't support updating it.
-- `username` (String) User's display name.
+- `username` (String) User's display name. Can be imported from Plex if `plex_id` is provided.
 
 ### Optional
 
 - `notification_settings` (Block, Optional) User-specific notification settings. (see [below for nested schema](#nestedblock--notification_settings))
 - `permissions` (Number) Permissions bitmask.
+- `plex_id` (String) Optional Plex ID to import a user directly from Plex. Field is ForceNew.
 
 ### Computed
 

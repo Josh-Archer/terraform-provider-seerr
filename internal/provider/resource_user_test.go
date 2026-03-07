@@ -12,10 +12,14 @@ func TestAccUserResource(t *testing.T) {
 	email := "test_user@example.com"
 	updatedUsername := "terraform_test_user_updated"
 
+	// The Plex ID test is difficult to fully automate without a known, stable Plex server attached to the test instance.
+	// In a real testing environment, you would provide a valid Plex ID.
+	// plexIDToImport := "123456"
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
-			// Create and Verify
+			// Create Local User and Verify
 			{
 				Config: testAccUserResourceConfig(username, email, 0),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -47,7 +51,6 @@ func TestAccUserResource(t *testing.T) {
 				ResourceName:      "seerr_user.test",
 				ImportState:       true,
 				ImportStateVerify: true,
-				// ImportStateVerifyIgnore: []string{"notification_settings.pushbullet_access_token", "notification_settings.pushover_application_token", "notification_settings.pushover_user_key"},
 			},
 		},
 	})
