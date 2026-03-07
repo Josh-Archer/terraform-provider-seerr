@@ -69,7 +69,7 @@ jobs:
   auto-tag:
     name: Auto Tag
     needs: [build-test, tofu-test]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore:')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -81,7 +81,7 @@ jobs:
         uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: patch
+          default_bump: false
           create_annotated_tag: true
           tag_prefix: v
 
