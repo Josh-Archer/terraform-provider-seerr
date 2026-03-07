@@ -114,6 +114,7 @@ func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewUserPermissionsResource,
 		NewUserWatchlistSettingsResource,
 		NewAPIKeyResource,
+		NewUserResource,
 	}
 }
 
@@ -130,6 +131,7 @@ func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewUserPermissionsDataSource,
 		NewUserWatchlistSettingsDataSource,
 		NewAPIKeyDataSource,
+		NewUserDataSource,
 	}
 }
 
