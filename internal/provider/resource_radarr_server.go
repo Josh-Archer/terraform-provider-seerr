@@ -197,7 +197,8 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 		profileName = strings.TrimSpace(data.QualityProfileName.ValueString())
 	}
 	if profileName == "" {
-		profileName, err = resolveArrProfileNameByID(
+		profileID := data.QualityProfileID.ValueInt64()
+		profile, lookupErr := findArrProfile(
 			ctx,
 			data.URL.ValueString(),
 			data.Hostname.ValueString(),
@@ -205,11 +206,13 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 			data.UseSSL.ValueBool(),
 			data.BaseURL.ValueString(),
 			data.APIKey.ValueString(),
-			data.QualityProfileID.ValueInt64(),
+			&profileID,
+			nil,
 		)
-		if err != nil {
-			return "", fmt.Errorf("resolve quality_profile_name: %w", err)
+		if lookupErr != nil {
+			return "", fmt.Errorf("resolve quality_profile_name: %w", lookupErr)
 		}
+		profileName = profile.Name
 	}
 
 	base := map[string]any{

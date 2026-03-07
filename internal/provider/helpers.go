@@ -153,11 +153,23 @@ func fetchArrProfiles(ctx context.Context, rawURL, hostname string, port int64, 
 	return profiles, profilesURL, nil
 }
 
-func resolveArrProfileNameByID(ctx context.Context, rawURL, hostname string, port int64, useSSL bool, baseURL, apiKey string, profileID int64) (string, error) {
+type arrProfileMatch struct {
+	ID   int64
+	Name string
+	Body []byte
+}
+
+func findArrProfile(ctx context.Context, rawURL, hostname string, port int64, useSSL bool, baseURL, apiKey string, profileID *int64, profileName *string) (*arrProfileMatch, error) {
 	profiles, profilesURL, err := fetchArrProfiles(ctx, rawURL, hostname, port, useSSL, baseURL, apiKey)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+
+	var trimmedName string
+	if profileName != nil {
+		trimmedName = strings.TrimSpace(*profileName)
+	}
+
 	for _, p := range profiles {
 		rawID, ok := p["id"]
 		if !ok {
@@ -172,40 +184,36 @@ func resolveArrProfileNameByID(ctx context.Context, rawURL, hostname string, por
 		default:
 			continue
 		}
-		if id != profileID {
-			continue
-		}
-		if name, ok := p["name"].(string); ok && strings.TrimSpace(name) != "" {
-			return name, nil
-		}
-		return "", fmt.Errorf("profile id %d has no name", profileID)
-	}
-	return "", fmt.Errorf("profile id %d not found at %s", profileID, profilesURL)
-}
 
-func resolveArrProfileIDByName(ctx context.Context, rawURL, hostname string, port int64, useSSL bool, baseURL, apiKey, profileName string) (int64, error) {
-	profiles, profilesURL, err := fetchArrProfiles(ctx, rawURL, hostname, port, useSSL, baseURL, apiKey)
-	if err != nil {
-		return 0, err
-	}
-	needle := strings.TrimSpace(profileName)
-	for _, p := range profiles {
 		name, ok := p["name"].(string)
-		if !ok || strings.TrimSpace(name) != needle {
+		if !ok || strings.TrimSpace(name) == "" {
 			continue
 		}
-		rawID, ok := p["id"]
-		if !ok {
-			return 0, fmt.Errorf("profile %q has no id", profileName)
+
+		matchesID := profileID != nil && id == *profileID
+		matchesName := profileName != nil && strings.TrimSpace(name) == trimmedName
+		if !matchesID && !matchesName {
+			continue
 		}
-		switch v := rawID.(type) {
-		case float64:
-			return int64(v), nil
-		case int64:
-			return v, nil
-		default:
-			return 0, fmt.Errorf("profile %q has unsupported id type", profileName)
+
+		body, err := json.Marshal(p)
+		if err != nil {
+			return nil, err
 		}
+
+		return &arrProfileMatch{
+			ID:   id,
+			Name: strings.TrimSpace(name),
+			Body: body,
+		}, nil
 	}
-	return 0, fmt.Errorf("profile %q not found at %s", profileName, profilesURL)
+
+	switch {
+	case profileID != nil:
+		return nil, fmt.Errorf("profile id %d not found at %s", *profileID, profilesURL)
+	case profileName != nil:
+		return nil, fmt.Errorf("profile %q not found at %s", trimmedName, profilesURL)
+	default:
+		return nil, fmt.Errorf("profile selector is required")
+	}
 }
