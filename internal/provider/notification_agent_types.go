@@ -53,6 +53,12 @@ type NotificationAgentPushoverModel struct {
 	Sound       types.String `tfsdk:"sound"`
 }
 
+type NotificationAgentNtfyModel struct {
+	Url         types.String `tfsdk:"url"`
+	Topic       types.String `tfsdk:"topic"`
+	AccessToken types.String `tfsdk:"access_token"`
+}
+
 type NotificationAgentWebhookModel struct {
 	WebhookUrl  types.String `tfsdk:"webhook_url"`
 	JsonPayload types.String `tfsdk:"json_payload"`
@@ -75,6 +81,7 @@ type NotificationAgentOptionsModel struct {
 	Telegram   *NotificationAgentTelegramModel   `tfsdk:"telegram"`
 	Pushbullet *NotificationAgentPushbulletModel `tfsdk:"pushbullet"`
 	Pushover   *NotificationAgentPushoverModel   `tfsdk:"pushover"`
+	Ntfy       *NotificationAgentNtfyModel       `tfsdk:"ntfy"`
 	Webhook    *NotificationAgentWebhookModel    `tfsdk:"webhook"`
 	Gotify     *NotificationAgentGotifyModel     `tfsdk:"gotify"`
 	Webpush    *NotificationAgentWebpushModel    `tfsdk:"webpush"`
