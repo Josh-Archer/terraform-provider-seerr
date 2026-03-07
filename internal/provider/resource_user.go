@@ -272,8 +272,12 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	data.Email = types.StringValue(userMap["email"].(string))
-	data.Username = types.StringValue(userMap["username"].(string))
+	if email, ok := userMap["email"].(string); ok {
+		data.Email = types.StringValue(email)
+	}
+	if username, ok := userMap["username"].(string); ok {
+		data.Username = types.StringValue(username)
+	}
 	if p, ok := userMap["permissions"].(float64); ok {
 		data.Permissions = types.Int64Value(int64(p))
 	}
