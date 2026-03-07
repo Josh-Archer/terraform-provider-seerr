@@ -39,6 +39,8 @@ jobs:
     name: OpenTofu Integration Tests
     runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 15
+    env:
+      TF_CLI_CONFIG_FILE: ${{ github.workspace }}/.tofurc
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
@@ -55,10 +57,10 @@ jobs:
         run: |
           echo "provider_installation {
             dev_overrides {
-              \"josh-archer/seerr\" = \"$GITHUB_WORKSPACE\"
+              \"josh-archer/seerr\" = \"${{ github.workspace }}\"
             }
             direct {}
-          }" > ~/.tofurc
+          }" > ${{ github.workspace }}/.tofurc
       - name: OpenTofu Init
         working-directory: tests
         run: tofu init
@@ -67,7 +69,6 @@ jobs:
         env:
           SEERR_URL: ${{ secrets.SEERR_URL }}
           SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
-          TF_CLI_CONFIG_FILE: ~/.tofurc
         run: |
           if [ -z "$SEERR_URL" ]; then
             echo "Skipping integration tests: SEERR_URL not set"
