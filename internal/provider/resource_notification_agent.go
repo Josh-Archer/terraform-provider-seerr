@@ -24,10 +24,11 @@ type NotificationAgentResource struct {
 }
 
 type NotificationAgentModel struct {
-	ID        types.String `tfsdk:"id"`
-	Agent     types.String `tfsdk:"agent"`
-	Enabled   types.Bool   `tfsdk:"enabled"`
-	TypesMask types.Int64  `tfsdk:"types"`
+	ID          types.String `tfsdk:"id"`
+	Agent       types.String `tfsdk:"agent"`
+	Enabled     types.Bool   `tfsdk:"enabled"`
+	EmbedPoster types.Bool   `tfsdk:"embed_poster"`
+	TypesMask   types.Int64  `tfsdk:"types"`
 
 	Discord    *NotificationAgentDiscordModel    `tfsdk:"discord"`
 	Slack      *NotificationAgentSlackModel      `tfsdk:"slack"`
@@ -43,9 +44,10 @@ type NotificationAgentModel struct {
 }
 
 type notificationAgentPayload struct {
-	Enabled bool                   `json:"enabled"`
-	Types   int64                  `json:"types"`
-	Options map[string]interface{} `json:"options"`
+	Enabled     bool                   `json:"enabled"`
+	EmbedPoster bool                   `json:"embedPoster"`
+	Types       int64                  `json:"types"`
+	Options     map[string]interface{} `json:"options"`
 }
 
 func NewNotificationAgentResource() resource.Resource { return &NotificationAgentResource{} }
@@ -71,6 +73,11 @@ func (r *NotificationAgentResource) Schema(_ context.Context, _ resource.SchemaR
 				},
 			},
 			"enabled": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				Default:  booldefault.StaticBool(false),
+			},
+			"embed_poster": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
 				Default:  booldefault.StaticBool(false),
@@ -103,9 +110,10 @@ func notificationPath(agent string) string {
 
 func buildPayload(data *NotificationAgentModel) (string, error) {
 	payload := notificationAgentPayload{
-		Enabled: data.Enabled.ValueBool(),
-		Types:   data.TypesMask.ValueInt64(),
-		Options: make(map[string]interface{}),
+		Enabled:     data.Enabled.ValueBool(),
+		EmbedPoster: data.EmbedPoster.ValueBool(),
+		Types:       data.TypesMask.ValueInt64(),
+		Options:     make(map[string]interface{}),
 	}
 
 	switch data.Agent.ValueString() {
@@ -222,8 +230,23 @@ func buildPayload(data *NotificationAgentModel) (string, error) {
 			if !data.Ntfy.Topic.IsNull() {
 				payload.Options["topic"] = data.Ntfy.Topic.ValueString()
 			}
-			if !data.Ntfy.AccessToken.IsNull() {
-				payload.Options["accessToken"] = data.Ntfy.AccessToken.ValueString()
+			if !data.Ntfy.AuthMethodUsernamePassword.IsNull() {
+				payload.Options["authMethodUsernamePassword"] = data.Ntfy.AuthMethodUsernamePassword.ValueBool()
+			}
+			if !data.Ntfy.Username.IsNull() {
+				payload.Options["username"] = data.Ntfy.Username.ValueString()
+			}
+			if !data.Ntfy.Password.IsNull() {
+				payload.Options["password"] = data.Ntfy.Password.ValueString()
+			}
+			if !data.Ntfy.AuthMethodToken.IsNull() {
+				payload.Options["authMethodToken"] = data.Ntfy.AuthMethodToken.ValueBool()
+			}
+			if !data.Ntfy.Token.IsNull() {
+				payload.Options["token"] = data.Ntfy.Token.ValueString()
+			}
+			if !data.Ntfy.Priority.IsNull() {
+				payload.Options["priority"] = data.Ntfy.Priority.ValueInt64()
 			}
 		}
 	case "webhook":
@@ -263,6 +286,7 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 		return err
 	}
 	data.Enabled = types.BoolValue(payload.Enabled)
+	data.EmbedPoster = types.BoolValue(payload.EmbedPoster)
 	data.TypesMask = types.Int64Value(payload.Types)
 
 	opt := payload.Options
@@ -280,6 +304,12 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 	}
 	getInt64 := func(key string) types.Int64 {
 		if v, ok := opt[key].(float64); ok {
+			return types.Int64Value(int64(v))
+		}
+		if v, ok := opt[key].(int64); ok {
+			return types.Int64Value(v)
+		}
+		if v, ok := opt[key].(int); ok {
 			return types.Int64Value(int64(v))
 		}
 		return types.Int64Null()
@@ -350,9 +380,14 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 		}
 	case "ntfy":
 		data.Ntfy = &NotificationAgentNtfyModel{
-			Url:         getString("url"),
-			Topic:       getString("topic"),
-			AccessToken: getString("accessToken"),
+			Url:                        getString("url"),
+			Topic:                      getString("topic"),
+			AuthMethodUsernamePassword: getBool("authMethodUsernamePassword"),
+			Username:                   getString("username"),
+			Password:                   getString("password"),
+			AuthMethodToken:            getBool("authMethodToken"),
+			Token:                      getString("token"),
+			Priority:                   getInt64("priority"),
 		}
 	case "webhook":
 		data.Webhook = &NotificationAgentWebhookModel{

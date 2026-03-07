@@ -54,9 +54,14 @@ type NotificationAgentPushoverModel struct {
 }
 
 type NotificationAgentNtfyModel struct {
-	Url         types.String `tfsdk:"url"`
-	Topic       types.String `tfsdk:"topic"`
-	AccessToken types.String `tfsdk:"access_token"`
+	Url                        types.String `tfsdk:"url"`
+	Topic                      types.String `tfsdk:"topic"`
+	AuthMethodUsernamePassword types.Bool   `tfsdk:"auth_method_username_password"`
+	Username                   types.String `tfsdk:"username"`
+	Password                   types.String `tfsdk:"password"`
+	AuthMethodToken            types.Bool   `tfsdk:"auth_method_token"`
+	Token                      types.String `tfsdk:"token"`
+	Priority                   types.Int64  `tfsdk:"priority"`
 }
 
 type NotificationAgentWebhookModel struct {

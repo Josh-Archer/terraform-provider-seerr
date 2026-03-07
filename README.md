@@ -131,20 +131,30 @@ Operational note:
 ```hcl
 resource "seerr_notification_agent" "ntfy" {
   agent        = "ntfy"
-  payload_json = jsonencode({
-    enabled = true
-    options = {
-      serverUrl   = "https://ntfy.example.com"
-      topic       = "media"
-      accessToken = var.ntfy_access_token
-      priority    = 3
-    }
-    types = {
-      MEDIA_APPROVED  = true
-      MEDIA_AVAILABLE = true
-      MEDIA_FAILED    = true
-    }
-  })
+  enabled      = true
+  embed_poster = true
+  types        = 1023
+
+  ntfy {
+    url               = "https://ntfy.example.com"
+    topic             = "media"
+    auth_method_token = true
+    token             = var.ntfy_access_token
+    priority          = 3
+  }
+}
+
+resource "seerr_notification_agent" "pushover" {
+  agent        = "pushover"
+  enabled      = true
+  embed_poster = true
+  types        = 1023
+
+  pushover {
+    access_token = var.pushover_access_token
+    user_token   = var.pushover_user_token
+    sound        = "pushover"
+  }
 }
 ```
 
