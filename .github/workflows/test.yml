@@ -39,8 +39,6 @@ jobs:
     name: OpenTofu Integration Tests
     runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 15
-    env:
-      TF_CLI_CONFIG_FILE: ${{ github.workspace }}/.tofurc
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
@@ -55,19 +53,11 @@ jobs:
           tofu_version: 1.6.0
       - name: Setup Provider Mirror
         run: |
-          MIRROR_PATH="${{ github.workspace }}/provider-mirror/registry.opentofu.org/josh-archer/seerr/99.99.99/linux_amd64"
-          mkdir -p "$MIRROR_PATH"
-          cp terraform-provider-seerr "$MIRROR_PATH/"
-          echo "provider_installation {
-            filesystem_mirror {
-              path    = \"${{ github.workspace }}/provider-mirror\"
-              include = [\"josh-archer/seerr\"]
-            }
-            direct {}
-          }" > ${{ github.workspace }}/.tofurc
+          mkdir -p provider-mirror/linux_amd64
+          cp terraform-provider-seerr provider-mirror/linux_amd64/terraform-provider-seerr_v99.99.99
       - name: OpenTofu Init
         working-directory: tests
-        run: tofu init
+        run: tofu init -plugin-dir=${{ github.workspace }}/provider-mirror
       - name: OpenTofu Test
         working-directory: tests
         env:
