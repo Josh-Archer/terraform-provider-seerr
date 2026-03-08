@@ -291,6 +291,85 @@ func (r *RadarrServerResource) Create(ctx context.Context, req resource.CreateRe
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
+// readRadarrStateFromJSON populates all API-sourced fields of data from the
+// JSON object representing a single Radarr server entry returned by Overseerr.
+// Fields that are user-supplied and never echoed by the API (api_key, url,
+// extra_payload_json) are intentionally left untouched.
+func readRadarrStateFromJSON(ctx context.Context, item []byte, data *RadarrServerModel) error {
+	var m map[string]any
+	if err := json.Unmarshal(item, &m); err != nil {
+		return fmt.Errorf("parse radarr server response: %w", err)
+	}
+
+	if v, ok := m["name"].(string); ok {
+		data.Name = types.StringValue(v)
+	}
+	if v, ok := m["hostname"].(string); ok {
+		data.Hostname = types.StringValue(v)
+	}
+	if v, ok := m["port"].(float64); ok {
+		data.Port = types.Int64Value(int64(v))
+	}
+	if v, ok := m["useSsl"].(bool); ok {
+		data.UseSSL = types.BoolValue(v)
+	}
+	if v, ok := m["baseUrl"].(string); ok {
+		data.BaseURL = types.StringValue(v)
+	}
+	if v, ok := m["activeProfileId"].(float64); ok {
+		data.QualityProfileID = types.Int64Value(int64(v))
+	}
+	if v, ok := m["activeProfileName"].(string); ok {
+		data.QualityProfileName = types.StringValue(v)
+	}
+	if v, ok := m["activeDirectory"].(string); ok {
+		data.ActiveDirectory = types.StringValue(v)
+	}
+	if v, ok := m["is4k"].(bool); ok {
+		data.Is4K = types.BoolValue(v)
+	}
+	if v, ok := m["minimumAvailability"].(string); ok {
+		data.MinimumAvailability = types.StringValue(v)
+	}
+	if v, ok := m["isDefault"].(bool); ok {
+		data.IsDefault = types.BoolValue(v)
+	}
+	if v, ok := m["enableScan"].(bool); ok {
+		data.EnableScan = types.BoolValue(v)
+	}
+	if v, ok := m["syncEnabled"].(bool); ok {
+		data.SyncEnabled = types.BoolValue(v)
+	}
+	if v, ok := m["preventSearch"].(bool); ok {
+		data.PreventSearch = types.BoolValue(v)
+	}
+	if v, ok := m["tagRequests"].(bool); ok {
+		data.TagRequestsWithUser = types.BoolValue(v)
+	}
+
+	// tags is []float64 in JSON numbers
+	if raw, ok := m["tags"]; ok {
+		var ids []int64
+		if arr, ok := raw.([]any); ok {
+			for _, el := range arr {
+				if f, ok := el.(float64); ok {
+					ids = append(ids, int64(f))
+				}
+			}
+		}
+		if ids == nil {
+			ids = []int64{}
+		}
+		listVal, diags := types.ListValueFrom(ctx, types.Int64Type, ids)
+		if diags.HasError() {
+			return fmt.Errorf("build tags list: %s", diags[0].Detail())
+		}
+		data.Tags = listVal
+	}
+
+	return nil
+}
+
 func (r *RadarrServerResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data RadarrServerModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -313,6 +392,10 @@ func (r *RadarrServerResource) Read(ctx context.Context, req resource.ReadReques
 	}
 	if !found {
 		resp.State.RemoveResource(ctx)
+		return
+	}
+	if err := readRadarrStateFromJSON(ctx, item, &data); err != nil {
+		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
 	data.ResponseJSON = types.StringValue(string(item))

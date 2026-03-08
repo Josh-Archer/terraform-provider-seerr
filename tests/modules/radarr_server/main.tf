@@ -2,14 +2,25 @@ variable "name" { type = string }
 variable "hostname" { type = string }
 variable "port" { type = number }
 variable "api_key" { type = string }
+variable "quality_profile_id" { type = number; default = 1 }
+variable "active_directory" { type = string; default = "/movies" }
 
 resource "seerr_radarr_server" "test" {
-  name     = var.name
-  hostname = var.hostname
-  port     = var.port
-  api_key  = var.api_key
+  name               = var.name
+  hostname           = var.hostname
+  port               = var.port
+  api_key            = var.api_key
+  quality_profile_id = var.quality_profile_id
+  active_directory   = var.active_directory
 }
 
 output "id" {
   value = seerr_radarr_server.test.id
 }
+
+output "hostname" { value = seerr_radarr_server.test.hostname }
+output "port"     { value = seerr_radarr_server.test.port }
+output "quality_profile_id" { value = seerr_radarr_server.test.quality_profile_id }
+output "is_default" { value = seerr_radarr_server.test.is_default }
+output "sync_enabled" { value = seerr_radarr_server.test.sync_enabled }
+
