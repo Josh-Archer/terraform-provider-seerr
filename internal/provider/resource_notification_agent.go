@@ -30,17 +30,29 @@ type NotificationAgentModel struct {
 	EmbedPoster types.Bool   `tfsdk:"embed_poster"`
 	TypesMask   types.Int64  `tfsdk:"types"`
 
-	Discord    *NotificationAgentDiscordModel    `tfsdk:"discord"`
-	Slack      *NotificationAgentSlackModel      `tfsdk:"slack"`
-	Email      *NotificationAgentEmailModel      `tfsdk:"email"`
-	LunaSea    *NotificationAgentLunaSeaModel    `tfsdk:"lunasea"`
-	Telegram   *NotificationAgentTelegramModel   `tfsdk:"telegram"`
-	Pushbullet *NotificationAgentPushbulletModel `tfsdk:"pushbullet"`
-	Pushover   *NotificationAgentPushoverModel   `tfsdk:"pushover"`
-	Ntfy       *NotificationAgentNtfyModel       `tfsdk:"ntfy"`
-	Webhook    *NotificationAgentWebhookModel    `tfsdk:"webhook"`
-	Gotify     *NotificationAgentGotifyModel     `tfsdk:"gotify"`
-	Webpush    *NotificationAgentWebpushModel    `tfsdk:"webpush"`
+	Discord               *NotificationAgentDiscordModel    `tfsdk:"discord"`
+	Slack                 *NotificationAgentSlackModel      `tfsdk:"slack"`
+	Email                 *NotificationAgentEmailModel      `tfsdk:"email"`
+	LunaSea               *NotificationAgentLunaSeaModel    `tfsdk:"lunasea"`
+	Telegram              *NotificationAgentTelegramModel   `tfsdk:"telegram"`
+	Pushbullet            *NotificationAgentPushbulletModel `tfsdk:"pushbullet"`
+	Pushover              *NotificationAgentPushoverModel   `tfsdk:"pushover"`
+	Ntfy                  *NotificationAgentNtfyModel       `tfsdk:"ntfy"`
+	Webhook               *NotificationAgentWebhookModel    `tfsdk:"webhook"`
+	Gotify                *NotificationAgentGotifyModel     `tfsdk:"gotify"`
+	Webpush               *NotificationAgentWebpushModel    `tfsdk:"webpush"`
+	OnRequestPending      types.Bool                        `tfsdk:"on_request_pending"`
+	OnRequestApproved     types.Bool                        `tfsdk:"on_request_approved"`
+	OnRequestRejected     types.Bool                        `tfsdk:"on_request_rejected"`
+	OnRequestFailed       types.Bool                        `tfsdk:"on_request_failed"`
+	OnRequestAvailable    types.Bool                        `tfsdk:"on_request_available"`
+	OnRequestDeclined     types.Bool                        `tfsdk:"on_request_declined"`
+	OnRequestAutoApproved types.Bool                        `tfsdk:"on_request_auto_approved"`
+	OnMediaAvailable      types.Bool                        `tfsdk:"on_media_available"`
+	OnMediaFailed         types.Bool                        `tfsdk:"on_media_failed"`
+	OnMediaSkipped        types.Bool                        `tfsdk:"on_media_skipped"`
+	OnMediaIssued         types.Bool                        `tfsdk:"on_media_issued"`
+	OnMediaFollowed       types.Bool                        `tfsdk:"on_media_followed"`
 }
 
 type notificationAgentPayload struct {
@@ -119,6 +131,94 @@ func buildPayload(data *NotificationAgentModel) (string, error) {
 		Types:       data.TypesMask.ValueInt64(),
 		Options:     make(map[string]interface{}),
 	}
+
+	// Calculate types bitmask from individual booleans if they are set
+	mask := data.TypesMask.ValueInt64()
+	if !data.OnRequestPending.IsNull() && !data.OnRequestPending.IsUnknown() {
+		if data.OnRequestPending.ValueBool() {
+			mask |= 1
+		} else {
+			mask &= ^int64(1)
+		}
+	}
+	if !data.OnRequestApproved.IsNull() && !data.OnRequestApproved.IsUnknown() {
+		if data.OnRequestApproved.ValueBool() {
+			mask |= 2
+		} else {
+			mask &= ^int64(2)
+		}
+	}
+	if !data.OnRequestRejected.IsNull() && !data.OnRequestRejected.IsUnknown() {
+		if data.OnRequestRejected.ValueBool() {
+			mask |= 4
+		} else {
+			mask &= ^int64(4)
+		}
+	}
+	if !data.OnRequestFailed.IsNull() && !data.OnRequestFailed.IsUnknown() {
+		if data.OnRequestFailed.ValueBool() {
+			mask |= 8
+		} else {
+			mask &= ^int64(8)
+		}
+	}
+	if !data.OnRequestAvailable.IsNull() && !data.OnRequestAvailable.IsUnknown() {
+		if data.OnRequestAvailable.ValueBool() {
+			mask |= 16
+		} else {
+			mask &= ^int64(16)
+		}
+	}
+	if !data.OnRequestDeclined.IsNull() && !data.OnRequestDeclined.IsUnknown() {
+		if data.OnRequestDeclined.ValueBool() {
+			mask |= 32
+		} else {
+			mask &= ^int64(32)
+		}
+	}
+	if !data.OnRequestAutoApproved.IsNull() && !data.OnRequestAutoApproved.IsUnknown() {
+		if data.OnRequestAutoApproved.ValueBool() {
+			mask |= 64
+		} else {
+			mask &= ^int64(64)
+		}
+	}
+	if !data.OnMediaAvailable.IsNull() && !data.OnMediaAvailable.IsUnknown() {
+		if data.OnMediaAvailable.ValueBool() {
+			mask |= 128
+		} else {
+			mask &= ^int64(128)
+		}
+	}
+	if !data.OnMediaFailed.IsNull() && !data.OnMediaFailed.IsUnknown() {
+		if data.OnMediaFailed.ValueBool() {
+			mask |= 256
+		} else {
+			mask &= ^int64(256)
+		}
+	}
+	if !data.OnMediaSkipped.IsNull() && !data.OnMediaSkipped.IsUnknown() {
+		if data.OnMediaSkipped.ValueBool() {
+			mask |= 512
+		} else {
+			mask &= ^int64(512)
+		}
+	}
+	if !data.OnMediaIssued.IsNull() && !data.OnMediaIssued.IsUnknown() {
+		if data.OnMediaIssued.ValueBool() {
+			mask |= 1024
+		} else {
+			mask &= ^int64(1024)
+		}
+	}
+	if !data.OnMediaFollowed.IsNull() && !data.OnMediaFollowed.IsUnknown() {
+		if data.OnMediaFollowed.ValueBool() {
+			mask |= 2048
+		} else {
+			mask &= ^int64(2048)
+		}
+	}
+	payload.Types = mask
 
 	switch data.Agent.ValueString() {
 	case "discord":
@@ -292,6 +392,20 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 	data.Enabled = types.BoolValue(payload.Enabled)
 	data.EmbedPoster = types.BoolValue(payload.EmbedPoster)
 	data.TypesMask = types.Int64Value(payload.Types)
+
+	mask := payload.Types
+	data.OnRequestPending = types.BoolValue(mask&1 != 0)
+	data.OnRequestApproved = types.BoolValue(mask&2 != 0)
+	data.OnRequestRejected = types.BoolValue(mask&4 != 0)
+	data.OnRequestFailed = types.BoolValue(mask&8 != 0)
+	data.OnRequestAvailable = types.BoolValue(mask&16 != 0)
+	data.OnRequestDeclined = types.BoolValue(mask&32 != 0)
+	data.OnRequestAutoApproved = types.BoolValue(mask&64 != 0)
+	data.OnMediaAvailable = types.BoolValue(mask&128 != 0)
+	data.OnMediaFailed = types.BoolValue(mask&256 != 0)
+	data.OnMediaSkipped = types.BoolValue(mask&512 != 0)
+	data.OnMediaIssued = types.BoolValue(mask&1024 != 0)
+	data.OnMediaFollowed = types.BoolValue(mask&2048 != 0)
 
 	opt := payload.Options
 	getString := func(key string) types.String {

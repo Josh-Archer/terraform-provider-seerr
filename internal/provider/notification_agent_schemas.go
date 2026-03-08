@@ -102,6 +102,18 @@ func notificationAgentResourceAttributes() map[string]schema.Attribute {
 			Optional:   true,
 			Attributes: map[string]schema.Attribute{},
 		},
+		"on_request_pending":       schema.BoolAttribute{Optional: true, Computed: true},
+		"on_request_approved":      schema.BoolAttribute{Optional: true, Computed: true},
+		"on_request_rejected":      schema.BoolAttribute{Optional: true, Computed: true},
+		"on_request_failed":        schema.BoolAttribute{Optional: true, Computed: true},
+		"on_request_available":     schema.BoolAttribute{Optional: true, Computed: true},
+		"on_request_declined":      schema.BoolAttribute{Optional: true, Computed: true},
+		"on_request_auto_approved": schema.BoolAttribute{Optional: true, Computed: true},
+		"on_media_available":       schema.BoolAttribute{Optional: true, Computed: true},
+		"on_media_failed":          schema.BoolAttribute{Optional: true, Computed: true},
+		"on_media_skipped":         schema.BoolAttribute{Optional: true, Computed: true},
+		"on_media_issued":          schema.BoolAttribute{Optional: true, Computed: true},
+		"on_media_followed":        schema.BoolAttribute{Optional: true, Computed: true},
 	}
 }
 
@@ -202,5 +214,17 @@ func notificationAgentDataSourceAttributes() map[string]dschema.Attribute {
 			Computed:   true,
 			Attributes: map[string]dschema.Attribute{},
 		},
+		"on_request_pending":       dschema.BoolAttribute{Computed: true},
+		"on_request_approved":      dschema.BoolAttribute{Computed: true},
+		"on_request_rejected":      dschema.BoolAttribute{Computed: true},
+		"on_request_failed":        dschema.BoolAttribute{Computed: true},
+		"on_request_available":     dschema.BoolAttribute{Computed: true},
+		"on_request_declined":      dschema.BoolAttribute{Computed: true},
+		"on_request_auto_approved": dschema.BoolAttribute{Computed: true},
+		"on_media_available":       dschema.BoolAttribute{Computed: true},
+		"on_media_failed":          dschema.BoolAttribute{Computed: true},
+		"on_media_skipped":         dschema.BoolAttribute{Computed: true},
+		"on_media_issued":          dschema.BoolAttribute{Computed: true},
+		"on_media_followed":        dschema.BoolAttribute{Computed: true},
 	}
 }

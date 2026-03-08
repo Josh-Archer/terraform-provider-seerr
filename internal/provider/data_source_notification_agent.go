@@ -21,17 +21,29 @@ type NotificationAgentDataSourceModel struct {
 	EmbedPoster types.Bool   `tfsdk:"embed_poster"`
 	TypesMask   types.Int64  `tfsdk:"types"`
 
-	Discord    *NotificationAgentDiscordModel    `tfsdk:"discord"`
-	Slack      *NotificationAgentSlackModel      `tfsdk:"slack"`
-	Email      *NotificationAgentEmailModel      `tfsdk:"email"`
-	LunaSea    *NotificationAgentLunaSeaModel    `tfsdk:"lunasea"`
-	Telegram   *NotificationAgentTelegramModel   `tfsdk:"telegram"`
-	Pushbullet *NotificationAgentPushbulletModel `tfsdk:"pushbullet"`
-	Pushover   *NotificationAgentPushoverModel   `tfsdk:"pushover"`
-	Ntfy       *NotificationAgentNtfyModel       `tfsdk:"ntfy"`
-	Webhook    *NotificationAgentWebhookModel    `tfsdk:"webhook"`
-	Gotify     *NotificationAgentGotifyModel     `tfsdk:"gotify"`
-	Webpush    *NotificationAgentWebpushModel    `tfsdk:"webpush"`
+	Discord               *NotificationAgentDiscordModel    `tfsdk:"discord"`
+	Slack                 *NotificationAgentSlackModel      `tfsdk:"slack"`
+	Email                 *NotificationAgentEmailModel      `tfsdk:"email"`
+	LunaSea               *NotificationAgentLunaSeaModel    `tfsdk:"lunasea"`
+	Telegram              *NotificationAgentTelegramModel   `tfsdk:"telegram"`
+	Pushbullet            *NotificationAgentPushbulletModel `tfsdk:"pushbullet"`
+	Pushover              *NotificationAgentPushoverModel   `tfsdk:"pushover"`
+	Ntfy                  *NotificationAgentNtfyModel       `tfsdk:"ntfy"`
+	Webhook               *NotificationAgentWebhookModel    `tfsdk:"webhook"`
+	Gotify                *NotificationAgentGotifyModel     `tfsdk:"gotify"`
+	Webpush               *NotificationAgentWebpushModel    `tfsdk:"webpush"`
+	OnRequestPending      types.Bool                        `tfsdk:"on_request_pending"`
+	OnRequestApproved     types.Bool                        `tfsdk:"on_request_approved"`
+	OnRequestRejected     types.Bool                        `tfsdk:"on_request_rejected"`
+	OnRequestFailed       types.Bool                        `tfsdk:"on_request_failed"`
+	OnRequestAvailable    types.Bool                        `tfsdk:"on_request_available"`
+	OnRequestDeclined     types.Bool                        `tfsdk:"on_request_declined"`
+	OnRequestAutoApproved types.Bool                        `tfsdk:"on_request_auto_approved"`
+	OnMediaAvailable      types.Bool                        `tfsdk:"on_media_available"`
+	OnMediaFailed         types.Bool                        `tfsdk:"on_media_failed"`
+	OnMediaSkipped        types.Bool                        `tfsdk:"on_media_skipped"`
+	OnMediaIssued         types.Bool                        `tfsdk:"on_media_issued"`
+	OnMediaFollowed       types.Bool                        `tfsdk:"on_media_followed"`
 }
 
 func NewNotificationAgentDataSource() datasource.DataSource { return &NotificationAgentDataSource{} }
@@ -118,6 +130,19 @@ func (d *NotificationAgentDataSource) Read(ctx context.Context, req datasource.R
 	data.Webhook = resourceData.Webhook
 	data.Gotify = resourceData.Gotify
 	data.Webpush = resourceData.Webpush
+
+	data.OnRequestPending = resourceData.OnRequestPending
+	data.OnRequestApproved = resourceData.OnRequestApproved
+	data.OnRequestRejected = resourceData.OnRequestRejected
+	data.OnRequestFailed = resourceData.OnRequestFailed
+	data.OnRequestAvailable = resourceData.OnRequestAvailable
+	data.OnRequestDeclined = resourceData.OnRequestDeclined
+	data.OnRequestAutoApproved = resourceData.OnRequestAutoApproved
+	data.OnMediaAvailable = resourceData.OnMediaAvailable
+	data.OnMediaFailed = resourceData.OnMediaFailed
+	data.OnMediaSkipped = resourceData.OnMediaSkipped
+	data.OnMediaIssued = resourceData.OnMediaIssued
+	data.OnMediaFollowed = resourceData.OnMediaFollowed
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
