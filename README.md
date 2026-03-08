@@ -185,6 +185,23 @@ go test ./...
 go build .
 ```
 
+## Contributor workflow
+
+Before pushing changes, keep generated docs and Go formatting current:
+
+```bash
+go generate ./...
+gofmt -w .
+```
+
+This repo includes a tracked `pre-push` hook at `.githooks/pre-push`. Enable it once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The hook runs the same generated-file verification used by CI and fails the push if generated docs or formatting are stale.
+
 ## Release and publish
 
 Releases are created from git tags matching `v*` by GitHub Actions.
