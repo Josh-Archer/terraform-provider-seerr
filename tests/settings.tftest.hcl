@@ -35,6 +35,26 @@ run "plex_settings_lifecycle" {
   }
 }
 
+run "jellyfin_settings_lifecycle" {
+  command = apply
+
+  variables {
+    ip      = "127.0.0.1"
+    port    = 8096
+    api_key = "abc123mockkey"
+  }
+
+  module {
+    source = "./modules/jellyfin_settings"
+  }
+
+  assert {
+    condition     = seerr_jellyfin_settings.test.ip == var.ip
+    error_message = "Jellyfin settings ip did not match expected value"
+  }
+}
+
+
 # Note: user_id 1 is usually the admin
 run "watchlist_settings_lifecycle" {
   command = apply

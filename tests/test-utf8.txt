@@ -1,0 +1,16 @@
+﻿api_objects.tftest.hcl... [31mfail[0m[0m
+  run "api_object_lifecycle"... [31mfail[0m[0m
+  run "api_request_data_source"... [37mskip[0m[0m
+servers.tftest.hcl... [31mfail[0m[0m
+  run "radarr_lifecycle"... [31mfail[0m[0m
+  run "sonarr_lifecycle"... [37mskip[0m[0m
+settings.tftest.hcl... [31mfail[0m[0m
+  run "main_settings_lifecycle"... [31mfail[0m[0m
+  run "plex_settings_lifecycle"... [37mskip[0m[0m
+  run "jellyfin_settings_lifecycle"... [37mskip[0m[0m
+  run "watchlist_settings_lifecycle"... [37mskip[0m[0m
+user.tftest.hcl... [31mfail[0m[0m
+  run "user_lifecycle"... [31mfail[0m[0m
+  run "user_data_source"... [37mskip[0m[0m
+
+[31mFailure![0m[0m 0 passed, 4 failed, 6 skipped.
