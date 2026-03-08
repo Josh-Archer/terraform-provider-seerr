@@ -7,45 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// sampleRadarrJSON returns a realistic Overseerr API payload for a single
-// Radarr server. The api_key is never returned by the real API.
-func sampleRadarrJSON(name, hostname string, port int, profileID int, tags []int) string {
-	tagsJSON := "[]"
-	if len(tags) > 0 {
-		tagsJSON = "["
-		for i, t := range tags {
-			if i > 0 {
-				tagsJSON += ","
-			}
-			tagsJSON += formatInt(t)
-		}
-		tagsJSON += "]"
-	}
-	return `{
-		"id":                  1,
-		"name":                "` + name + `",
-		"hostname":            "` + hostname + `",
-		"port":                ` + formatInt(port) + `,
-		"useSsl":              false,
-		"baseUrl":             "",
-		"activeProfileId":     ` + formatInt(profileID) + `,
-		"activeProfileName":   "HD-1080p",
-		"activeDirectory":     "/movies",
-		"is4k":                false,
-		"minimumAvailability": "announced",
-		"tags":                ` + tagsJSON + `,
-		"isDefault":           true,
-		"enableScan":          true,
-		"syncEnabled":         true,
-		"preventSearch":       false,
-		"tagRequests":         true
-	}`
-}
-
-func formatInt(i int) string {
-	return string([]byte{byte('0' + i%10)})
-}
-
 // TestReadRadarrStateFromJSON_AllFields verifies that every API-mapped field is
 // populated correctly from a full JSON payload.
 func TestReadRadarrStateFromJSON_AllFields(t *testing.T) {
