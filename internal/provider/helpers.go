@@ -15,6 +15,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+func normalizeServerIdentity(id, fallbackID types.String, serverID, fallbackServerID types.Int64) (types.String, types.Int64) {
+	if serverID.IsNull() || serverID.IsUnknown() {
+		serverID = fallbackServerID
+	}
+
+	if id.IsNull() || id.IsUnknown() || strings.TrimSpace(id.ValueString()) == "" {
+		switch {
+		case !serverID.IsNull() && !serverID.IsUnknown():
+			id = types.StringValue(strconv.FormatInt(serverID.ValueInt64(), 10))
+		default:
+			id = fallbackID
+		}
+	}
+
+	return id, serverID
+}
+
 func mapFromTypesMap(ctx context.Context, input types.Map) (map[string]string, diag.Diagnostics) {
 	out := map[string]string{}
 	if input.IsNull() || input.IsUnknown() {

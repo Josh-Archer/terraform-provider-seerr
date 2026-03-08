@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -66,7 +67,12 @@ func (r *RadarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"server_id": schema.Int64Attribute{Computed: true},
+			"server_id": schema.Int64Attribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
+			},
 			"name": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
@@ -314,11 +320,18 @@ func (r *RadarrServerResource) Read(ctx context.Context, req resource.ReadReques
 }
 
 func (r *RadarrServerResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var state RadarrServerModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	var data RadarrServerModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	data.ID, data.ServerID = normalizeServerIdentity(data.ID, state.ID, data.ServerID, state.ServerID)
 	normalizedData, body, err := r.payload(ctx, data)
 	if err != nil {
 		resp.Diagnostics.AddError("Update Failed", err.Error())
