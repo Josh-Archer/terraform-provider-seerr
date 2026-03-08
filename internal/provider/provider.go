@@ -111,6 +111,7 @@ func (p *SeerrProvider) Configure(ctx context.Context, req provider.ConfigureReq
 func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewAPIObjectResource,
+		NewJobScheduleResource,
 		NewMainSettingsResource,
 		NewPlexSettingsResource,
 		NewJellyfinSettingsResource,
@@ -121,6 +122,7 @@ func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewUserWatchlistSettingsResource,
 		NewAPIKeyResource,
 		NewUserResource,
+		NewDiscoverSliderResource,
 	}
 }
 
