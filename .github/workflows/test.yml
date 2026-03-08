@@ -8,8 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: write
-  contents: write
+  contents: read
 
 jobs:
   build-test:
@@ -23,11 +22,8 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: go mod download
-      - run: go generate ./...
-      - run: gofmt -w .
-      - uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "docs(auto): regenerate provider documentation"
+      - name: Verify generated docs and formatting are up to date
+        run: bash ./tools/check-generated.sh
       - run: go build ./...
       - run: go test ./...
       - name: Run linters
