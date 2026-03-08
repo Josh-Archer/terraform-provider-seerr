@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    seerr = {
+      source = "josh-archer/seerr"
+    }
+  }
+}
+
 variable "application_url" { type = string }
 variable "application_title" { type = string }
 
@@ -9,3 +17,4 @@ resource "seerr_main_settings" "test" {
 output "application_url" {
   value = seerr_main_settings.test.application_url
 }
+

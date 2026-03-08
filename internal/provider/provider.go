@@ -74,7 +74,12 @@ func (p *SeerrProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 	baseURL := strings.TrimSpace(data.URL.ValueString())
 	apiKey := strings.TrimSpace(data.APIKey.ValueString())
-	if baseURL == "" || apiKey == "" {
+	if baseURL == "" {
+		resp.Diagnostics.AddError("Missing Base URL", "Provider requires a 'url' to be set.")
+		return
+	}
+	if apiKey == "" {
+		resp.Diagnostics.AddError("Missing API Key", "Provider requires an 'api_key' to be set.")
 		return
 	}
 

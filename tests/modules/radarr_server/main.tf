@@ -1,9 +1,23 @@
+terraform {
+  required_providers {
+    seerr = {
+      source = "josh-archer/seerr"
+    }
+  }
+}
+
 variable "name" { type = string }
 variable "hostname" { type = string }
 variable "port" { type = number }
 variable "api_key" { type = string }
-variable "quality_profile_id" { type = number; default = 1 }
-variable "active_directory" { type = string; default = "/movies" }
+variable "quality_profile_id" {
+  type    = number
+  default = 1
+}
+variable "active_directory" {
+  type    = string
+  default = "/movies"
+}
 
 resource "seerr_radarr_server" "test" {
   name               = var.name
@@ -23,4 +37,5 @@ output "port"     { value = seerr_radarr_server.test.port }
 output "quality_profile_id" { value = seerr_radarr_server.test.quality_profile_id }
 output "is_default" { value = seerr_radarr_server.test.is_default }
 output "sync_enabled" { value = seerr_radarr_server.test.sync_enabled }
+
 

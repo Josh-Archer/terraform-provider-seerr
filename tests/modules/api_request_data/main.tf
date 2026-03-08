@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    seerr = {
+      source = "josh-archer/seerr"
+    }
+  }
+}
+
 variable "endpoint" { type = string }
 
 data "seerr_api_request" "test" {
@@ -7,3 +15,4 @@ data "seerr_api_request" "test" {
 output "response" {
   value = data.seerr_api_request.test.response_json
 }
+

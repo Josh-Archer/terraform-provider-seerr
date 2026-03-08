@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    seerr = {
+      source = "josh-archer/seerr"
+    }
+  }
+}
+
 variable "username" { type = string }
 variable "email" { type = string }
 variable "permissions" { type = number }
@@ -15,3 +23,4 @@ output "id" {
 output "username" {
   value = seerr_user.test.username
 }
+

@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    seerr = {
+      source = "josh-archer/seerr"
+    }
+  }
+}
+
 variable "email" { type = string }
 
 data "seerr_user" "test" {
@@ -7,3 +15,4 @@ data "seerr_user" "test" {
 output "id" {
   value = data.seerr_user.test.id
 }
+
