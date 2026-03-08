@@ -46,18 +46,22 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Build Provider
-        run: go build -v -o terraform-provider-seerr
+        run: go build -v -o ${{ github.workspace }}/terraform-provider-seerr
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: 1.6.0
-      - name: Setup Provider Mirror
+      - name: Setup Dev Overrides
         run: |
-          mkdir -p provider-mirror/linux_amd64
-          cp terraform-provider-seerr provider-mirror/linux_amd64/terraform-provider-seerr_v99.99.99
-      - name: OpenTofu Init
-        working-directory: tests
-        run: tofu init -plugin-dir=${{ github.workspace }}/provider-mirror
+          cat > $HOME/.tofurc << EOF
+          provider_installation {
+            dev_overrides {
+              "josh-archer/seerr" = "${{ github.workspace }}"
+            }
+            direct {}
+          }
+          EOF
+          echo "TF_CLI_CONFIG_FILE=$HOME/.tofurc" >> $GITHUB_ENV
       - name: OpenTofu Test
         working-directory: tests
         env:
