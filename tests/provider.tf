@@ -10,12 +10,14 @@ terraform {
 variable "url" {
   type        = string
   description = "The URL of the Overseerr instance"
+  default     = "http://localhost:5055"
 }
 
 variable "api_key" {
   type        = string
   description = "The API key for the Overseerr instance"
   sensitive   = true
+  default     = "dummy"
 }
 
 provider "seerr" {

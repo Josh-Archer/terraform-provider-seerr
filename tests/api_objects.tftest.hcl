@@ -2,9 +2,8 @@ run "api_object_lifecycle" {
   command = apply
 
   variables {
-    name     = "tofu_api_test"
-    endpoint = "/api/v1/settings/main"
-    payload  = jsonencode({ applicationTitle = "tofu_api_test" })
+    path         = "/api/v1/settings/main"
+    request_body = jsonencode({ applicationTitle = "tofu_api_test" })
   }
 
   module {
@@ -12,8 +11,8 @@ run "api_object_lifecycle" {
   }
 
   assert {
-    condition     = seerr_api_object.test.name == var.name
-    error_message = "API object name did not match expected value"
+    condition     = seerr_api_object.test.status_code == 200
+    error_message = "API object status_code was not 200"
   }
 }
 

@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    seerr = {
+      source = "josh-archer/seerr"
+    }
+  }
+}
+
 resource "seerr_discover_slider" "all" {
   sliders {
     type    = 1 # Recently Added TV

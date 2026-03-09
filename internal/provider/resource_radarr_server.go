@@ -398,6 +398,18 @@ func (r *RadarrServerResource) Read(ctx context.Context, req resource.ReadReques
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
+
+	// Preserve fields not returned by the API
+	var state RadarrServerModel
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	data.APIKey = state.APIKey
+	data.URL = state.URL
+	data.ExtraPayloadJSON = state.ExtraPayloadJSON
+
 	data.ResponseJSON = types.StringValue(string(item))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
