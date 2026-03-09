@@ -53,6 +53,11 @@ type NotificationAgentModel struct {
 	OnMediaSkipped        types.Bool                        `tfsdk:"on_media_skipped"`
 	OnMediaIssued         types.Bool                        `tfsdk:"on_media_issued"`
 	OnMediaFollowed       types.Bool                        `tfsdk:"on_media_followed"`
+	OnIssueCreated        types.Bool                        `tfsdk:"on_issue_created"`
+	OnIssueComment        types.Bool                        `tfsdk:"on_issue_comment"`
+	OnIssueResolved       types.Bool                        `tfsdk:"on_issue_resolved"`
+	OnIssueReopened       types.Bool                        `tfsdk:"on_issue_reopened"`
+	OnMediaAutoRequested  types.Bool                        `tfsdk:"on_media_auto_requested"`
 }
 
 type notificationAgentPayload struct {
@@ -134,90 +139,36 @@ func buildPayload(data *NotificationAgentModel) (string, error) {
 
 	// Calculate types bitmask from individual booleans if they are set
 	mask := data.TypesMask.ValueInt64()
-	if !data.OnRequestPending.IsNull() && !data.OnRequestPending.IsUnknown() {
-		if data.OnRequestPending.ValueBool() {
-			mask |= 1
-		} else {
-			mask &= ^int64(1)
+	updateMask := func(val types.Bool, bit int64) {
+		if !val.IsNull() && !val.IsUnknown() {
+			if val.ValueBool() {
+				mask |= bit
+			} else {
+				mask &= ^bit
+			}
 		}
 	}
-	if !data.OnRequestApproved.IsNull() && !data.OnRequestApproved.IsUnknown() {
-		if data.OnRequestApproved.ValueBool() {
-			mask |= 2
-		} else {
-			mask &= ^int64(2)
-		}
-	}
-	if !data.OnRequestRejected.IsNull() && !data.OnRequestRejected.IsUnknown() {
-		if data.OnRequestRejected.ValueBool() {
-			mask |= 4
-		} else {
-			mask &= ^int64(4)
-		}
-	}
-	if !data.OnRequestFailed.IsNull() && !data.OnRequestFailed.IsUnknown() {
-		if data.OnRequestFailed.ValueBool() {
-			mask |= 8
-		} else {
-			mask &= ^int64(8)
-		}
-	}
-	if !data.OnRequestAvailable.IsNull() && !data.OnRequestAvailable.IsUnknown() {
-		if data.OnRequestAvailable.ValueBool() {
-			mask |= 16
-		} else {
-			mask &= ^int64(16)
-		}
-	}
-	if !data.OnRequestDeclined.IsNull() && !data.OnRequestDeclined.IsUnknown() {
-		if data.OnRequestDeclined.ValueBool() {
-			mask |= 32
-		} else {
-			mask &= ^int64(32)
-		}
-	}
-	if !data.OnRequestAutoApproved.IsNull() && !data.OnRequestAutoApproved.IsUnknown() {
-		if data.OnRequestAutoApproved.ValueBool() {
-			mask |= 64
-		} else {
-			mask &= ^int64(64)
-		}
-	}
-	if !data.OnMediaAvailable.IsNull() && !data.OnMediaAvailable.IsUnknown() {
-		if data.OnMediaAvailable.ValueBool() {
-			mask |= 128
-		} else {
-			mask &= ^int64(128)
-		}
-	}
-	if !data.OnMediaFailed.IsNull() && !data.OnMediaFailed.IsUnknown() {
-		if data.OnMediaFailed.ValueBool() {
-			mask |= 256
-		} else {
-			mask &= ^int64(256)
-		}
-	}
-	if !data.OnMediaSkipped.IsNull() && !data.OnMediaSkipped.IsUnknown() {
-		if data.OnMediaSkipped.ValueBool() {
-			mask |= 512
-		} else {
-			mask &= ^int64(512)
-		}
-	}
-	if !data.OnMediaIssued.IsNull() && !data.OnMediaIssued.IsUnknown() {
-		if data.OnMediaIssued.ValueBool() {
-			mask |= 1024
-		} else {
-			mask &= ^int64(1024)
-		}
-	}
-	if !data.OnMediaFollowed.IsNull() && !data.OnMediaFollowed.IsUnknown() {
-		if data.OnMediaFollowed.ValueBool() {
-			mask |= 2048
-		} else {
-			mask &= ^int64(2048)
-		}
-	}
+
+	updateMask(data.OnRequestPending, 2)
+	updateMask(data.OnRequestApproved, 4)
+	updateMask(data.OnMediaAvailable, 8)
+	updateMask(data.OnMediaFailed, 16)
+	updateMask(data.OnRequestDeclined, 64)
+	updateMask(data.OnRequestAutoApproved, 128)
+	updateMask(data.OnIssueCreated, 256)
+	updateMask(data.OnIssueComment, 512)
+	updateMask(data.OnIssueResolved, 1024)
+	updateMask(data.OnIssueReopened, 2048)
+	updateMask(data.OnMediaAutoRequested, 4096)
+
+	// Keep existing ones for backward compatibility or if they are still used in some contexts
+	updateMask(data.OnRequestRejected, 4) // Duplicate of Approved in some contexts? Or just 4 in old.
+	updateMask(data.OnRequestFailed, 8)
+	updateMask(data.OnRequestAvailable, 16)
+	updateMask(data.OnMediaSkipped, 512)
+	updateMask(data.OnMediaIssued, 1024)
+	updateMask(data.OnMediaFollowed, 2048)
+
 	payload.Types = mask
 
 	switch data.Agent.ValueString() {
@@ -394,18 +345,23 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 	data.TypesMask = types.Int64Value(payload.Types)
 
 	mask := payload.Types
-	data.OnRequestPending = types.BoolValue(mask&1 != 0)
-	data.OnRequestApproved = types.BoolValue(mask&2 != 0)
-	data.OnRequestRejected = types.BoolValue(mask&4 != 0)
+	data.OnRequestPending = types.BoolValue(mask&2 != 0)
+	data.OnRequestApproved = types.BoolValue(mask&4 != 0)
+	data.OnRequestRejected = types.BoolValue(mask&4 != 0) // Align with Approved or 4 in old.
 	data.OnRequestFailed = types.BoolValue(mask&8 != 0)
 	data.OnRequestAvailable = types.BoolValue(mask&16 != 0)
-	data.OnRequestDeclined = types.BoolValue(mask&32 != 0)
-	data.OnRequestAutoApproved = types.BoolValue(mask&64 != 0)
-	data.OnMediaAvailable = types.BoolValue(mask&128 != 0)
-	data.OnMediaFailed = types.BoolValue(mask&256 != 0)
+	data.OnRequestDeclined = types.BoolValue(mask&64 != 0)
+	data.OnRequestAutoApproved = types.BoolValue(mask&128 != 0)
+	data.OnMediaAvailable = types.BoolValue(mask&8 != 0)
+	data.OnMediaFailed = types.BoolValue(mask&16 != 0)
 	data.OnMediaSkipped = types.BoolValue(mask&512 != 0)
 	data.OnMediaIssued = types.BoolValue(mask&1024 != 0)
 	data.OnMediaFollowed = types.BoolValue(mask&2048 != 0)
+	data.OnIssueCreated = types.BoolValue(mask&256 != 0)
+	data.OnIssueComment = types.BoolValue(mask&512 != 0)
+	data.OnIssueResolved = types.BoolValue(mask&1024 != 0)
+	data.OnIssueReopened = types.BoolValue(mask&2048 != 0)
+	data.OnMediaAutoRequested = types.BoolValue(mask&4096 != 0)
 
 	opt := payload.Options
 	getString := func(key string) types.String {

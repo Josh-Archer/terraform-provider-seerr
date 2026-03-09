@@ -37,23 +37,52 @@ func TestAccUserResource(t *testing.T) {
 					resource.TestCheckResourceAttr("seerr_user.test", "permissions", "32"),
 				),
 			},
-			// Update Notification Settings
+			// Update Full Settings
 			{
-				Config: testAccUserResourceConfigWithNotifications(updatedUsername, email, 32),
+				Config: testAccUserResourceConfigFull(updatedUsername, email, 32),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("seerr_user.test", "notification_settings.discord_enabled", "true"),
-					resource.TestCheckResourceAttr("seerr_user.test", "notification_settings.discord_id", "123456789"),
-					resource.TestCheckResourceAttr("seerr_user.test", "notification_settings.notification_types.discord", "2"),
+					resource.TestCheckResourceAttr("seerr_user.test", "locale", "en"),
+					resource.TestCheckResourceAttr("seerr_user.test", "discover_region", "US"),
+					resource.TestCheckResourceAttr("seerr_user.test", "notification_settings.telegram_message_thread_id", "1"),
+					resource.TestCheckResourceAttr("seerr_user.test", "notification_settings.notification_types.webpush", "256"),
 				),
 			},
 			// Import
 			{
-				ResourceName:      "seerr_user.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "seerr_user.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"notification_settings.pushbullet_access_token", "notification_settings.pushover_application_token", "notification_settings.pushover_user_key"},
 			},
 		},
 	})
+}
+
+func testAccUserResourceConfigFull(username, email string, permissions int) string {
+	return fmt.Sprintf(`
+resource "seerr_user" "test" {
+  username          = %[1]q
+  email             = %[2]q
+  permissions       = %[3]d
+  locale            = "en"
+  discover_region   = "US"
+  streaming_region  = "US"
+  original_language = "en"
+  watchlist_sync_movies = true
+  watchlist_sync_tv     = true
+
+  notification_settings {
+    discord_enabled            = true
+    discord_id                 = "123456789"
+    telegram_message_thread_id = "1"
+    
+    notification_types {
+      discord    = 2
+      webpush    = 256
+    }
+  }
+}
+`, username, email, permissions)
 }
 
 func testAccUserResourceConfig(username, email string, permissions int) string {
@@ -73,11 +102,11 @@ resource "seerr_user" "test" {
   email       = %[2]q
   permissions = %[3]d
 
-  notification_settings = {
+  notification_settings {
     discord_enabled = true
     discord_id      = "123456789"
     
-    notification_types = {
+    notification_types {
       discord = 2
     }
   }

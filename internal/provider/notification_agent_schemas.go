@@ -114,6 +114,11 @@ func notificationAgentResourceAttributes() map[string]schema.Attribute {
 		"on_media_skipped":         schema.BoolAttribute{Optional: true, Computed: true},
 		"on_media_issued":          schema.BoolAttribute{Optional: true, Computed: true},
 		"on_media_followed":        schema.BoolAttribute{Optional: true, Computed: true},
+		"on_issue_created":         schema.BoolAttribute{Optional: true, Computed: true},
+		"on_issue_comment":         schema.BoolAttribute{Optional: true, Computed: true},
+		"on_issue_resolved":        schema.BoolAttribute{Optional: true, Computed: true},
+		"on_issue_reopened":        schema.BoolAttribute{Optional: true, Computed: true},
+		"on_media_auto_requested":  schema.BoolAttribute{Optional: true, Computed: true},
 	}
 }
 
@@ -226,5 +231,10 @@ func notificationAgentDataSourceAttributes() map[string]dschema.Attribute {
 		"on_media_skipped":         dschema.BoolAttribute{Computed: true},
 		"on_media_issued":          dschema.BoolAttribute{Computed: true},
 		"on_media_followed":        dschema.BoolAttribute{Computed: true},
+		"on_issue_created":         dschema.BoolAttribute{Computed: true},
+		"on_issue_comment":         dschema.BoolAttribute{Computed: true},
+		"on_issue_resolved":        dschema.BoolAttribute{Computed: true},
+		"on_issue_reopened":        dschema.BoolAttribute{Computed: true},
+		"on_media_auto_requested":  dschema.BoolAttribute{Computed: true},
 	}
 }

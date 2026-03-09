@@ -31,6 +31,8 @@ type UserNotificationTypesModel struct {
 	Telegram   types.Int64 `tfsdk:"telegram"`
 	Webhook    types.Int64 `tfsdk:"webhook"`
 	Webpush    types.Int64 `tfsdk:"webpush"`
+	Gotify     types.Int64 `tfsdk:"gotify"`
+	Ntfy       types.Int64 `tfsdk:"ntfy"`
 }
 
 type UserNotificationSettingsModel struct {
@@ -45,7 +47,9 @@ type UserNotificationSettingsModel struct {
 	TelegramEnabled          types.Bool                  `tfsdk:"telegram_enabled"`
 	TelegramBotUsername      types.String                `tfsdk:"telegram_bot_username"`
 	TelegramChatID           types.String                `tfsdk:"telegram_chat_id"`
+	TelegramMessageThreadID  types.String                `tfsdk:"telegram_message_thread_id"`
 	TelegramSendSilently     types.Bool                  `tfsdk:"telegram_send_silently"`
+	WebpushEnabled           types.Bool                  `tfsdk:"webpush_enabled"`
 	NotificationTypes        *UserNotificationTypesModel `tfsdk:"notification_types"`
 }
 
@@ -55,6 +59,12 @@ type UserModel struct {
 	Username             types.String                   `tfsdk:"username"`
 	PlexID               types.String                   `tfsdk:"plex_id"`
 	Permissions          types.Int64                    `tfsdk:"permissions"`
+	Locale               types.String                   `tfsdk:"locale"`
+	DiscoverRegion       types.String                   `tfsdk:"discover_region"`
+	StreamingRegion      types.String                   `tfsdk:"streaming_region"`
+	OriginalLanguage     types.String                   `tfsdk:"original_language"`
+	WatchlistSyncMovies  types.Bool                     `tfsdk:"watchlist_sync_movies"`
+	WatchlistSyncTv      types.Bool                     `tfsdk:"watchlist_sync_tv"`
 	NotificationSettings *UserNotificationSettingsModel `tfsdk:"notification_settings"`
 }
 
@@ -102,6 +112,36 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
+			"locale": schema.StringAttribute{
+				MarkdownDescription: "User's preferred locale.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"discover_region": schema.StringAttribute{
+				MarkdownDescription: "User's preferred discovery region.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"streaming_region": schema.StringAttribute{
+				MarkdownDescription: "User's preferred streaming region.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"original_language": schema.StringAttribute{
+				MarkdownDescription: "User's preferred original language.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"watchlist_sync_movies": schema.BoolAttribute{
+				MarkdownDescription: "Enable watchlist sync for movies.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"watchlist_sync_tv": schema.BoolAttribute{
+				MarkdownDescription: "Enable watchlist sync for TV shows.",
+				Optional:            true,
+				Computed:            true,
+			},
 		},
 		Blocks: map[string]schema.Block{
 			"notification_settings": schema.SingleNestedBlock{
@@ -118,7 +158,9 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 					"telegram_enabled":           schema.BoolAttribute{Optional: true, Computed: true},
 					"telegram_bot_username":      schema.StringAttribute{Optional: true},
 					"telegram_chat_id":           schema.StringAttribute{Optional: true},
+					"telegram_message_thread_id": schema.StringAttribute{Optional: true},
 					"telegram_send_silently":     schema.BoolAttribute{Optional: true, Computed: true},
+					"webpush_enabled":            schema.BoolAttribute{Computed: true},
 				},
 				Blocks: map[string]schema.Block{
 					"notification_types": schema.SingleNestedBlock{
@@ -131,6 +173,8 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 							"telegram":   schema.Int64Attribute{Optional: true, Computed: true},
 							"webhook":    schema.Int64Attribute{Optional: true, Computed: true},
 							"webpush":    schema.Int64Attribute{Optional: true, Computed: true},
+							"gotify":     schema.Int64Attribute{Optional: true, Computed: true},
+							"ntfy":       schema.Int64Attribute{Optional: true, Computed: true},
 						},
 					},
 				},
@@ -233,7 +277,13 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	data.ID = types.StringValue(userIDStr)
 
-	// Update Notification Settings if provided
+	// Update main settings
+	if err := r.updateMainSettings(ctx, userIDStr, &data); err != nil {
+		resp.Diagnostics.AddError("Update Main Settings Failed", err.Error())
+		return
+	}
+
+	// Update Notification Settings
 	if data.NotificationSettings != nil {
 		if err := r.updateNotificationSettings(ctx, userIDStr, data.NotificationSettings); err != nil {
 			resp.Diagnostics.AddError("Update Notification Settings Failed", err.Error())
@@ -282,6 +332,32 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		data.Permissions = types.Int64Value(int64(p))
 	}
 
+	// Read Main Settings
+	mainRes, err := r.client.Request(ctx, "GET", fmt.Sprintf("/api/v1/user/%s/settings/main", userID), "", nil)
+	if err == nil && StatusIsOK(mainRes.StatusCode) {
+		var mainMap map[string]any
+		if err := json.Unmarshal(mainRes.Body, &mainMap); err == nil {
+			if v, ok := mainMap["locale"].(string); ok {
+				data.Locale = types.StringValue(v)
+			}
+			if v, ok := mainMap["discoverRegion"].(string); ok {
+				data.DiscoverRegion = types.StringValue(v)
+			}
+			if v, ok := mainMap["streamingRegion"].(string); ok {
+				data.StreamingRegion = types.StringValue(v)
+			}
+			if v, ok := mainMap["originalLanguage"].(string); ok {
+				data.OriginalLanguage = types.StringValue(v)
+			}
+			if v, ok := mainMap["watchlistSyncMovies"].(bool); ok {
+				data.WatchlistSyncMovies = types.BoolValue(v)
+			}
+			if v, ok := mainMap["watchlistSyncTv"].(bool); ok {
+				data.WatchlistSyncTv = types.BoolValue(v)
+			}
+		}
+	}
+
 	// Read Notification Settings
 	notifRes, err := r.client.Request(ctx, "GET", fmt.Sprintf("/api/v1/user/%s/settings/notifications", userID), "", nil)
 	if err == nil && StatusIsOK(notifRes.StatusCode) {
@@ -319,6 +395,12 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
+	// Update main settings
+	if err := r.updateMainSettings(ctx, userID, &data); err != nil {
+		resp.Diagnostics.AddError("Update Main Settings Failed", err.Error())
+		return
+	}
+
 	// Update Notification Settings
 	if data.NotificationSettings != nil {
 		if err := r.updateNotificationSettings(ctx, userID, data.NotificationSettings); err != nil {
@@ -352,6 +434,43 @@ func (r *UserResource) ImportState(ctx context.Context, req resource.ImportState
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
+func (r *UserResource) updateMainSettings(ctx context.Context, userID string, data *UserModel) error {
+	payload := map[string]any{
+		"username": data.Username.ValueString(),
+		"email":    data.Email.ValueString(),
+	}
+
+	if !data.Locale.IsNull() && !data.Locale.IsUnknown() {
+		payload["locale"] = data.Locale.ValueString()
+	}
+	if !data.DiscoverRegion.IsNull() && !data.DiscoverRegion.IsUnknown() {
+		payload["discoverRegion"] = data.DiscoverRegion.ValueString()
+	}
+	if !data.StreamingRegion.IsNull() && !data.StreamingRegion.IsUnknown() {
+		payload["streamingRegion"] = data.StreamingRegion.ValueString()
+	}
+	if !data.OriginalLanguage.IsNull() && !data.OriginalLanguage.IsUnknown() {
+		payload["originalLanguage"] = data.OriginalLanguage.ValueString()
+	}
+	if !data.WatchlistSyncMovies.IsNull() && !data.WatchlistSyncMovies.IsUnknown() {
+		payload["watchlistSyncMovies"] = data.WatchlistSyncMovies.ValueBool()
+	}
+	if !data.WatchlistSyncTv.IsNull() && !data.WatchlistSyncTv.IsUnknown() {
+		payload["watchlistSyncTv"] = data.WatchlistSyncTv.ValueBool()
+	}
+
+	body, _ := json.Marshal(payload)
+	path := fmt.Sprintf("/api/v1/user/%s/settings/main", userID)
+	res, err := r.client.Request(ctx, "POST", path, string(body), nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("main settings status %d: %s", res.StatusCode, string(res.Body))
+	}
+	return nil
+}
+
 func (r *UserResource) updateNotificationSettings(ctx context.Context, userID string, settings *UserNotificationSettingsModel) error {
 	payload := map[string]any{
 		"emailEnabled":             settings.EmailEnabled.ValueBool(),
@@ -365,6 +484,7 @@ func (r *UserResource) updateNotificationSettings(ctx context.Context, userID st
 		"telegramEnabled":          settings.TelegramEnabled.ValueBool(),
 		"telegramBotUsername":      settings.TelegramBotUsername.ValueString(),
 		"telegramChatId":           settings.TelegramChatID.ValueString(),
+		"telegramMessageThreadId":  settings.TelegramMessageThreadID.ValueString(),
 		"telegramSendSilently":     settings.TelegramSendSilently.ValueBool(),
 	}
 
@@ -378,6 +498,8 @@ func (r *UserResource) updateNotificationSettings(ctx context.Context, userID st
 			"telegram":   settings.NotificationTypes.Telegram.ValueInt64(),
 			"webhook":    settings.NotificationTypes.Webhook.ValueInt64(),
 			"webpush":    settings.NotificationTypes.Webpush.ValueInt64(),
+			"gotify":     settings.NotificationTypes.Gotify.ValueInt64(),
+			"ntfy":       settings.NotificationTypes.Ntfy.ValueInt64(),
 		}
 	}
 
@@ -432,6 +554,9 @@ func (r *UserResource) mapNotificationSettings(notifMap map[string]any) *UserNot
 	if v, ok := notifMap["telegramSendSilently"].(bool); ok {
 		settings.TelegramSendSilently = types.BoolValue(v)
 	}
+	if v, ok := notifMap["telegramMessageThreadId"].(string); ok {
+		settings.TelegramMessageThreadID = types.StringValue(v)
+	}
 
 	if typesMap, ok := notifMap["notificationTypes"].(map[string]any); ok {
 		settings.NotificationTypes = &UserNotificationTypesModel{
@@ -443,6 +568,8 @@ func (r *UserResource) mapNotificationSettings(notifMap map[string]any) *UserNot
 			Telegram:   r.toInt64(typesMap["telegram"]),
 			Webhook:    r.toInt64(typesMap["webhook"]),
 			Webpush:    r.toInt64(typesMap["webpush"]),
+			Gotify:     r.toInt64(typesMap["gotify"]),
+			Ntfy:       r.toInt64(typesMap["ntfy"]),
 		}
 	}
 
