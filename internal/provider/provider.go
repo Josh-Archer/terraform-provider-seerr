@@ -140,6 +140,7 @@ func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource 
 func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewAPIRequestDataSource,
+		NewPublicSettingsDataSource,
 		NewMainSettingsDataSource,
 		NewPlexSettingsDataSource,
 		NewJellyfinSettingsDataSource,

@@ -21,23 +21,27 @@ type MainSettingsResource struct {
 }
 
 type MainSettingsModel struct {
-	ID                 types.String `tfsdk:"id"`
-	AppTitle           types.String `tfsdk:"app_title"`
-	ApplicationURL     types.String `tfsdk:"application_url"`
-	TrustProxy         types.Bool   `tfsdk:"trust_proxy"`
-	CSRFProtection     types.Bool   `tfsdk:"csrf_protection"`
-	ImageProxy         types.Bool   `tfsdk:"image_proxy"`
-	Locale             types.String `tfsdk:"locale"`
-	Region             types.String `tfsdk:"region"`
-	OriginalLanguage   types.String `tfsdk:"original_language"`
-	HideAvailable      types.Bool   `tfsdk:"hide_available"`
-	PartialRequests    types.Bool   `tfsdk:"partial_requests"`
-	LocalLogin         types.Bool   `tfsdk:"local_login"`
-	NewPlexLogin       types.Bool   `tfsdk:"new_plex_login"`
-	MovieRequestLimit  types.Int64  `tfsdk:"movie_request_limit"`
-	SeriesRequestLimit types.Int64  `tfsdk:"series_request_limit"`
-	ResponseJSON       types.String `tfsdk:"response_json"`
-	StatusCode         types.Int64  `tfsdk:"status_code"`
+	ID                    types.String `tfsdk:"id"`
+	AppTitle              types.String `tfsdk:"app_title"`
+	ApplicationURL        types.String `tfsdk:"application_url"`
+	TrustProxy            types.Bool   `tfsdk:"trust_proxy"`
+	CSRFProtection        types.Bool   `tfsdk:"csrf_protection"`
+	ImageProxy            types.Bool   `tfsdk:"image_proxy"`
+	Locale                types.String `tfsdk:"locale"`
+	Region                types.String `tfsdk:"region"`
+	OriginalLanguage      types.String `tfsdk:"original_language"`
+	HideAvailable         types.Bool   `tfsdk:"hide_available"`
+	PartialRequests       types.Bool   `tfsdk:"partial_requests"`
+	LocalLogin            types.Bool   `tfsdk:"local_login"`
+	NewPlexLogin          types.Bool   `tfsdk:"new_plex_login"`
+	PlexLogin             types.Bool   `tfsdk:"plex_login"`
+	MovieRequestsEnabled  types.Bool   `tfsdk:"movie_requests_enabled"`
+	SeriesRequestsEnabled types.Bool   `tfsdk:"series_requests_enabled"`
+	EnableReportAnIssue   types.Bool   `tfsdk:"enable_report_an_issue"`
+	MovieRequestLimit     types.Int64  `tfsdk:"movie_request_limit"`
+	SeriesRequestLimit    types.Int64  `tfsdk:"series_request_limit"`
+	ResponseJSON          types.String `tfsdk:"response_json"`
+	StatusCode            types.Int64  `tfsdk:"status_code"`
 }
 
 func NewMainSettingsResource() resource.Resource { return &MainSettingsResource{} }
@@ -113,6 +117,26 @@ func (r *MainSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 			},
 			"new_plex_login": schema.BoolAttribute{
 				MarkdownDescription: "Whether the new Plex login is enabled.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"plex_login": schema.BoolAttribute{
+				MarkdownDescription: "Whether Plex login is enabled.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"movie_requests_enabled": schema.BoolAttribute{
+				MarkdownDescription: "Whether movie requests are enabled.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"series_requests_enabled": schema.BoolAttribute{
+				MarkdownDescription: "Whether series requests are enabled.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"enable_report_an_issue": schema.BoolAttribute{
+				MarkdownDescription: "Whether the 'Report an Issue' feature is enabled.",
 				Optional:            true,
 				Computed:            true,
 			},
@@ -194,6 +218,18 @@ func (r *MainSettingsResource) Create(ctx context.Context, req resource.CreateRe
 	if !data.NewPlexLogin.IsNull() && !data.NewPlexLogin.IsUnknown() {
 		payload["newPlexLogin"] = data.NewPlexLogin.ValueBool()
 	}
+	if !data.PlexLogin.IsNull() && !data.PlexLogin.IsUnknown() {
+		payload["plexLogin"] = data.PlexLogin.ValueBool()
+	}
+	if !data.MovieRequestsEnabled.IsNull() && !data.MovieRequestsEnabled.IsUnknown() {
+		payload["movieRequestsEnabled"] = data.MovieRequestsEnabled.ValueBool()
+	}
+	if !data.SeriesRequestsEnabled.IsNull() && !data.SeriesRequestsEnabled.IsUnknown() {
+		payload["seriesRequestsEnabled"] = data.SeriesRequestsEnabled.ValueBool()
+	}
+	if !data.EnableReportAnIssue.IsNull() && !data.EnableReportAnIssue.IsUnknown() {
+		payload["enableReportAnIssue"] = data.EnableReportAnIssue.ValueBool()
+	}
 	if !data.MovieRequestLimit.IsNull() && !data.MovieRequestLimit.IsUnknown() {
 		payload["movieRequestLimit"] = data.MovieRequestLimit.ValueInt64()
 	}
@@ -262,6 +298,18 @@ func (r *MainSettingsResource) Create(ctx context.Context, req resource.CreateRe
 	}
 	if v, ok := decoded["newPlexLogin"].(bool); ok {
 		data.NewPlexLogin = types.BoolValue(v)
+	}
+	if v, ok := decoded["plexLogin"].(bool); ok {
+		data.PlexLogin = types.BoolValue(v)
+	}
+	if v, ok := decoded["movieRequestsEnabled"].(bool); ok {
+		data.MovieRequestsEnabled = types.BoolValue(v)
+	}
+	if v, ok := decoded["seriesRequestsEnabled"].(bool); ok {
+		data.SeriesRequestsEnabled = types.BoolValue(v)
+	}
+	if v, ok := decoded["enableReportAnIssue"].(bool); ok {
+		data.EnableReportAnIssue = types.BoolValue(v)
 	}
 	if v, ok := decoded["movieRequestLimit"].(float64); ok {
 		data.MovieRequestLimit = types.Int64Value(int64(v))
@@ -333,6 +381,18 @@ func (r *MainSettingsResource) Read(ctx context.Context, req resource.ReadReques
 	}
 	if v, ok := decoded["newPlexLogin"].(bool); ok {
 		data.NewPlexLogin = types.BoolValue(v)
+	}
+	if v, ok := decoded["plexLogin"].(bool); ok {
+		data.PlexLogin = types.BoolValue(v)
+	}
+	if v, ok := decoded["movieRequestsEnabled"].(bool); ok {
+		data.MovieRequestsEnabled = types.BoolValue(v)
+	}
+	if v, ok := decoded["seriesRequestsEnabled"].(bool); ok {
+		data.SeriesRequestsEnabled = types.BoolValue(v)
+	}
+	if v, ok := decoded["enableReportAnIssue"].(bool); ok {
+		data.EnableReportAnIssue = types.BoolValue(v)
 	}
 	if v, ok := decoded["movieRequestLimit"].(float64); ok {
 		data.MovieRequestLimit = types.Int64Value(int64(v))

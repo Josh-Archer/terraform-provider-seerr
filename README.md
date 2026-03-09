@@ -41,6 +41,7 @@ Data sources:
 - `seerr_main_settings`: read current main settings.
 - `seerr_notification_agent`: read a named notification agent payload.
 - `seerr_plex_settings`: read current Plex settings.
+- `seerr_public_settings`: read current public settings.
 - `seerr_radarr_quality_profile`: resolve a Radarr quality profile name to its numeric ID.
 - `seerr_radarr_server`: read a configured Radarr server by Seerr server ID.
 - `seerr_sonarr_quality_profile`: resolve a Sonarr quality profile name to its numeric ID.
@@ -162,18 +163,21 @@ resource "seerr_notification_agent" "pushover" {
 
 ```hcl
 resource "seerr_main_settings" "main" {
-  payload_json = jsonencode({
-    applicationTitle = "Seerr"
-    locale           = "en"
-  })
+  app_title       = "Seerr"
+  application_url = "https://seerr.example.com"
+  locale          = "en"
 }
 
 resource "seerr_plex_settings" "plex" {
-  payload_json = jsonencode({
-    hostname = "plex.media.svc.cluster.local"
-    port     = 32400
-    useSsl   = false
-  })
+  ip      = "plex.media.svc.cluster.local"
+  port    = 32400
+  use_ssl = false
+}
+
+data "seerr_public_settings" "public" {}
+
+output "seerr_initialized" {
+  value = data.seerr_public_settings.public.initialized
 }
 ```
 
