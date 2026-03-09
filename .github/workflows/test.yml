@@ -40,9 +40,6 @@ jobs:
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
       SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE }}
-      SEERR_BOOTSTRAP_API_KEY: ${{ secrets.SEERR_BOOTSTRAP_API_KEY }}
-      SEERR_BOOTSTRAP_COMMAND: ${{ vars.SEERR_BOOTSTRAP_COMMAND }}
-      SEERR_BOOTSTRAP_API_KEY_COMMAND: ${{ vars.SEERR_BOOTSTRAP_API_KEY_COMMAND }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
@@ -69,16 +66,16 @@ jobs:
       - name: Setup Seerr Test Target
         shell: bash
         run: |
-          if [[ "${USE_SELF_HOSTED}" == "true" || "${USE_SELF_HOSTED}" == "True" ]]; then
-            namespace="seerr-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-            echo "SEERR_NAMESPACE=${namespace}" >> "$GITHUB_ENV"
-            bash ./scripts/ci-seerr-up.sh "${namespace}"
-            bash ./scripts/ci-seerr-bootstrap.sh "${namespace}" >> "$GITHUB_ENV"
-          else
-            if [[ -z "${LEGACY_SEERR_URL}" ]]; then
-              echo "Skipping integration tests: SEERR_URL not set"
-              exit 0
-            fi
+            if [[ "${USE_SELF_HOSTED}" == "true" || "${USE_SELF_HOSTED}" == "True" ]]; then
+              namespace="seerr-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+              echo "SEERR_NAMESPACE=${namespace}" >> "$GITHUB_ENV"
+              bash ./scripts/ci-seerr-up.sh "${namespace}"
+              SEERR_TEST_USE_PORT_FORWARD=false bash ./scripts/ci-seerr-bootstrap.sh "${namespace}" >> "$GITHUB_ENV"
+            else
+              if [[ -z "${LEGACY_SEERR_URL}" ]]; then
+                echo "Skipping integration tests: SEERR_URL not set"
+                exit 0
+              fi
             echo "SEERR_URL=${LEGACY_SEERR_URL}" >> "$GITHUB_ENV"
             echo "SEERR_API_KEY=${LEGACY_SEERR_API_KEY}" >> "$GITHUB_ENV"
           fi
@@ -90,7 +87,20 @@ jobs:
             echo "Skipping integration tests: SEERR_URL not set"
             exit 0
           fi
-          tofu test -var="url=$SEERR_URL" -var="api_key=$SEERR_API_KEY"
+          if [[ -n "${SEERR_NAMESPACE:-}" ]]; then
+            kubectl port-forward -n "$SEERR_NAMESPACE" service/seerr 15055:5055 >/tmp/seerr-port-forward.log 2>&1 &
+            PF_PID=$!
+            trap 'kill "$PF_PID" || true' EXIT
+            for _ in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1:15055/api/v1/status >/dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            tofu test -var="url=http://127.0.0.1:15055" -var="api_key=$SEERR_API_KEY"
+          else
+            tofu test -var="url=$SEERR_URL" -var="api_key=$SEERR_API_KEY"
+          fi
       - name: Collect Seerr Diagnostics
         if: failure() && env.SEERR_NAMESPACE != ''
         shell: bash
