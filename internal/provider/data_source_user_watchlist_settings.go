@@ -34,7 +34,7 @@ func (d *UserWatchlistSettingsDataSource) Metadata(_ context.Context, req dataso
 
 func (d *UserWatchlistSettingsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Read Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/watchlist.",
+		MarkdownDescription: "Read Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/main.",
 		Attributes: map[string]schema.Attribute{
 			"user_id": schema.Int64Attribute{
 				MarkdownDescription: "The numeric ID of the user to look up.",

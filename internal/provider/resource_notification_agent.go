@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -159,7 +158,6 @@ func (r *NotificationClientResource) Schema(_ context.Context, _ resource.Schema
 		"types": schema.Int64Attribute{
 			Optional: true,
 			Computed: true,
-			Default:  int64default.StaticInt64(0),
 		},
 	}
 	for name, attr := range notificationAgentResourceEventAttributes() {
@@ -378,41 +376,9 @@ func buildPayload(data *NotificationAgentModel) (string, error) {
 	payload := notificationAgentPayload{
 		Enabled:     data.Enabled.ValueBool(),
 		EmbedPoster: data.EmbedPoster.ValueBool(),
-		Types:       data.TypesMask.ValueInt64(),
+		Types:       notificationTypesMask(data),
 		Options:     make(map[string]interface{}),
 	}
-
-	mask := data.TypesMask.ValueInt64()
-	updateMask := func(val types.Bool, bit int64) {
-		if !val.IsNull() && !val.IsUnknown() {
-			if val.ValueBool() {
-				mask |= bit
-			} else {
-				mask &= ^bit
-			}
-		}
-	}
-
-	updateMask(data.OnRequestPending, 2)
-	updateMask(data.OnRequestApproved, 4)
-	updateMask(data.OnMediaAvailable, 8)
-	updateMask(data.OnMediaFailed, 16)
-	updateMask(data.OnRequestDeclined, 64)
-	updateMask(data.OnRequestAutoApproved, 128)
-	updateMask(data.OnIssueCreated, 256)
-	updateMask(data.OnIssueComment, 512)
-	updateMask(data.OnIssueResolved, 1024)
-	updateMask(data.OnIssueReopened, 2048)
-	updateMask(data.OnMediaAutoRequested, 4096)
-
-	updateMask(data.OnRequestRejected, 4)
-	updateMask(data.OnRequestFailed, 8)
-	updateMask(data.OnRequestAvailable, 16)
-	updateMask(data.OnMediaSkipped, 512)
-	updateMask(data.OnMediaIssued, 1024)
-	updateMask(data.OnMediaFollowed, 2048)
-
-	payload.Types = mask
 
 	switch data.Agent.ValueString() {
 	case "discord":
@@ -577,6 +543,40 @@ func buildPayload(data *NotificationAgentModel) (string, error) {
 	return string(b), err
 }
 
+func notificationTypesMask(data *NotificationAgentModel) int64 {
+	mask := data.TypesMask.ValueInt64()
+	updateMask := func(val types.Bool, bit int64) {
+		if !val.IsNull() && !val.IsUnknown() {
+			if val.ValueBool() {
+				mask |= bit
+			} else {
+				mask &= ^bit
+			}
+		}
+	}
+
+	updateMask(data.OnRequestPending, 2)
+	updateMask(data.OnRequestApproved, 4)
+	updateMask(data.OnMediaAvailable, 8)
+	updateMask(data.OnMediaFailed, 16)
+	updateMask(data.OnRequestDeclined, 64)
+	updateMask(data.OnRequestAutoApproved, 128)
+	updateMask(data.OnIssueCreated, 256)
+	updateMask(data.OnIssueComment, 512)
+	updateMask(data.OnIssueResolved, 1024)
+	updateMask(data.OnIssueReopened, 2048)
+	updateMask(data.OnMediaAutoRequested, 4096)
+
+	updateMask(data.OnRequestRejected, 4)
+	updateMask(data.OnRequestFailed, 8)
+	updateMask(data.OnRequestAvailable, 16)
+	updateMask(data.OnMediaSkipped, 512)
+	updateMask(data.OnMediaIssued, 1024)
+	updateMask(data.OnMediaFollowed, 2048)
+
+	return mask
+}
+
 func parsePayload(data *NotificationAgentModel, body []byte) error {
 	var payload notificationAgentPayload
 	if err := json.Unmarshal(body, &payload); err != nil {
@@ -736,7 +736,7 @@ func (r *NotificationClientResource) Create(ctx context.Context, req resource.Cr
 
 	// Preserve sensitive fields from plan if API didn't return them
 	preserveSensitiveNotificationFields(&data, &planData)
-
+	data.TypesMask = types.Int64Value(notificationTypesMask(&data))
 	data.ID = types.StringValue(r.agent)
 	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &data)...)
 }
@@ -807,7 +807,7 @@ func (r *NotificationClientResource) Update(ctx context.Context, req resource.Up
 
 	// Preserve sensitive fields from plan if API didn't return them
 	preserveSensitiveNotificationFields(&data, &planData)
-
+	data.TypesMask = types.Int64Value(notificationTypesMask(&data))
 	data.ID = types.StringValue(r.agent)
 	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &data)...)
 }

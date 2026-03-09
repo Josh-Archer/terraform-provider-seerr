@@ -35,6 +35,14 @@ jobs:
     name: OpenTofu Integration Tests
     runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 15
+    env:
+      USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED }}
+      LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
+      LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
+      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE }}
+      SEERR_BOOTSTRAP_API_KEY: ${{ secrets.SEERR_BOOTSTRAP_API_KEY }}
+      SEERR_BOOTSTRAP_COMMAND: ${{ vars.SEERR_BOOTSTRAP_COMMAND }}
+      SEERR_BOOTSTRAP_API_KEY_COMMAND: ${{ vars.SEERR_BOOTSTRAP_API_KEY_COMMAND }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
@@ -58,17 +66,42 @@ jobs:
           }
           EOF
           echo "TF_CLI_CONFIG_FILE=$HOME/.tofurc" >> $GITHUB_ENV
+      - name: Setup Seerr Test Target
+        shell: bash
+        run: |
+          if [[ "${USE_SELF_HOSTED}" == "true" || "${USE_SELF_HOSTED}" == "True" ]]; then
+            namespace="seerr-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            echo "SEERR_NAMESPACE=${namespace}" >> "$GITHUB_ENV"
+            bash ./scripts/ci-seerr-up.sh "${namespace}"
+            bash ./scripts/ci-seerr-bootstrap.sh "${namespace}" >> "$GITHUB_ENV"
+          else
+            if [[ -z "${LEGACY_SEERR_URL}" ]]; then
+              echo "Skipping integration tests: SEERR_URL not set"
+              exit 0
+            fi
+            echo "SEERR_URL=${LEGACY_SEERR_URL}" >> "$GITHUB_ENV"
+            echo "SEERR_API_KEY=${LEGACY_SEERR_API_KEY}" >> "$GITHUB_ENV"
+          fi
       - name: OpenTofu Test
         working-directory: tests
-        env:
-          SEERR_URL: ${{ secrets.SEERR_URL }}
-          SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
+        shell: bash
         run: |
-          if [ -z "$SEERR_URL" ]; then
+          if [[ -z "${SEERR_URL:-}" ]]; then
             echo "Skipping integration tests: SEERR_URL not set"
             exit 0
           fi
           tofu test -var="url=$SEERR_URL" -var="api_key=$SEERR_API_KEY"
+      - name: Collect Seerr Diagnostics
+        if: failure() && env.SEERR_NAMESPACE != ''
+        shell: bash
+        run: |
+          kubectl get all -n "$SEERR_NAMESPACE" || true
+          kubectl describe pods -n "$SEERR_NAMESPACE" || true
+          kubectl logs deployment/seerr -n "$SEERR_NAMESPACE" --tail=500 || true
+      - name: Tear Down Seerr Test Target
+        if: always() && env.SEERR_NAMESPACE != ''
+        shell: bash
+        run: bash ./scripts/ci-seerr-down.sh "$SEERR_NAMESPACE"
 
   auto-tag:
     name: Auto Tag

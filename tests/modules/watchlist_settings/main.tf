@@ -7,10 +7,12 @@ terraform {
 }
 
 variable "user_id" { type = number }
-variable "global_watchlist_sync" { type = bool }
+variable "watchlist_sync_movies" { type = bool }
+variable "watchlist_sync_tv" { type = bool }
 
 resource "seerr_user_watchlist_settings" "test" {
   user_id               = var.user_id
-  global_watchlist_sync = var.global_watchlist_sync
+  watchlist_sync_movies = var.watchlist_sync_movies
+  watchlist_sync_tv     = var.watchlist_sync_tv
 }
 
