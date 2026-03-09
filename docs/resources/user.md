@@ -22,9 +22,15 @@ Manage Seerr users and their notification settings.
 
 ### Optional
 
+- `discover_region` (String) User's preferred discovery region.
+- `locale` (String) User's preferred locale.
 - `notification_settings` (Block, Optional) User-specific notification settings. (see [below for nested schema](#nestedblock--notification_settings))
+- `original_language` (String) User's preferred original language.
 - `permissions` (Number) Permissions bitmask.
 - `plex_id` (String) Optional Plex ID to import a user directly from Plex.
+- `streaming_region` (String) User's preferred streaming region.
+- `watchlist_sync_movies` (Boolean) Enable watchlist sync for movies.
+- `watchlist_sync_tv` (Boolean) Enable watchlist sync for TV shows.
 
 ### Read-Only
 
@@ -47,7 +53,12 @@ Optional:
 - `telegram_bot_username` (String)
 - `telegram_chat_id` (String)
 - `telegram_enabled` (Boolean)
+- `telegram_message_thread_id` (String)
 - `telegram_send_silently` (Boolean)
+
+Read-Only:
+
+- `webpush_enabled` (Boolean)
 
 <a id="nestedblock--notification_settings--notification_types"></a>
 ### Nested Schema for `notification_settings.notification_types`
@@ -56,6 +67,8 @@ Optional:
 
 - `discord` (Number)
 - `email` (Number)
+- `gotify` (Number)
+- `ntfy` (Number)
 - `pushbullet` (Number)
 - `pushover` (Number)
 - `slack` (Number)
