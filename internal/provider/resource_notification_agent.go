@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -58,6 +59,39 @@ type notificationAgentPayload struct {
 	EmbedPoster bool                   `json:"embedPoster"`
 	Types       int64                  `json:"types"`
 	Options     map[string]interface{} `json:"options"`
+}
+
+type notificationClientCommonModel struct {
+	ID          types.String `tfsdk:"id"`
+	Enabled     types.Bool   `tfsdk:"enabled"`
+	EmbedPoster types.Bool   `tfsdk:"embed_poster"`
+	TypesMask   types.Int64  `tfsdk:"types"`
+
+	OnRequestPending      types.Bool `tfsdk:"on_request_pending"`
+	OnRequestApproved     types.Bool `tfsdk:"on_request_approved"`
+	OnRequestRejected     types.Bool `tfsdk:"on_request_rejected"`
+	OnRequestFailed       types.Bool `tfsdk:"on_request_failed"`
+	OnRequestAvailable    types.Bool `tfsdk:"on_request_available"`
+	OnRequestDeclined     types.Bool `tfsdk:"on_request_declined"`
+	OnRequestAutoApproved types.Bool `tfsdk:"on_request_auto_approved"`
+	OnMediaAvailable      types.Bool `tfsdk:"on_media_available"`
+	OnMediaFailed         types.Bool `tfsdk:"on_media_failed"`
+	OnMediaSkipped        types.Bool `tfsdk:"on_media_skipped"`
+	OnMediaIssued         types.Bool `tfsdk:"on_media_issued"`
+	OnMediaFollowed       types.Bool `tfsdk:"on_media_followed"`
+	OnIssueCreated        types.Bool `tfsdk:"on_issue_created"`
+	OnIssueComment        types.Bool `tfsdk:"on_issue_comment"`
+	OnIssueResolved       types.Bool `tfsdk:"on_issue_resolved"`
+	OnIssueReopened       types.Bool `tfsdk:"on_issue_reopened"`
+	OnMediaAutoRequested  types.Bool `tfsdk:"on_media_auto_requested"`
+}
+
+type notificationAttributeReader interface {
+	GetAttribute(context.Context, path.Path, any) diag.Diagnostics
+}
+
+type notificationAttributeWriter interface {
+	SetAttribute(context.Context, path.Path, any) diag.Diagnostics
 }
 
 type NotificationClientResource struct {
@@ -159,6 +193,185 @@ func (r *NotificationClientResource) Configure(_ context.Context, req resource.C
 
 func notificationPath(agent string) string {
 	return "/api/v1/settings/notifications/" + agent
+}
+
+func applyCommonNotificationFields(data *NotificationAgentModel, common notificationClientCommonModel) {
+	data.ID = common.ID
+	data.Enabled = common.Enabled
+	data.EmbedPoster = common.EmbedPoster
+	data.TypesMask = common.TypesMask
+	data.OnRequestPending = common.OnRequestPending
+	data.OnRequestApproved = common.OnRequestApproved
+	data.OnRequestRejected = common.OnRequestRejected
+	data.OnRequestFailed = common.OnRequestFailed
+	data.OnRequestAvailable = common.OnRequestAvailable
+	data.OnRequestDeclined = common.OnRequestDeclined
+	data.OnRequestAutoApproved = common.OnRequestAutoApproved
+	data.OnMediaAvailable = common.OnMediaAvailable
+	data.OnMediaFailed = common.OnMediaFailed
+	data.OnMediaSkipped = common.OnMediaSkipped
+	data.OnMediaIssued = common.OnMediaIssued
+	data.OnMediaFollowed = common.OnMediaFollowed
+	data.OnIssueCreated = common.OnIssueCreated
+	data.OnIssueComment = common.OnIssueComment
+	data.OnIssueResolved = common.OnIssueResolved
+	data.OnIssueReopened = common.OnIssueReopened
+	data.OnMediaAutoRequested = common.OnMediaAutoRequested
+}
+
+func commonNotificationFields(data *NotificationAgentModel) notificationClientCommonModel {
+	return notificationClientCommonModel{
+		ID:                    data.ID,
+		Enabled:               data.Enabled,
+		EmbedPoster:           data.EmbedPoster,
+		TypesMask:             data.TypesMask,
+		OnRequestPending:      data.OnRequestPending,
+		OnRequestApproved:     data.OnRequestApproved,
+		OnRequestRejected:     data.OnRequestRejected,
+		OnRequestFailed:       data.OnRequestFailed,
+		OnRequestAvailable:    data.OnRequestAvailable,
+		OnRequestDeclined:     data.OnRequestDeclined,
+		OnRequestAutoApproved: data.OnRequestAutoApproved,
+		OnMediaAvailable:      data.OnMediaAvailable,
+		OnMediaFailed:         data.OnMediaFailed,
+		OnMediaSkipped:        data.OnMediaSkipped,
+		OnMediaIssued:         data.OnMediaIssued,
+		OnMediaFollowed:       data.OnMediaFollowed,
+		OnIssueCreated:        data.OnIssueCreated,
+		OnIssueComment:        data.OnIssueComment,
+		OnIssueResolved:       data.OnIssueResolved,
+		OnIssueReopened:       data.OnIssueReopened,
+		OnMediaAutoRequested:  data.OnMediaAutoRequested,
+	}
+}
+
+func readNotificationClientModel(ctx context.Context, reader notificationAttributeReader, agent string) (NotificationAgentModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var common notificationClientCommonModel
+
+	for _, field := range []struct {
+		name   string
+		target any
+	}{
+		{name: "id", target: &common.ID},
+		{name: "enabled", target: &common.Enabled},
+		{name: "embed_poster", target: &common.EmbedPoster},
+		{name: "types", target: &common.TypesMask},
+		{name: "on_request_pending", target: &common.OnRequestPending},
+		{name: "on_request_approved", target: &common.OnRequestApproved},
+		{name: "on_request_rejected", target: &common.OnRequestRejected},
+		{name: "on_request_failed", target: &common.OnRequestFailed},
+		{name: "on_request_available", target: &common.OnRequestAvailable},
+		{name: "on_request_declined", target: &common.OnRequestDeclined},
+		{name: "on_request_auto_approved", target: &common.OnRequestAutoApproved},
+		{name: "on_media_available", target: &common.OnMediaAvailable},
+		{name: "on_media_failed", target: &common.OnMediaFailed},
+		{name: "on_media_skipped", target: &common.OnMediaSkipped},
+		{name: "on_media_issued", target: &common.OnMediaIssued},
+		{name: "on_media_followed", target: &common.OnMediaFollowed},
+		{name: "on_issue_created", target: &common.OnIssueCreated},
+		{name: "on_issue_comment", target: &common.OnIssueComment},
+		{name: "on_issue_resolved", target: &common.OnIssueResolved},
+		{name: "on_issue_reopened", target: &common.OnIssueReopened},
+		{name: "on_media_auto_requested", target: &common.OnMediaAutoRequested},
+	} {
+		diags.Append(reader.GetAttribute(ctx, path.Root(field.name), field.target)...)
+	}
+
+	data := NotificationAgentModel{Agent: types.StringValue(agent)}
+	applyCommonNotificationFields(&data, common)
+
+	switch agent {
+	case "discord":
+		diags.Append(reader.GetAttribute(ctx, path.Root("discord"), &data.Discord)...)
+	case "slack":
+		diags.Append(reader.GetAttribute(ctx, path.Root("slack"), &data.Slack)...)
+	case "email":
+		diags.Append(reader.GetAttribute(ctx, path.Root("email"), &data.Email)...)
+	case "lunasea":
+		diags.Append(reader.GetAttribute(ctx, path.Root("lunasea"), &data.LunaSea)...)
+	case "telegram":
+		diags.Append(reader.GetAttribute(ctx, path.Root("telegram"), &data.Telegram)...)
+	case "pushbullet":
+		diags.Append(reader.GetAttribute(ctx, path.Root("pushbullet"), &data.Pushbullet)...)
+	case "pushover":
+		diags.Append(reader.GetAttribute(ctx, path.Root("pushover"), &data.Pushover)...)
+	case "ntfy":
+		diags.Append(reader.GetAttribute(ctx, path.Root("ntfy"), &data.Ntfy)...)
+	case "webhook":
+		diags.Append(reader.GetAttribute(ctx, path.Root("webhook"), &data.Webhook)...)
+	case "gotify":
+		diags.Append(reader.GetAttribute(ctx, path.Root("gotify"), &data.Gotify)...)
+	case "webpush":
+		diags.Append(reader.GetAttribute(ctx, path.Root("webpush"), &data.Webpush)...)
+	default:
+		diags.AddError("Unsupported notification agent", fmt.Sprintf("agent %q is not supported", agent))
+	}
+
+	return data, diags
+}
+
+func setNotificationClientState(ctx context.Context, writer notificationAttributeWriter, data *NotificationAgentModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	common := commonNotificationFields(data)
+
+	for _, field := range []struct {
+		name  string
+		value any
+	}{
+		{name: "id", value: common.ID},
+		{name: "enabled", value: common.Enabled},
+		{name: "embed_poster", value: common.EmbedPoster},
+		{name: "types", value: common.TypesMask},
+		{name: "on_request_pending", value: common.OnRequestPending},
+		{name: "on_request_approved", value: common.OnRequestApproved},
+		{name: "on_request_rejected", value: common.OnRequestRejected},
+		{name: "on_request_failed", value: common.OnRequestFailed},
+		{name: "on_request_available", value: common.OnRequestAvailable},
+		{name: "on_request_declined", value: common.OnRequestDeclined},
+		{name: "on_request_auto_approved", value: common.OnRequestAutoApproved},
+		{name: "on_media_available", value: common.OnMediaAvailable},
+		{name: "on_media_failed", value: common.OnMediaFailed},
+		{name: "on_media_skipped", value: common.OnMediaSkipped},
+		{name: "on_media_issued", value: common.OnMediaIssued},
+		{name: "on_media_followed", value: common.OnMediaFollowed},
+		{name: "on_issue_created", value: common.OnIssueCreated},
+		{name: "on_issue_comment", value: common.OnIssueComment},
+		{name: "on_issue_resolved", value: common.OnIssueResolved},
+		{name: "on_issue_reopened", value: common.OnIssueReopened},
+		{name: "on_media_auto_requested", value: common.OnMediaAutoRequested},
+	} {
+		diags.Append(writer.SetAttribute(ctx, path.Root(field.name), field.value)...)
+	}
+
+	switch data.Agent.ValueString() {
+	case "discord":
+		diags.Append(writer.SetAttribute(ctx, path.Root("discord"), data.Discord)...)
+	case "slack":
+		diags.Append(writer.SetAttribute(ctx, path.Root("slack"), data.Slack)...)
+	case "email":
+		diags.Append(writer.SetAttribute(ctx, path.Root("email"), data.Email)...)
+	case "lunasea":
+		diags.Append(writer.SetAttribute(ctx, path.Root("lunasea"), data.LunaSea)...)
+	case "telegram":
+		diags.Append(writer.SetAttribute(ctx, path.Root("telegram"), data.Telegram)...)
+	case "pushbullet":
+		diags.Append(writer.SetAttribute(ctx, path.Root("pushbullet"), data.Pushbullet)...)
+	case "pushover":
+		diags.Append(writer.SetAttribute(ctx, path.Root("pushover"), data.Pushover)...)
+	case "ntfy":
+		diags.Append(writer.SetAttribute(ctx, path.Root("ntfy"), data.Ntfy)...)
+	case "webhook":
+		diags.Append(writer.SetAttribute(ctx, path.Root("webhook"), data.Webhook)...)
+	case "gotify":
+		diags.Append(writer.SetAttribute(ctx, path.Root("gotify"), data.Gotify)...)
+	case "webpush":
+		diags.Append(writer.SetAttribute(ctx, path.Root("webpush"), data.Webpush)...)
+	default:
+		diags.AddError("Unsupported notification agent", fmt.Sprintf("agent %q is not supported", data.Agent.ValueString()))
+	}
+
+	return diags
 }
 
 func buildPayload(data *NotificationAgentModel) (string, error) {
@@ -491,12 +704,11 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 }
 
 func (r *NotificationClientResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data NotificationAgentModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	data, diags := readNotificationClientModel(ctx, req.Plan, r.agent)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	data.Agent = types.StringValue(r.agent)
 
 	payloadStr, err := buildPayload(&data)
 	if err != nil {
@@ -515,16 +727,11 @@ func (r *NotificationClientResource) Create(ctx context.Context, req resource.Cr
 	}
 
 	data.ID = types.StringValue(r.agent)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &data)...)
 }
 
 func (r *NotificationClientResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data NotificationAgentModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	data.Agent = types.StringValue(r.agent)
+	data := NotificationAgentModel{Agent: types.StringValue(r.agent)}
 
 	res, err := r.client.Request(ctx, "GET", notificationPath(r.agent), "", nil)
 	if err != nil {
@@ -545,16 +752,15 @@ func (r *NotificationClientResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 	data.ID = types.StringValue(r.agent)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &data)...)
 }
 
 func (r *NotificationClientResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data NotificationAgentModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	data, diags := readNotificationClientModel(ctx, req.Plan, r.agent)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	data.Agent = types.StringValue(r.agent)
 
 	payloadStr, err := buildPayload(&data)
 	if err != nil {
@@ -573,7 +779,7 @@ func (r *NotificationClientResource) Update(ctx context.Context, req resource.Up
 	}
 
 	data.ID = types.StringValue(r.agent)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &data)...)
 }
 
 func (r *NotificationClientResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
