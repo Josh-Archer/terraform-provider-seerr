@@ -258,19 +258,3 @@ func notificationAgentDataSourceOptionAttribute(agent string) (dschema.Attribute
 	attr, ok := notificationAgentDataSourceOptionAttributes()[agent]
 	return attr, ok
 }
-
-func notificationAgentResourceAttributes() map[string]schema.Attribute {
-	attrs := notificationAgentResourceEventAttributes()
-	for name, attr := range notificationAgentResourceOptionAttributes() {
-		attrs[name] = attr
-	}
-	return attrs
-}
-
-func notificationAgentDataSourceAttributes() map[string]dschema.Attribute {
-	attrs := notificationAgentDataSourceEventAttributes()
-	for name, attr := range notificationAgentDataSourceOptionAttributes() {
-		attrs[name] = attr
-	}
-	return attrs
-}

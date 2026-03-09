@@ -23,7 +23,6 @@ func TestNotificationClientResourceMetadataAndSchema(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.agent, func(t *testing.T) {
 			t.Parallel()
 
@@ -63,7 +62,6 @@ func TestNotificationClientDataSourceMetadataAndSchema(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.agent, func(t *testing.T) {
 			t.Parallel()
 

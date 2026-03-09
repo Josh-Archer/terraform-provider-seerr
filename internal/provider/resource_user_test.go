@@ -94,22 +94,3 @@ resource "seerr_user" "test" {
 }
 `, username, email, permissions)
 }
-
-func testAccUserResourceConfigWithNotifications(username, email string, permissions int) string {
-	return fmt.Sprintf(`
-resource "seerr_user" "test" {
-  username    = %[1]q
-  email       = %[2]q
-  permissions = %[3]d
-
-  notification_settings {
-    discord_enabled = true
-    discord_id      = "123456789"
-    
-    notification_types {
-      discord = 2
-    }
-  }
-}
-`, username, email, permissions)
-}
