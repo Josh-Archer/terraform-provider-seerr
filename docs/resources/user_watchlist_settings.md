@@ -3,12 +3,12 @@
 page_title: "seerr_user_watchlist_settings Resource - seerr"
 subcategory: ""
 description: |-
-  Manage Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/watchlist.
+  Manage Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/main.
 ---
 
 # seerr_user_watchlist_settings (Resource)
 
-Manage Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/watchlist.
+Manage Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/main.
 
 
 

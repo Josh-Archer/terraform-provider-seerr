@@ -106,3 +106,15 @@ func TestNotificationAgentUnknownResolution(t *testing.T) {
 		t.Error("OnMediaFollowed should be true (mask 2048)")
 	}
 }
+
+func TestNotificationTypesMaskIgnoresMissingDefaultAndDerivesFromFlags(t *testing.T) {
+	data := &NotificationAgentModel{
+		TypesMask:        types.Int64Null(),
+		OnRequestPending: types.BoolValue(true),
+		OnIssueCreated:   types.BoolValue(true),
+	}
+
+	if got, want := notificationTypesMask(data), int64(258); got != want {
+		t.Fatalf("notificationTypesMask() = %d, want %d", got, want)
+	}
+}

@@ -37,7 +37,7 @@ func (r *UserWatchlistSettingsResource) Metadata(_ context.Context, req resource
 
 func (r *UserWatchlistSettingsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manage Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/watchlist.",
+		MarkdownDescription: "Manage Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/main.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
@@ -82,7 +82,7 @@ func (r *UserWatchlistSettingsResource) Configure(_ context.Context, req resourc
 }
 
 func userWatchlistPath(userID int64) string {
-	return fmt.Sprintf("/api/v1/user/%d/settings/watchlist", userID)
+	return fmt.Sprintf("/api/v1/user/%d/settings/main", userID)
 }
 
 func (r *UserWatchlistSettingsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {

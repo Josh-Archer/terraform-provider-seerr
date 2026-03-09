@@ -3,12 +3,12 @@
 page_title: "seerr_user_watchlist_settings Data Source - seerr"
 subcategory: ""
 description: |-
-  Read Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/watchlist.
+  Read Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/main.
 ---
 
 # seerr_user_watchlist_settings (Data Source)
 
-Read Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/watchlist.
+Read Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/main.
 
 
 

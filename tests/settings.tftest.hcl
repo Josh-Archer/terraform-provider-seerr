@@ -113,7 +113,8 @@ run "watchlist_settings_lifecycle" {
 
   variables {
     user_id               = 1
-    global_watchlist_sync = true
+    watchlist_sync_movies = true
+    watchlist_sync_tv     = true
   }
 
   module {
@@ -121,8 +122,13 @@ run "watchlist_settings_lifecycle" {
   }
 
   assert {
-    condition     = seerr_user_watchlist_settings.test.global_watchlist_sync == var.global_watchlist_sync
-    error_message = "Watchlist settings sync did not match expected value"
+    condition     = seerr_user_watchlist_settings.test.watchlist_sync_movies == var.watchlist_sync_movies
+    error_message = "Watchlist movie sync did not match expected value"
+  }
+
+  assert {
+    condition     = seerr_user_watchlist_settings.test.watchlist_sync_tv == var.watchlist_sync_tv
+    error_message = "Watchlist TV sync did not match expected value"
   }
 }
 

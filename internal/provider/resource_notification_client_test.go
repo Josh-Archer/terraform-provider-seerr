@@ -19,6 +19,7 @@ func TestAccNotificationNtfyResource(t *testing.T) {
 					resource.TestCheckResourceAttr("seerr_notification_ntfy.test", "ntfy.url", "https://ntfy.example.com"),
 					resource.TestCheckResourceAttr("seerr_notification_ntfy.test", "ntfy.topic", "terraform-create"),
 					resource.TestCheckResourceAttr("seerr_notification_ntfy.test", "ntfy.priority", "3"),
+					resource.TestCheckResourceAttr("seerr_notification_ntfy.test", "types", "258"),
 					resource.TestCheckResourceAttr("seerr_notification_ntfy.test", "on_request_pending", "true"),
 					resource.TestCheckResourceAttr("seerr_notification_ntfy.test", "on_issue_created", "true"),
 					resource.TestCheckResourceAttrSet("seerr_notification_ntfy.test", "id"),
@@ -61,6 +62,7 @@ func TestAccNotificationPushoverResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("seerr_notification_pushover.test", "enabled", "true"),
 					resource.TestCheckResourceAttr("seerr_notification_pushover.test", "pushover.sound", "bike"),
+					resource.TestCheckResourceAttr("seerr_notification_pushover.test", "types", "258"),
 					resource.TestCheckResourceAttr("seerr_notification_pushover.test", "on_request_pending", "true"),
 					resource.TestCheckResourceAttrSet("seerr_notification_pushover.test", "id"),
 				),
