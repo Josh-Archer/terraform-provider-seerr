@@ -16,13 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var _ resource.Resource = &NotificationAgentResource{}
-var _ resource.ResourceWithImportState = &NotificationAgentResource{}
-
-type NotificationAgentResource struct {
-	client *APIClient
-}
-
 type NotificationAgentModel struct {
 	ID          types.String `tfsdk:"id"`
 	Agent       types.String `tfsdk:"agent"`
@@ -67,24 +60,56 @@ type notificationAgentPayload struct {
 	Options     map[string]interface{} `json:"options"`
 }
 
-func NewNotificationAgentResource() resource.Resource { return &NotificationAgentResource{} }
-
-func (r *NotificationAgentResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_notification_agent"
+type NotificationClientResource struct {
+	client *APIClient
+	agent  string
 }
 
-func (r *NotificationAgentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+var _ resource.Resource = &NotificationClientResource{}
+var _ resource.ResourceWithImportState = &NotificationClientResource{}
+
+func newNotificationClientResource(agent string) resource.Resource {
+	return &NotificationClientResource{agent: agent}
+}
+
+func NewNotificationDiscordResource() resource.Resource {
+	return newNotificationClientResource("discord")
+}
+func NewNotificationSlackResource() resource.Resource { return newNotificationClientResource("slack") }
+func NewNotificationEmailResource() resource.Resource { return newNotificationClientResource("email") }
+func NewNotificationLunaSeaResource() resource.Resource {
+	return newNotificationClientResource("lunasea")
+}
+func NewNotificationTelegramResource() resource.Resource {
+	return newNotificationClientResource("telegram")
+}
+func NewNotificationPushbulletResource() resource.Resource {
+	return newNotificationClientResource("pushbullet")
+}
+func NewNotificationPushoverResource() resource.Resource {
+	return newNotificationClientResource("pushover")
+}
+func NewNotificationNtfyResource() resource.Resource { return newNotificationClientResource("ntfy") }
+func NewNotificationWebhookResource() resource.Resource {
+	return newNotificationClientResource("webhook")
+}
+func NewNotificationGotifyResource() resource.Resource {
+	return newNotificationClientResource("gotify")
+}
+func NewNotificationWebpushResource() resource.Resource {
+	return newNotificationClientResource("webpush")
+}
+
+func (r *NotificationClientResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_notification_" + r.agent
+}
+
+func (r *NotificationClientResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	attributes := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
 			Computed: true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
-			},
-		},
-		"agent": schema.StringAttribute{
-			Required: true,
-			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.RequiresReplace(),
 			},
 		},
 		"enabled": schema.BoolAttribute{
@@ -103,17 +128,24 @@ func (r *NotificationAgentResource) Schema(_ context.Context, _ resource.SchemaR
 			Default:  int64default.StaticInt64(0),
 		},
 	}
-	for name, attr := range notificationAgentResourceAttributes() {
+	for name, attr := range notificationAgentResourceEventAttributes() {
 		attributes[name] = attr
 	}
 
+	optionAttr, ok := notificationAgentResourceOptionAttribute(r.agent)
+	if !ok {
+		resp.Diagnostics.AddError("Unsupported notification agent", fmt.Sprintf("agent %q is not supported", r.agent))
+		return
+	}
+	attributes[r.agent] = optionAttr
+
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manage Seerr notification agent settings via /api/v1/settings/notifications/{agent}.",
+		MarkdownDescription: fmt.Sprintf("Manage Seerr %s notification settings via /api/v1/settings/notifications/%s.", r.agent, r.agent),
 		Attributes:          attributes,
 	}
 }
 
-func (r *NotificationAgentResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *NotificationClientResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -137,7 +169,6 @@ func buildPayload(data *NotificationAgentModel) (string, error) {
 		Options:     make(map[string]interface{}),
 	}
 
-	// Calculate types bitmask from individual booleans if they are set
 	mask := data.TypesMask.ValueInt64()
 	updateMask := func(val types.Bool, bit int64) {
 		if !val.IsNull() && !val.IsUnknown() {
@@ -161,8 +192,7 @@ func buildPayload(data *NotificationAgentModel) (string, error) {
 	updateMask(data.OnIssueReopened, 2048)
 	updateMask(data.OnMediaAutoRequested, 4096)
 
-	// Keep existing ones for backward compatibility or if they are still used in some contexts
-	updateMask(data.OnRequestRejected, 4) // Duplicate of Approved in some contexts? Or just 4 in old.
+	updateMask(data.OnRequestRejected, 4)
 	updateMask(data.OnRequestFailed, 8)
 	updateMask(data.OnRequestAvailable, 16)
 	updateMask(data.OnMediaSkipped, 512)
@@ -326,7 +356,6 @@ func buildPayload(data *NotificationAgentModel) (string, error) {
 			}
 		}
 	case "webpush":
-		// no options
 	default:
 		return "", fmt.Errorf("unsupported agent: %s", data.Agent.ValueString())
 	}
@@ -347,7 +376,7 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 	mask := payload.Types
 	data.OnRequestPending = types.BoolValue(mask&2 != 0)
 	data.OnRequestApproved = types.BoolValue(mask&4 != 0)
-	data.OnRequestRejected = types.BoolValue(mask&4 != 0) // Align with Approved or 4 in old.
+	data.OnRequestRejected = types.BoolValue(mask&4 != 0)
 	data.OnRequestFailed = types.BoolValue(mask&8 != 0)
 	data.OnRequestAvailable = types.BoolValue(mask&16 != 0)
 	data.OnRequestDeclined = types.BoolValue(mask&64 != 0)
@@ -389,7 +418,6 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 		return types.Int64Null()
 	}
 
-	// Reset blocks to nil initially
 	data.Discord = nil
 	data.Slack = nil
 	data.Email = nil
@@ -411,9 +439,7 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 			EnableMentions: getBool("enableMentions"),
 		}
 	case "slack":
-		data.Slack = &NotificationAgentSlackModel{
-			WebhookUrl: getString("webhookUrl"),
-		}
+		data.Slack = &NotificationAgentSlackModel{WebhookUrl: getString("webhookUrl")}
 	case "email":
 		data.Email = &NotificationAgentEmailModel{
 			EmailFrom:       getString("emailFrom"),
@@ -430,10 +456,7 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 			PgpPassword:     getString("pgpPassword"),
 		}
 	case "lunasea":
-		data.LunaSea = &NotificationAgentLunaSeaModel{
-			WebhookUrl:  getString("webhookUrl"),
-			ProfileName: getString("profileName"),
-		}
+		data.LunaSea = &NotificationAgentLunaSeaModel{WebhookUrl: getString("webhookUrl"), ProfileName: getString("profileName")}
 	case "telegram":
 		data.Telegram = &NotificationAgentTelegramModel{
 			BotUsername:  getString("botUsername"),
@@ -442,16 +465,9 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 			SendSilently: getBool("sendSilently"),
 		}
 	case "pushbullet":
-		data.Pushbullet = &NotificationAgentPushbulletModel{
-			AccessToken: getString("accessToken"),
-			ChannelTag:  getString("channelTag"),
-		}
+		data.Pushbullet = &NotificationAgentPushbulletModel{AccessToken: getString("accessToken"), ChannelTag: getString("channelTag")}
 	case "pushover":
-		data.Pushover = &NotificationAgentPushoverModel{
-			AccessToken: getString("accessToken"),
-			UserToken:   getString("userToken"),
-			Sound:       getString("sound"),
-		}
+		data.Pushover = &NotificationAgentPushoverModel{AccessToken: getString("accessToken"), UserToken: getString("userToken"), Sound: getString("sound")}
 	case "ntfy":
 		data.Ntfy = &NotificationAgentNtfyModel{
 			Url:                        getString("url"),
@@ -464,16 +480,9 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 			Priority:                   getInt64("priority"),
 		}
 	case "webhook":
-		data.Webhook = &NotificationAgentWebhookModel{
-			WebhookUrl:  getString("webhookUrl"),
-			JsonPayload: getString("jsonPayload"),
-			AuthHeader:  getString("authHeader"),
-		}
+		data.Webhook = &NotificationAgentWebhookModel{WebhookUrl: getString("webhookUrl"), JsonPayload: getString("jsonPayload"), AuthHeader: getString("authHeader")}
 	case "gotify":
-		data.Gotify = &NotificationAgentGotifyModel{
-			Url:   getString("url"),
-			Token: getString("token"),
-		}
+		data.Gotify = &NotificationAgentGotifyModel{Url: getString("url"), Token: getString("token")}
 	case "webpush":
 		data.Webpush = &NotificationAgentWebpushModel{}
 	}
@@ -481,20 +490,21 @@ func parsePayload(data *NotificationAgentModel, body []byte) error {
 	return nil
 }
 
-func (r *NotificationAgentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *NotificationClientResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data NotificationAgentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	path := notificationPath(data.Agent.ValueString())
+	data.Agent = types.StringValue(r.agent)
+
 	payloadStr, err := buildPayload(&data)
 	if err != nil {
 		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
 	}
 
-	res, err := r.client.Request(ctx, "POST", path, payloadStr, nil)
+	res, err := r.client.Request(ctx, "POST", notificationPath(r.agent), payloadStr, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
@@ -504,18 +514,19 @@ func (r *NotificationAgentResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	data.ID = types.StringValue(data.Agent.ValueString())
+	data.ID = types.StringValue(r.agent)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *NotificationAgentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *NotificationClientResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data NotificationAgentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	path := notificationPath(data.Agent.ValueString())
-	res, err := r.client.Request(ctx, "GET", path, "", nil)
+	data.Agent = types.StringValue(r.agent)
+
+	res, err := r.client.Request(ctx, "GET", notificationPath(r.agent), "", nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
@@ -533,22 +544,25 @@ func (r *NotificationAgentResource) Read(ctx context.Context, req resource.ReadR
 		resp.Diagnostics.AddError("Parse Failed", err.Error())
 		return
 	}
+	data.ID = types.StringValue(r.agent)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *NotificationAgentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *NotificationClientResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data NotificationAgentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	path := notificationPath(data.Agent.ValueString())
+	data.Agent = types.StringValue(r.agent)
+
 	payloadStr, err := buildPayload(&data)
 	if err != nil {
 		resp.Diagnostics.AddError("Update Failed", err.Error())
 		return
 	}
-	res, err := r.client.Request(ctx, "POST", path, payloadStr, nil)
+
+	res, err := r.client.Request(ctx, "POST", notificationPath(r.agent), payloadStr, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Update Failed", err.Error())
 		return
@@ -557,22 +571,14 @@ func (r *NotificationAgentResource) Update(ctx context.Context, req resource.Upd
 		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return
 	}
-	data.ID = types.StringValue(data.Agent.ValueString())
+
+	data.ID = types.StringValue(r.agent)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *NotificationAgentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data NotificationAgentModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	path := notificationPath(data.Agent.ValueString())
-
-	// Default disable payload upon deletion to clear it
+func (r *NotificationClientResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	disablePayload := `{"enabled":false,"types":0,"options":{}}`
-	res, err := r.client.Request(ctx, "POST", path, disablePayload, nil)
+	res, err := r.client.Request(ctx, "POST", notificationPath(r.agent), disablePayload, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Delete Failed", err.Error())
 		return
@@ -584,7 +590,10 @@ func (r *NotificationAgentResource) Delete(ctx context.Context, req resource.Del
 	}
 }
 
-func (r *NotificationAgentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *NotificationClientResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	if req.ID != r.agent {
+		resp.Diagnostics.AddError("Invalid import id", fmt.Sprintf("use import id %q for this resource type", r.agent))
+		return
+	}
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("agent"), req.ID)...)
 }

@@ -115,7 +115,17 @@ func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewMainSettingsResource,
 		NewPlexSettingsResource,
 		NewJellyfinSettingsResource,
-		NewNotificationAgentResource,
+		NewNotificationDiscordResource,
+		NewNotificationSlackResource,
+		NewNotificationEmailResource,
+		NewNotificationLunaSeaResource,
+		NewNotificationTelegramResource,
+		NewNotificationPushbulletResource,
+		NewNotificationPushoverResource,
+		NewNotificationNtfyResource,
+		NewNotificationWebhookResource,
+		NewNotificationGotifyResource,
+		NewNotificationWebpushResource,
 		NewRadarrServerResource,
 		NewSonarrServerResource,
 		NewUserPermissionsResource,
@@ -123,6 +133,7 @@ func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewAPIKeyResource,
 		NewUserResource,
 		NewDiscoverSliderResource,
+		NewTautulliSettingsResource,
 	}
 }
 
@@ -132,7 +143,17 @@ func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewMainSettingsDataSource,
 		NewPlexSettingsDataSource,
 		NewJellyfinSettingsDataSource,
-		NewNotificationAgentDataSource,
+		NewNotificationDiscordDataSource,
+		NewNotificationSlackDataSource,
+		NewNotificationEmailDataSource,
+		NewNotificationLunaSeaDataSource,
+		NewNotificationTelegramDataSource,
+		NewNotificationPushbulletDataSource,
+		NewNotificationPushoverDataSource,
+		NewNotificationNtfyDataSource,
+		NewNotificationWebhookDataSource,
+		NewNotificationGotifyDataSource,
+		NewNotificationWebpushDataSource,
 		NewRadarrQualityProfileDataSource,
 		NewRadarrServerDataSource,
 		NewSonarrQualityProfileDataSource,
@@ -141,6 +162,7 @@ func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewUserWatchlistSettingsDataSource,
 		NewAPIKeyDataSource,
 		NewUserDataSource,
+		NewTautulliSettingsDataSource,
 	}
 }
 

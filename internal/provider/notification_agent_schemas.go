@@ -5,7 +5,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
-func notificationAgentResourceAttributes() map[string]schema.Attribute {
+func notificationAgentResourceOptionAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"discord": schema.SingleNestedAttribute{
 			Optional: true,
@@ -102,27 +102,10 @@ func notificationAgentResourceAttributes() map[string]schema.Attribute {
 			Optional:   true,
 			Attributes: map[string]schema.Attribute{},
 		},
-		"on_request_pending":       schema.BoolAttribute{Optional: true, Computed: true},
-		"on_request_approved":      schema.BoolAttribute{Optional: true, Computed: true},
-		"on_request_rejected":      schema.BoolAttribute{Optional: true, Computed: true},
-		"on_request_failed":        schema.BoolAttribute{Optional: true, Computed: true},
-		"on_request_available":     schema.BoolAttribute{Optional: true, Computed: true},
-		"on_request_declined":      schema.BoolAttribute{Optional: true, Computed: true},
-		"on_request_auto_approved": schema.BoolAttribute{Optional: true, Computed: true},
-		"on_media_available":       schema.BoolAttribute{Optional: true, Computed: true},
-		"on_media_failed":          schema.BoolAttribute{Optional: true, Computed: true},
-		"on_media_skipped":         schema.BoolAttribute{Optional: true, Computed: true},
-		"on_media_issued":          schema.BoolAttribute{Optional: true, Computed: true},
-		"on_media_followed":        schema.BoolAttribute{Optional: true, Computed: true},
-		"on_issue_created":         schema.BoolAttribute{Optional: true, Computed: true},
-		"on_issue_comment":         schema.BoolAttribute{Optional: true, Computed: true},
-		"on_issue_resolved":        schema.BoolAttribute{Optional: true, Computed: true},
-		"on_issue_reopened":        schema.BoolAttribute{Optional: true, Computed: true},
-		"on_media_auto_requested":  schema.BoolAttribute{Optional: true, Computed: true},
 	}
 }
 
-func notificationAgentDataSourceAttributes() map[string]dschema.Attribute {
+func notificationAgentDataSourceOptionAttributes() map[string]dschema.Attribute {
 	return map[string]dschema.Attribute{
 		"discord": dschema.SingleNestedAttribute{
 			Computed: true,
@@ -219,6 +202,33 @@ func notificationAgentDataSourceAttributes() map[string]dschema.Attribute {
 			Computed:   true,
 			Attributes: map[string]dschema.Attribute{},
 		},
+	}
+}
+
+func notificationAgentResourceEventAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"on_request_pending":       schema.BoolAttribute{Optional: true, Computed: true},
+		"on_request_approved":      schema.BoolAttribute{Optional: true, Computed: true},
+		"on_request_rejected":      schema.BoolAttribute{Optional: true, Computed: true},
+		"on_request_failed":        schema.BoolAttribute{Optional: true, Computed: true},
+		"on_request_available":     schema.BoolAttribute{Optional: true, Computed: true},
+		"on_request_declined":      schema.BoolAttribute{Optional: true, Computed: true},
+		"on_request_auto_approved": schema.BoolAttribute{Optional: true, Computed: true},
+		"on_media_available":       schema.BoolAttribute{Optional: true, Computed: true},
+		"on_media_failed":          schema.BoolAttribute{Optional: true, Computed: true},
+		"on_media_skipped":         schema.BoolAttribute{Optional: true, Computed: true},
+		"on_media_issued":          schema.BoolAttribute{Optional: true, Computed: true},
+		"on_media_followed":        schema.BoolAttribute{Optional: true, Computed: true},
+		"on_issue_created":         schema.BoolAttribute{Optional: true, Computed: true},
+		"on_issue_comment":         schema.BoolAttribute{Optional: true, Computed: true},
+		"on_issue_resolved":        schema.BoolAttribute{Optional: true, Computed: true},
+		"on_issue_reopened":        schema.BoolAttribute{Optional: true, Computed: true},
+		"on_media_auto_requested":  schema.BoolAttribute{Optional: true, Computed: true},
+	}
+}
+
+func notificationAgentDataSourceEventAttributes() map[string]dschema.Attribute {
+	return map[string]dschema.Attribute{
 		"on_request_pending":       dschema.BoolAttribute{Computed: true},
 		"on_request_approved":      dschema.BoolAttribute{Computed: true},
 		"on_request_rejected":      dschema.BoolAttribute{Computed: true},
@@ -237,4 +247,30 @@ func notificationAgentDataSourceAttributes() map[string]dschema.Attribute {
 		"on_issue_reopened":        dschema.BoolAttribute{Computed: true},
 		"on_media_auto_requested":  dschema.BoolAttribute{Computed: true},
 	}
+}
+
+func notificationAgentResourceOptionAttribute(agent string) (schema.Attribute, bool) {
+	attr, ok := notificationAgentResourceOptionAttributes()[agent]
+	return attr, ok
+}
+
+func notificationAgentDataSourceOptionAttribute(agent string) (dschema.Attribute, bool) {
+	attr, ok := notificationAgentDataSourceOptionAttributes()[agent]
+	return attr, ok
+}
+
+func notificationAgentResourceAttributes() map[string]schema.Attribute {
+	attrs := notificationAgentResourceEventAttributes()
+	for name, attr := range notificationAgentResourceOptionAttributes() {
+		attrs[name] = attr
+	}
+	return attrs
+}
+
+func notificationAgentDataSourceAttributes() map[string]dschema.Attribute {
+	attrs := notificationAgentDataSourceEventAttributes()
+	for name, attr := range notificationAgentDataSourceOptionAttributes() {
+		attrs[name] = attr
+	}
+	return attrs
 }

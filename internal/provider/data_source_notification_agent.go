@@ -9,17 +9,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var _ datasource.DataSource = &NotificationAgentDataSource{}
-
-type NotificationAgentDataSource struct {
+type NotificationClientDataSource struct {
 	client *APIClient
+	agent  string
 }
 
-type NotificationAgentDataSourceModel struct {
-	Agent       types.String `tfsdk:"agent"`
-	Enabled     types.Bool   `tfsdk:"enabled"`
-	EmbedPoster types.Bool   `tfsdk:"embed_poster"`
-	TypesMask   types.Int64  `tfsdk:"types"`
+type NotificationClientDataSourceModel struct {
+	Enabled     types.Bool  `tfsdk:"enabled"`
+	EmbedPoster types.Bool  `tfsdk:"embed_poster"`
+	TypesMask   types.Int64 `tfsdk:"types"`
 
 	Discord               *NotificationAgentDiscordModel    `tfsdk:"discord"`
 	Slack                 *NotificationAgentSlackModel      `tfsdk:"slack"`
@@ -44,41 +42,81 @@ type NotificationAgentDataSourceModel struct {
 	OnMediaSkipped        types.Bool                        `tfsdk:"on_media_skipped"`
 	OnMediaIssued         types.Bool                        `tfsdk:"on_media_issued"`
 	OnMediaFollowed       types.Bool                        `tfsdk:"on_media_followed"`
+	OnIssueCreated        types.Bool                        `tfsdk:"on_issue_created"`
+	OnIssueComment        types.Bool                        `tfsdk:"on_issue_comment"`
+	OnIssueResolved       types.Bool                        `tfsdk:"on_issue_resolved"`
+	OnIssueReopened       types.Bool                        `tfsdk:"on_issue_reopened"`
+	OnMediaAutoRequested  types.Bool                        `tfsdk:"on_media_auto_requested"`
 }
 
-func NewNotificationAgentDataSource() datasource.DataSource { return &NotificationAgentDataSource{} }
+var _ datasource.DataSource = &NotificationClientDataSource{}
 
-func (d *NotificationAgentDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_notification_agent"
+func newNotificationClientDataSource(agent string) datasource.DataSource {
+	return &NotificationClientDataSource{agent: agent}
 }
 
-func (d *NotificationAgentDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func NewNotificationDiscordDataSource() datasource.DataSource {
+	return newNotificationClientDataSource("discord")
+}
+func NewNotificationSlackDataSource() datasource.DataSource {
+	return newNotificationClientDataSource("slack")
+}
+func NewNotificationEmailDataSource() datasource.DataSource {
+	return newNotificationClientDataSource("email")
+}
+func NewNotificationLunaSeaDataSource() datasource.DataSource {
+	return newNotificationClientDataSource("lunasea")
+}
+func NewNotificationTelegramDataSource() datasource.DataSource {
+	return newNotificationClientDataSource("telegram")
+}
+func NewNotificationPushbulletDataSource() datasource.DataSource {
+	return newNotificationClientDataSource("pushbullet")
+}
+func NewNotificationPushoverDataSource() datasource.DataSource {
+	return newNotificationClientDataSource("pushover")
+}
+func NewNotificationNtfyDataSource() datasource.DataSource {
+	return newNotificationClientDataSource("ntfy")
+}
+func NewNotificationWebhookDataSource() datasource.DataSource {
+	return newNotificationClientDataSource("webhook")
+}
+func NewNotificationGotifyDataSource() datasource.DataSource {
+	return newNotificationClientDataSource("gotify")
+}
+func NewNotificationWebpushDataSource() datasource.DataSource {
+	return newNotificationClientDataSource("webpush")
+}
+
+func (d *NotificationClientDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_notification_" + d.agent
+}
+
+func (d *NotificationClientDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	attributes := map[string]schema.Attribute{
-		"agent": schema.StringAttribute{
-			MarkdownDescription: "Notification agent name (e.g. `email`, `discord`, `slack`).",
-			Required:            true,
-		},
-		"enabled": schema.BoolAttribute{
-			Computed: true,
-		},
-		"embed_poster": schema.BoolAttribute{
-			Computed: true,
-		},
-		"types": schema.Int64Attribute{
-			Computed: true,
-		},
+		"enabled":      schema.BoolAttribute{Computed: true},
+		"embed_poster": schema.BoolAttribute{Computed: true},
+		"types":        schema.Int64Attribute{Computed: true},
 	}
-	for name, attr := range notificationAgentDataSourceAttributes() {
+	for name, attr := range notificationAgentDataSourceEventAttributes() {
 		attributes[name] = attr
 	}
 
+	optionAttr, ok := notificationAgentDataSourceOptionAttribute(d.agent)
+	if !ok {
+		resp.Diagnostics.AddError("Unsupported notification agent", fmt.Sprintf("agent %q is not supported", d.agent))
+		return
+	}
+	attributes[d.agent] = optionAttr
+
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Read Seerr notification agent settings via /api/v1/settings/notifications/{agent}.",
+		MarkdownDescription: fmt.Sprintf("Read Seerr %s notification settings via /api/v1/settings/notifications/%s.", d.agent, d.agent),
 		Attributes:          attributes,
 	}
 }
 
-func (d *NotificationAgentDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *NotificationClientDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -90,15 +128,8 @@ func (d *NotificationAgentDataSource) Configure(_ context.Context, req datasourc
 	d.client = c
 }
 
-func (d *NotificationAgentDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data NotificationAgentDataSourceModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	apiPath := notificationPath(data.Agent.ValueString())
-	res, err := d.client.Request(ctx, "GET", apiPath, "", nil)
+func (d *NotificationClientDataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
+	res, err := d.client.Request(ctx, "GET", notificationPath(d.agent), "", nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
@@ -108,14 +139,13 @@ func (d *NotificationAgentDataSource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	// Reuse the resource model parsing logic by adapting types
-	var resourceData NotificationAgentModel
-	resourceData.Agent = data.Agent
+	resourceData := NotificationAgentModel{Agent: types.StringValue(d.agent)}
 	if err := parsePayload(&resourceData, res.Body); err != nil {
 		resp.Diagnostics.AddError("Parse Failed", err.Error())
 		return
 	}
 
+	data := NotificationClientDataSourceModel{}
 	data.Enabled = resourceData.Enabled
 	data.EmbedPoster = resourceData.EmbedPoster
 	data.TypesMask = resourceData.TypesMask
@@ -130,7 +160,6 @@ func (d *NotificationAgentDataSource) Read(ctx context.Context, req datasource.R
 	data.Webhook = resourceData.Webhook
 	data.Gotify = resourceData.Gotify
 	data.Webpush = resourceData.Webpush
-
 	data.OnRequestPending = resourceData.OnRequestPending
 	data.OnRequestApproved = resourceData.OnRequestApproved
 	data.OnRequestRejected = resourceData.OnRequestRejected
@@ -143,6 +172,11 @@ func (d *NotificationAgentDataSource) Read(ctx context.Context, req datasource.R
 	data.OnMediaSkipped = resourceData.OnMediaSkipped
 	data.OnMediaIssued = resourceData.OnMediaIssued
 	data.OnMediaFollowed = resourceData.OnMediaFollowed
+	data.OnIssueCreated = resourceData.OnIssueCreated
+	data.OnIssueComment = resourceData.OnIssueComment
+	data.OnIssueResolved = resourceData.OnIssueResolved
+	data.OnIssueReopened = resourceData.OnIssueReopened
+	data.OnMediaAutoRequested = resourceData.OnMediaAutoRequested
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

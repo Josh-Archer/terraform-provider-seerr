@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -11,24 +12,36 @@ func TestAccNotificationAgentResource(t *testing.T) {
 }
 
 func TestNotificationBitmaskMapping(t *testing.T) {
-	resource := &notificationAgentResource{}
-
 	// Test case: request_pending (2) and issue_created (256)
 	data := &NotificationAgentModel{
+		Agent:            types.StringValue("discord"),
 		OnRequestPending: types.BoolValue(true),
 		OnIssueCreated:   types.BoolValue(true),
 		TypesMask:        types.Int64Value(0),
 	}
 
-	payload := resource.buildPayload(data)
+	payloadStr, err := buildPayload(data)
+	if err != nil {
+		t.Fatalf("buildPayload failed: %v", err)
+	}
+	payload := &notificationAgentPayload{}
+	if err := json.Unmarshal([]byte(payloadStr), payload); err != nil {
+		t.Fatalf("json unmarshal failed: %v", err)
+	}
 	expected := int64(2 | 256)
 	if payload.Types != expected {
 		t.Errorf("Expected mask %d, got %d", expected, payload.Types)
 	}
 
 	// Test case: parse back
-	newData := &NotificationAgentModel{}
-	resource.parsePayload(payload, newData)
+	newData := &NotificationAgentModel{Agent: types.StringValue("discord")}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("json marshal failed: %v", err)
+	}
+	if err := parsePayload(newData, payloadBytes); err != nil {
+		t.Fatalf("parsePayload failed: %v", err)
+	}
 
 	if !newData.OnRequestPending.ValueBool() {
 		t.Error("OnRequestPending should be true after parsing")
@@ -42,16 +55,30 @@ func TestNotificationBitmaskMapping(t *testing.T) {
 
 	// Test case: media_auto_requested (4096)
 	data2 := &NotificationAgentModel{
+		Agent:                types.StringValue("discord"),
 		OnMediaAutoRequested: types.BoolValue(true),
 		TypesMask:            types.Int64Value(0),
 	}
-	payload2 := resource.buildPayload(data2)
+	payloadStr2, err := buildPayload(data2)
+	if err != nil {
+		t.Fatalf("buildPayload failed: %v", err)
+	}
+	payload2 := &notificationAgentPayload{}
+	if err := json.Unmarshal([]byte(payloadStr2), payload2); err != nil {
+		t.Fatalf("json unmarshal failed: %v", err)
+	}
 	if payload2.Types != 4096 {
 		t.Errorf("Expected mask 4096, got %d", payload2.Types)
 	}
 
-	newData2 := &NotificationAgentModel{}
-	resource.parsePayload(payload2, newData2)
+	newData2 := &NotificationAgentModel{Agent: types.StringValue("discord")}
+	payloadBytes2, err := json.Marshal(payload2)
+	if err != nil {
+		t.Fatalf("json marshal failed: %v", err)
+	}
+	if err := parsePayload(newData2, payloadBytes2); err != nil {
+		t.Fatalf("parsePayload failed: %v", err)
+	}
 	if !newData2.OnMediaAutoRequested.ValueBool() {
 		t.Error("OnMediaAutoRequested should be true after parsing")
 	}

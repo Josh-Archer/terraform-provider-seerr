@@ -54,6 +54,45 @@ run "jellyfin_settings_lifecycle" {
   }
 }
 
+run "notification_ntfy_lifecycle" {
+  command = apply
+
+  variables {
+    ntfy_url = "https://ntfy.example.com"
+    topic    = "tofu-test-notification"
+    token    = "ntfy_mock_token"
+    priority = 4
+  }
+
+  module {
+    source = "./modules/notification_ntfy"
+  }
+
+  assert {
+    condition     = seerr_notification_ntfy.test.ntfy.topic == var.topic
+    error_message = "Ntfy notification topic did not match expected value"
+  }
+}
+
+run "notification_pushover_lifecycle" {
+  command = apply
+
+  variables {
+    access_token = "pushover_app_mock_token"
+    user_token   = "pushover_user_mock_token"
+    sound        = "bike"
+  }
+
+  module {
+    source = "./modules/notification_pushover"
+  }
+
+  assert {
+    condition     = seerr_notification_pushover.test.pushover.sound == var.sound
+    error_message = "Pushover notification sound did not match expected value"
+  }
+}
+
 
 # Note: user_id 1 is usually the admin
 run "watchlist_settings_lifecycle" {
@@ -71,6 +110,25 @@ run "watchlist_settings_lifecycle" {
   assert {
     condition     = seerr_user_watchlist_settings.test.global_watchlist_sync == var.global_watchlist_sync
     error_message = "Watchlist settings sync did not match expected value"
+  }
+}
+
+run "tautulli_settings_lifecycle" {
+  command = apply
+
+  variables {
+    hostname = "127.0.0.1"
+    port     = 8181
+    api_key  = "tautulli_mock_key"
+  }
+
+  module {
+    source = "./modules/tautulli_settings"
+  }
+
+  assert {
+    condition     = seerr_tautulli_settings.test.hostname == var.hostname
+    error_message = "Tautulli settings hostname did not match expected value"
   }
 }
 
