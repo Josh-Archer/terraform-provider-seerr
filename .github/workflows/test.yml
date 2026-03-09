@@ -66,16 +66,16 @@ jobs:
       - name: Setup Seerr Test Target
         shell: bash
         run: |
-            if [[ "${USE_SELF_HOSTED}" == "true" || "${USE_SELF_HOSTED}" == "True" ]]; then
-              namespace="seerr-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-              echo "SEERR_NAMESPACE=${namespace}" >> "$GITHUB_ENV"
-              bash ./scripts/ci-seerr-up.sh "${namespace}"
-              SEERR_TEST_USE_PORT_FORWARD=false bash ./scripts/ci-seerr-bootstrap.sh "${namespace}" >> "$GITHUB_ENV"
-            else
-              if [[ -z "${LEGACY_SEERR_URL}" ]]; then
-                echo "Skipping integration tests: SEERR_URL not set"
-                exit 0
-              fi
+          if [[ "${USE_SELF_HOSTED}" == "true" || "${USE_SELF_HOSTED}" == "True" ]]; then
+            namespace="seerr-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            echo "SEERR_NAMESPACE=${namespace}" >> "$GITHUB_ENV"
+            bash ./scripts/ci-seerr-up.sh "${namespace}"
+            SEERR_TEST_USE_PORT_FORWARD=false bash ./scripts/ci-seerr-bootstrap.sh "${namespace}" >> "$GITHUB_ENV"
+          else
+            if [[ -z "${LEGACY_SEERR_URL}" ]]; then
+              echo "Skipping integration tests: SEERR_URL not set"
+              exit 0
+            fi
             echo "SEERR_URL=${LEGACY_SEERR_URL}" >> "$GITHUB_ENV"
             echo "SEERR_API_KEY=${LEGACY_SEERR_API_KEY}" >> "$GITHUB_ENV"
           fi
