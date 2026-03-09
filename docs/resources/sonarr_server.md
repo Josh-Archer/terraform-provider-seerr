@@ -5,9 +5,10 @@ subcategory: ""
 description: |-
   Manage Seerr Sonarr server settings via /api/v1/settings/sonarr.
 ---
+
 # seerr_sonarr_server (Resource)
 
-Manage Seerr Sonarr server settings via /api/v1/settings/sonarr. Sensitive fields like `api_key` and configuration fields like `url` and `extra_payload_json` are preserved in the Terraform state because they are not returned by the Seerr API.
+Manage Seerr Sonarr server settings via /api/v1/settings/sonarr.
 
 ## Example Usage
 
@@ -19,6 +20,7 @@ resource "seerr_sonarr_server" "example" {
   api_key            = "your-sonarr-api-key"
   quality_profile_id = 1
   active_directory   = "/tv"
+  is_default         = true
 }
 ```
 
@@ -27,21 +29,19 @@ resource "seerr_sonarr_server" "example" {
 
 ### Required
 
-- `active_directory` (String) The path to the active directory for TV storage in Sonarr.
-- `api_key` (String, Sensitive) The API key for the Sonarr server. Preserved in the state.
-- `quality_profile_id` (Number) The ID of the default quality profile in Sonarr.
+- `active_directory` (String)
+- `api_key` (String, Sensitive)
+- `quality_profile_id` (Number)
 
 ### Optional
 
 - `active_anime_directory` (String)
 - `anime_tags` (List of Number)
-- `base_url` (String) The base URL for the Sonarr server.
+- `base_url` (String)
 - `enable_scan` (Boolean)
 - `enable_season_folders` (Boolean)
-- `extra_payload_json` (String) Optional extra payload JSON for additional configuration. Preserved in the state.
-...
-- `url` (String) The full URL for the Sonarr server. Preserved in the state.
-
+- `extra_payload_json` (String)
+- `hostname` (String)
 - `is_4k` (Boolean)
 - `is_default` (Boolean)
 - `name` (String)

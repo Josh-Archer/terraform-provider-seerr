@@ -21,10 +21,10 @@ type UserSettingsPermissionsResource struct {
 }
 
 type UserSettingsPermissionsModel struct {
-	ID                 types.String `tfsdk:"id"`
-	UserID             types.Int64  `tfsdk:"user_id"`
-	AutoApproveMovies  types.Bool   `tfsdk:"auto_approve_movies"`
-	AutoApproveTV      types.Bool   `tfsdk:"auto_approve_tv"`
+	ID                  types.String `tfsdk:"id"`
+	UserID              types.Int64  `tfsdk:"user_id"`
+	AutoApproveMovies   types.Bool   `tfsdk:"auto_approve_movies"`
+	AutoApproveTV       types.Bool   `tfsdk:"auto_approve_tv"`
 	AutoApprove4KMovies types.Bool   `tfsdk:"auto_approve_4k_movies"`
 	AutoApprove4KTV     types.Bool   `tfsdk:"auto_approve_4k_tv"`
 }

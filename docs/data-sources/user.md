@@ -8,13 +8,17 @@ description: |-
 
 # seerr_user (Data Source)
 
-Get information about an existing Seerr user by email or username. Lookups are case-insensitive, and the results will be stored in lowercase in the Terraform state.
+Get information about an existing Seerr user by email or username.
 
 ## Example Usage
 
 ```terraform
-data "seerr_user" "example" {
+data "seerr_user" "by_email" {
   email = "jdoe@example.com"
+}
+
+data "seerr_user" "by_username" {
+  username = "jdoe"
 }
 ```
 
@@ -23,8 +27,8 @@ data "seerr_user" "example" {
 
 ### Optional
 
-- `email` (String) The email address of the user to look up. Exactly one of `email` or `username` must be provided. Lookups are case-insensitive.
-- `username` (String) The username of the user to look up. Exactly one of `email` or `username` must be provided. Lookups are case-insensitive.
+- `email` (String) The email address of the user to look up. Exactly one of `email` or `username` must be provided.
+- `username` (String) The username of the user to look up. Exactly one of `email` or `username` must be provided.
 
 ### Read-Only
 

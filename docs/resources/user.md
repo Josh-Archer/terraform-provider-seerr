@@ -8,7 +8,7 @@ description: |-
 
 # seerr_user (Resource)
 
-Manage Seerr users and their notification settings. Emails and usernames are stored in lowercase in the Terraform state to ensure consistency.
+Manage Seerr users and their notification settings.
 
 ## Example Usage
 
@@ -17,6 +17,15 @@ resource "seerr_user" "example" {
   username    = "jdoe"
   email       = "jdoe@example.com"
   permissions = 0
+  locale      = "en"
+
+  notification_settings {
+    email_enabled = true
+    
+    notification_types {
+      email = 1
+    }
+  }
 }
 ```
 
@@ -25,8 +34,8 @@ resource "seerr_user" "example" {
 
 ### Required
 
-- `email` (String) User's email address. Field is ForceNew because Overseerr API doesn't support updating it. Stored in lowercase.
-- `username` (String) User's display name. Can be imported from Plex if `plex_id` is provided. Stored in lowercase.
+- `email` (String) User's email address. Field is ForceNew because Overseerr API doesn't support updating it.
+- `username` (String) User's display name. Can be imported from Plex if `plex_id` is provided.
 
 ### Optional
 

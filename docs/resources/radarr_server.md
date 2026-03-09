@@ -5,9 +5,10 @@ subcategory: ""
 description: |-
   Manage Seerr Radarr server settings via /api/v1/settings/radarr.
 ---
+
 # seerr_radarr_server (Resource)
 
-Manage Seerr Radarr server settings via /api/v1/settings/radarr. Sensitive fields like `api_key` and configuration fields like `url` and `extra_payload_json` are preserved in the Terraform state because they are not returned by the Seerr API.
+Manage Seerr Radarr server settings via /api/v1/settings/radarr.
 
 ## Example Usage
 
@@ -19,6 +20,7 @@ resource "seerr_radarr_server" "example" {
   api_key            = "your-radarr-api-key"
   quality_profile_id = 1
   active_directory   = "/movies"
+  is_default         = true
 }
 ```
 
@@ -27,18 +29,16 @@ resource "seerr_radarr_server" "example" {
 
 ### Required
 
-- `active_directory` (String) The path to the active directory for movie storage in Radarr.
-- `api_key` (String, Sensitive) The API key for the Radarr server. Preserved in the state.
-- `quality_profile_id` (Number) The ID of the default quality profile in Radarr.
+- `active_directory` (String)
+- `api_key` (String, Sensitive)
+- `quality_profile_id` (Number)
 
 ### Optional
 
-- `base_url` (String) The base URL for the Radarr server.
-- `enable_scan` (Boolean) Whether to enable scanning for movies in Radarr.
-- `extra_payload_json` (String) Optional extra payload JSON for additional configuration. Preserved in the state.
-...
-- `url` (String) The full URL for the Radarr server. Preserved in the state.
-
+- `base_url` (String)
+- `enable_scan` (Boolean)
+- `extra_payload_json` (String)
+- `hostname` (String)
 - `is_4k` (Boolean)
 - `is_default` (Boolean)
 - `minimum_availability` (String)
