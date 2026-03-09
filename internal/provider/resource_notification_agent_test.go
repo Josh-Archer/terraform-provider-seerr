@@ -83,3 +83,26 @@ func TestNotificationBitmaskMapping(t *testing.T) {
 		t.Error("OnMediaAutoRequested should be true after parsing")
 	}
 }
+
+func TestNotificationAgentUnknownResolution(t *testing.T) {
+	// This test simulates the case where a field is Unknown in the plan
+	// and verifies that parsePayload sets it to a Known value from the API response.
+	data := &NotificationAgentModel{
+		Agent:           types.StringValue("pushover"),
+		OnMediaFollowed: types.BoolUnknown(), // Simulate Unknown from Plan
+	}
+
+	// Mock API response body
+	responseBody := `{"enabled":true,"types":2048,"options":{"accessToken":"secret","userToken":"secret"}}`
+
+	if err := parsePayload(data, []byte(responseBody)); err != nil {
+		t.Fatalf("parsePayload failed: %v", err)
+	}
+
+	if data.OnMediaFollowed.IsUnknown() {
+		t.Error("OnMediaFollowed should NOT be Unknown after parsePayload")
+	}
+	if !data.OnMediaFollowed.ValueBool() {
+		t.Error("OnMediaFollowed should be true (mask 2048)")
+	}
+}

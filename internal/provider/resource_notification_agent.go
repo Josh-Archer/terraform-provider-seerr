@@ -726,6 +726,17 @@ func (r *NotificationClientResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
+	// Capture plan state to preserve sensitive fields
+	planData := data
+
+	if err := parsePayload(&data, res.Body); err != nil {
+		resp.Diagnostics.AddError("Parse Failed", err.Error())
+		return
+	}
+
+	// Preserve sensitive fields from plan if API didn't return them
+	preserveSensitiveNotificationFields(&data, &planData)
+
 	data.ID = types.StringValue(r.agent)
 	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &data)...)
 }
@@ -751,6 +762,14 @@ func (r *NotificationClientResource) Read(ctx context.Context, req resource.Read
 		resp.Diagnostics.AddError("Parse Failed", err.Error())
 		return
 	}
+
+	// Capture current state to preserve sensitive fields
+	var state NotificationAgentModel
+	diags := req.State.Get(ctx, &state)
+	if !diags.HasError() {
+		preserveSensitiveNotificationFields(&data, &state)
+	}
+
 	data.ID = types.StringValue(r.agent)
 	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &data)...)
 }
@@ -778,8 +797,82 @@ func (r *NotificationClientResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
+	// Capture plan state to preserve sensitive fields
+	planData := data
+
+	if err := parsePayload(&data, res.Body); err != nil {
+		resp.Diagnostics.AddError("Parse Failed", err.Error())
+		return
+	}
+
+	// Preserve sensitive fields from plan if API didn't return them
+	preserveSensitiveNotificationFields(&data, &planData)
+
 	data.ID = types.StringValue(r.agent)
 	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &data)...)
+}
+
+func preserveSensitiveNotificationFields(data, source *NotificationAgentModel) {
+	if source == nil {
+		return
+	}
+
+	switch data.Agent.ValueString() {
+	case "email":
+		if data.Email != nil && source.Email != nil {
+			if data.Email.AuthPass.IsNull() {
+				data.Email.AuthPass = source.Email.AuthPass
+			}
+			if data.Email.PgpPrivateKey.IsNull() {
+				data.Email.PgpPrivateKey = source.Email.PgpPrivateKey
+			}
+			if data.Email.PgpPassword.IsNull() {
+				data.Email.PgpPassword = source.Email.PgpPassword
+			}
+		}
+	case "telegram":
+		if data.Telegram != nil && source.Telegram != nil {
+			if data.Telegram.BotAPI.IsNull() {
+				data.Telegram.BotAPI = source.Telegram.BotAPI
+			}
+		}
+	case "pushbullet":
+		if data.Pushbullet != nil && source.Pushbullet != nil {
+			if data.Pushbullet.AccessToken.IsNull() {
+				data.Pushbullet.AccessToken = source.Pushbullet.AccessToken
+			}
+		}
+	case "pushover":
+		if data.Pushover != nil && source.Pushover != nil {
+			if data.Pushover.AccessToken.IsNull() {
+				data.Pushover.AccessToken = source.Pushover.AccessToken
+			}
+			if data.Pushover.UserToken.IsNull() {
+				data.Pushover.UserToken = source.Pushover.UserToken
+			}
+		}
+	case "ntfy":
+		if data.Ntfy != nil && source.Ntfy != nil {
+			if data.Ntfy.Password.IsNull() {
+				data.Ntfy.Password = source.Ntfy.Password
+			}
+			if data.Ntfy.Token.IsNull() {
+				data.Ntfy.Token = source.Ntfy.Token
+			}
+		}
+	case "webhook":
+		if data.Webhook != nil && source.Webhook != nil {
+			if data.Webhook.AuthHeader.IsNull() {
+				data.Webhook.AuthHeader = source.Webhook.AuthHeader
+			}
+		}
+	case "gotify":
+		if data.Gotify != nil && source.Gotify != nil {
+			if data.Gotify.Token.IsNull() {
+				data.Gotify.Token = source.Gotify.Token
+			}
+		}
+	}
 }
 
 func (r *NotificationClientResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
