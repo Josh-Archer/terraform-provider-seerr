@@ -39,6 +39,15 @@ func TestAccUserDataSource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.seerr_user.by_username", "id"),
 				),
 			},
+			// Test: Look up by email with different case
+			{
+				Config: testAccUserResourceConfig(username, email, 0) + testAccUserDataSourceConfigByEmail("DS_TEST_USER@EXAMPLE.COM"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.seerr_user.by_email", "email", email), // Should be normalized to lowercase
+					resource.TestCheckResourceAttr("data.seerr_user.by_email", "username", username),
+					resource.TestCheckResourceAttrSet("data.seerr_user.by_email", "id"),
+				),
+			},
 		},
 	})
 }

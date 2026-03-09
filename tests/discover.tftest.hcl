@@ -1,12 +1,4 @@
-variables {
-  seerr_url     = "http://localhost:1337" # Default or from environment
-  seerr_api_key = "dummy"                # Should be provided via env or tfvars
-}
-
-provider "seerr" {
-  url     = var.seerr_url
-  api_key = var.seerr_api_key
-}
+# Inherits provider "seerr" from provider.tf
 
 run "apply_discover_sliders" {
   module {

@@ -1,0 +1,23 @@
+variable "user_id" {
+  type = number
+}
+
+variable "auto_approve_movies" {
+  type    = bool
+  default = false
+}
+
+variable "auto_approve_tv" {
+  type    = bool
+  default = false
+}
+
+variable "auto_approve_4k_movies" {
+  type    = bool
+  default = false
+}
+
+variable "auto_approve_4k_tv" {
+  type    = bool
+  default = false
+}

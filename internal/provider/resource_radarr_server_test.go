@@ -129,13 +129,13 @@ func TestReadRadarrStateFromJSON_UserSuppliedFieldsUntouched(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if data.APIKey.ValueString() != "my-secret-key" {
-		t.Errorf("APIKey should not be overwritten, got %q", data.APIKey.ValueString())
+		t.Errorf("APIKey should not be overwritten by helper, got %q", data.APIKey.ValueString())
 	}
 	if data.URL.ValueString() != "http://radarr:7878" {
-		t.Errorf("URL should not be overwritten, got %q", data.URL.ValueString())
+		t.Errorf("URL should not be overwritten by helper, got %q", data.URL.ValueString())
 	}
 	if data.ExtraPayloadJSON.ValueString() != `{"custom":"value"}` {
-		t.Errorf("ExtraPayloadJSON should not be overwritten, got %q", data.ExtraPayloadJSON.ValueString())
+		t.Errorf("ExtraPayloadJSON should not be overwritten by helper, got %q", data.ExtraPayloadJSON.ValueString())
 	}
 }
 

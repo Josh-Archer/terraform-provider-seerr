@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -323,10 +324,10 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	if email, ok := userMap["email"].(string); ok {
-		data.Email = types.StringValue(email)
+		data.Email = types.StringValue(strings.ToLower(email))
 	}
 	if username, ok := userMap["username"].(string); ok {
-		data.Username = types.StringValue(username)
+		data.Username = types.StringValue(strings.ToLower(username))
 	}
 	if p, ok := userMap["permissions"].(float64); ok {
 		data.Permissions = types.Int64Value(int64(p))

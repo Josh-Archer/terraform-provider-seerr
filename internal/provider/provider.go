@@ -134,6 +134,7 @@ func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewUserResource,
 		NewDiscoverSliderResource,
 		NewTautulliSettingsResource,
+		NewUserSettingsPermissionsResource,
 	}
 }
 

@@ -156,10 +156,10 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	if e, ok := matchedUser["email"].(string); ok {
-		data.Email = types.StringValue(e)
+		data.Email = types.StringValue(strings.ToLower(e))
 	}
 	if un, ok := matchedUser["username"].(string); ok {
-		data.Username = types.StringValue(un)
+		data.Username = types.StringValue(strings.ToLower(un))
 	}
 	if p, ok := matchedUser["permissions"].(float64); ok {
 		data.Permissions = types.Int64Value(int64(p))
