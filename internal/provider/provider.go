@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -25,6 +26,7 @@ type SeerrProvider struct {
 type SeerrProviderModel struct {
 	URL                types.String `tfsdk:"url"`
 	APIKey             types.String `tfsdk:"api_key"`
+	PlexToken          types.String `tfsdk:"plex_token"`
 	InsecureSkipVerify types.Bool   `tfsdk:"insecure_skip_verify"`
 	UserAgent          types.String `tfsdk:"user_agent"`
 }
@@ -49,8 +51,13 @@ func (p *SeerrProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 				},
 			},
 			"api_key": schema.StringAttribute{
-				MarkdownDescription: "Seerr API key used as the `X-Api-Key` header.",
-				Required:            true,
+				MarkdownDescription: "Seerr API key used as the `X-Api-Key` header. Required if `plex_token` is not set.",
+				Optional:            true,
+				Sensitive:           true,
+			},
+			"plex_token": schema.StringAttribute{
+				MarkdownDescription: "Plex token used as the `X-Plex-Token` header for authentication. This token must belong to a server admin user in order to be used for the setup flow. Required if `api_key` is not set.",
+				Optional:            true,
 				Sensitive:           true,
 			},
 			"insecure_skip_verify": schema.BoolAttribute{
@@ -74,12 +81,14 @@ func (p *SeerrProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 	baseURL := strings.TrimSpace(data.URL.ValueString())
 	apiKey := strings.TrimSpace(data.APIKey.ValueString())
+	plexToken := strings.TrimSpace(data.PlexToken.ValueString())
+
 	if baseURL == "" {
 		resp.Diagnostics.AddError("Missing Base URL", "Provider requires a 'url' to be set.")
 		return
 	}
-	if apiKey == "" {
-		resp.Diagnostics.AddError("Missing API Key", "Provider requires an 'api_key' to be set.")
+	if apiKey == "" && plexToken == "" {
+		resp.Diagnostics.AddError("Missing Authentication", "Provider requires either an 'api_key' or a 'plex_token' to be set.")
 		return
 	}
 
@@ -104,6 +113,69 @@ func (p *SeerrProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	}
 
 	client := NewClient(parsed, apiKey, userAgent, insecure)
+
+	// Authentication flow logic
+	if apiKey == "" && plexToken != "" {
+		// 1. Authenticate with Plex token
+		authPayload := map[string]string{"authToken": plexToken}
+		authBody, _ := json.Marshal(authPayload)
+
+		authRes, err := client.Request(ctx, "POST", "/api/v1/auth/plex", string(authBody), nil)
+		if err != nil {
+			resp.Diagnostics.AddError("Plex Auth Failed", err.Error())
+			return
+		}
+		if !StatusIsOK(authRes.StatusCode) {
+			resp.Diagnostics.AddError("Plex Auth Failed", fmt.Sprintf("status %d: %s", authRes.StatusCode, string(authRes.Body)))
+			return
+		}
+
+		// 2. Extract session cookie (connect.sid)
+		cookies := authRes.Headers.Values("Set-Cookie")
+		var sessionCookie string
+		for _, c := range cookies {
+			if strings.HasPrefix(c, "connect.sid=") {
+				// We just need the actual key=value part before the first semicolon
+				sessionCookie = strings.SplitN(c, ";", 2)[0]
+				break
+			}
+		}
+
+		if sessionCookie == "" {
+			resp.Diagnostics.AddError("Plex Auth Failed", "Did not receive a session cookie from Seerr.")
+			return
+		}
+
+		client.SetSessionCookie(sessionCookie)
+
+		// 3. Fetch settings to get API key
+		settingsRes, err := client.Request(ctx, "GET", "/api/v1/settings/main", "", nil)
+		if err != nil {
+			resp.Diagnostics.AddError("API Key Fetch Failed", err.Error())
+			return
+		}
+		if !StatusIsOK(settingsRes.StatusCode) {
+			resp.Diagnostics.AddError("API Key Fetch Failed", fmt.Sprintf("status %d: %s", settingsRes.StatusCode, string(settingsRes.Body)))
+			return
+		}
+
+		var settings map[string]any
+		if err := json.Unmarshal(settingsRes.Body, &settings); err != nil {
+			resp.Diagnostics.AddError("API Key Fetch Failed", fmt.Sprintf("failed to parse settings: %s", err))
+			return
+		}
+
+		fetchedKey, ok := settings["apiKey"].(string)
+		if !ok || fetchedKey == "" {
+			resp.Diagnostics.AddError("API Key Fetch Failed", "apiKey not found in settings response. Ensure the Plex user is an admin.")
+			return
+		}
+
+		// 4. Update the client with the new API key, discarding the session cookie
+		client.SetAPIKey(fetchedKey)
+		client.SetSessionCookie("") // We only need the API key going forward
+	}
+
 	resp.DataSourceData = client
 	resp.ResourceData = client
 }

@@ -14,15 +14,17 @@ import (
 )
 
 type APIClient struct {
-	baseURL   *url.URL
-	apiKey    string
-	userAgent string
-	client    *http.Client
+	baseURL       *url.URL
+	apiKey        string
+	sessionCookie string
+	userAgent     string
+	client        *http.Client
 }
 
 type APIResponse struct {
 	StatusCode int
 	Body       []byte
+	Headers    http.Header
 }
 
 func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bool) *APIClient {
@@ -47,6 +49,14 @@ func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bo
 	}
 }
 
+func (c *APIClient) SetAPIKey(key string) {
+	c.apiKey = key
+}
+
+func (c *APIClient) SetSessionCookie(cookie string) {
+	c.sessionCookie = cookie
+}
+
 func (c *APIClient) Request(ctx context.Context, method, path string, body string, extraHeaders map[string]string) (*APIResponse, error) {
 	absURL, err := c.resolvePath(path)
 	if err != nil {
@@ -63,7 +73,11 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 		return nil, err
 	}
 
-	req.Header.Set("X-Api-Key", c.apiKey)
+	if c.apiKey != "" {
+		req.Header.Set("X-Api-Key", c.apiKey)
+	} else if c.sessionCookie != "" {
+		req.Header.Set("Cookie", c.sessionCookie)
+	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.userAgent)
 	if strings.TrimSpace(body) != "" {
@@ -90,6 +104,7 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 	return &APIResponse{
 		StatusCode: res.StatusCode,
 		Body:       respBody,
+		Headers:    res.Header,
 	}, nil
 }
 
