@@ -47,10 +47,26 @@ func TestAccUserResource(t *testing.T) {
 					resource.TestCheckResourceAttr("seerr_user.test", "notification_settings.notification_types.webpush", "256"),
 				),
 			},
-			// Import
+			// Import by ID
 			{
 				ResourceName:            "seerr_user.test",
 				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"notification_settings.pushbullet_access_token", "notification_settings.pushover_application_token", "notification_settings.pushover_user_key"},
+			},
+			// Import by Username
+			{
+				ResourceName:            "seerr_user.test",
+				ImportState:             true,
+				ImportStateId:           updatedUsername, // Importing by username instead of ID
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"notification_settings.pushbullet_access_token", "notification_settings.pushover_application_token", "notification_settings.pushover_user_key"},
+			},
+			// Import by Email
+			{
+				ResourceName:            "seerr_user.test",
+				ImportState:             true,
+				ImportStateId:           email, // Importing by email instead of ID
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"notification_settings.pushbullet_access_token", "notification_settings.pushover_application_token", "notification_settings.pushover_user_key"},
 			},
@@ -59,7 +75,7 @@ func TestAccUserResource(t *testing.T) {
 }
 
 func testAccUserResourceConfigFull(username, email string, permissions int) string {
-	return fmt.Sprintf(`
+	return providerConfig + fmt.Sprintf(`
 resource "seerr_user" "test" {
   username          = %[1]q
   email             = %[2]q
@@ -86,7 +102,7 @@ resource "seerr_user" "test" {
 }
 
 func testAccUserResourceConfig(username, email string, permissions int) string {
-	return fmt.Sprintf(`
+	return providerConfig + fmt.Sprintf(`
 resource "seerr_user" "test" {
   username    = %[1]q
   email       = %[2]q

@@ -92,3 +92,20 @@ Optional:
 - `telegram` (Number)
 - `webhook` (Number)
 - `webpush` (Number)
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# User can be imported by ID
+terraform import seerr_user.example 1
+
+# Additionally, the user can be imported by username
+terraform import seerr_user.example jdoe
+
+# Or the user can be imported by their email address
+terraform import seerr_user.example jdoe@example.com
+```

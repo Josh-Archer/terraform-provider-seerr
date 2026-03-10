@@ -247,7 +247,9 @@ func (r *PlexSettingsResource) Update(ctx context.Context, req resource.UpdateRe
 }
 
 func (r *PlexSettingsResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
-	// No DELETE route for plex settings.
+	// There is no concept of "deleting" Plex settings in Seerr; it is a singleton.
+	// This method only removes the resource from Terraform state.
+	// The settings remain as-is on the Seerr instance.
 }
 
 func (r *PlexSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
