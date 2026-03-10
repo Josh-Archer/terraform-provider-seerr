@@ -458,12 +458,16 @@ func (r *UserResource) ImportState(ctx context.Context, req resource.ImportState
 		searchLower := strings.ToLower(id)
 		for _, u := range parsedResponse.Results {
 			if un, ok := u["username"].(string); ok && strings.ToLower(un) == searchLower {
-				searchID = fmt.Sprintf("%.0f", u["id"].(float64))
-				break
+				if idFlt, idOk := u["id"].(float64); idOk {
+					searchID = fmt.Sprintf("%.0f", idFlt)
+					break
+				}
 			}
 			if e, ok := u["email"].(string); ok && strings.ToLower(e) == searchLower {
-				searchID = fmt.Sprintf("%.0f", u["id"].(float64))
-				break
+				if idFlt, idOk := u["id"].(float64); idOk {
+					searchID = fmt.Sprintf("%.0f", idFlt)
+					break
+				}
 			}
 		}
 
