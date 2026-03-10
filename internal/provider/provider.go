@@ -56,7 +56,7 @@ func (p *SeerrProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 				Sensitive:           true,
 			},
 			"plex_token": schema.StringAttribute{
-				MarkdownDescription: "Plex token used as the `X-Plex-Token` header. Required if `api_key` is not set.",
+				MarkdownDescription: "Plex token used as the `X-Plex-Token` header for authentication. This token must belong to a server admin user in order to be used for the setup flow. Required if `api_key` is not set.",
 				Optional:            true,
 				Sensitive:           true,
 			},

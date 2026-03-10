@@ -34,5 +34,5 @@ variable "seerr_api_key" {
 
 - `api_key` (String, Sensitive) Seerr API key used as the `X-Api-Key` header. Required if `plex_token` is not set.
 - `insecure_skip_verify` (Boolean) Skip TLS certificate verification.
-- `plex_token` (String, Sensitive) Plex token used as the `X-Plex-Token` header. Required if `api_key` is not set.
+- `plex_token` (String, Sensitive) Plex token used as the `X-Plex-Token` header for authentication. This token must belong to a server admin user in order to be used for the setup flow. Required if `api_key` is not set.
 - `user_agent` (String) Optional custom User-Agent header.
