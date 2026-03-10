@@ -432,7 +432,49 @@ func (r *UserResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 }
 
 func (r *UserResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	id := req.ID
+
+	// If ID is not an integer, try to look up user by username or email
+	if _, err := strconv.Atoi(id); err != nil {
+		res, err := r.client.Request(ctx, "GET", "/api/v1/user?take=1000", "", nil)
+		if err != nil {
+			resp.Diagnostics.AddError("Import Failed", fmt.Sprintf("failed to fetch users for lookup: %s", err))
+			return
+		}
+		if !StatusIsOK(res.StatusCode) {
+			resp.Diagnostics.AddError("Import Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
+			return
+		}
+
+		var parsedResponse struct {
+			Results []map[string]any `json:"results"`
+		}
+		if err := json.Unmarshal(res.Body, &parsedResponse); err != nil {
+			resp.Diagnostics.AddError("Import Failed", "Failed to parse API response: "+err.Error())
+			return
+		}
+
+		searchID := ""
+		searchLower := strings.ToLower(id)
+		for _, u := range parsedResponse.Results {
+			if un, ok := u["username"].(string); ok && strings.ToLower(un) == searchLower {
+				searchID = fmt.Sprintf("%.0f", u["id"].(float64))
+				break
+			}
+			if e, ok := u["email"].(string); ok && strings.ToLower(e) == searchLower {
+				searchID = fmt.Sprintf("%.0f", u["id"].(float64))
+				break
+			}
+		}
+
+		if searchID == "" {
+			resp.Diagnostics.AddError("Import Failed", fmt.Sprintf("could not find user matching %q as id, username, or email", id))
+			return
+		}
+		id = searchID
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
 }
 
 func (r *UserResource) updateMainSettings(ctx context.Context, userID string, data *UserModel) error {

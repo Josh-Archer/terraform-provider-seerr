@@ -1,0 +1,25 @@
+title:	Improve brownfield adoption with better data sources, imports, and lifecycle semantics
+state:	OPEN
+author:	Josh-Archer
+labels:	
+comments:	0
+assignees:	
+projects:	
+milestone:	
+number:	32
+--
+## Summary
+Improve brownfield adoption and day-2 operations for existing Seerr installs.
+
+## Proposed changes
+- Add read-only data sources for existing singleton resources such as discover sliders and job schedules.
+- Add collection/listing data sources for brownfield discovery, especially users, jobs, and notification agents.
+- Support more natural import identifiers where possible instead of only numeric IDs.
+- Clarify or improve lifecycle semantics for singleton resources that currently remove state without resetting remote state.
+- Consider explicit adopt-only / retain-on-delete style semantics where Seerr has no real delete/reset API.
+
+## Why
+The provider is already strong at managing known objects, but brownfield onboarding still requires too much manual discovery and import ceremony.
+
+## Scope
+These items belong together because they all improve discoverability, importability, and lifecycle clarity for existing Seerr deployments.

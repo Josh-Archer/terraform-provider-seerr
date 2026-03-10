@@ -1,0 +1,25 @@
+title:	Improve provider validation, transport options, and Terraform-native ergonomics
+state:	OPEN
+author:	Josh-Archer
+labels:	
+comments:	0
+assignees:	
+projects:	
+milestone:	
+number:	33
+--
+## Summary
+Improve provider ergonomics so invalid configurations fail earlier and advanced usage feels more Terraform-native.
+
+## Proposed changes
+- Add schema validation for conflicting inputs such as `url` vs `hostname`/`port`/`base_url`.
+- Validate that only the matching notification-agent block is set for the selected `agent`.
+- Add provider-level operator controls such as environment-variable config, configurable request timeout, and retry/backoff behavior.
+- Make `seerr_api_object` / `seerr_api_request` easier to use by supporting structured request input and normalized JSON handling.
+- Replace or supplement raw notification bitmask UX with a typed set/list of event names.
+
+## Why
+Several resources currently accept ambiguous input and normalize it later, which makes plan/apply behavior harder to reason about. The generic API escape hatches also require too much raw JSON handling today.
+
+## Scope
+This is grouped intentionally because validation, transport ergonomics, and Terraform-native schema design are all part of the same usability pass.

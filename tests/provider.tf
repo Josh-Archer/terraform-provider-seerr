@@ -20,6 +20,16 @@ variable "api_key" {
   default     = "dummy"
 }
 
+data "seerr_user" "admin" {
+  email = "admin@example.com"
+}
+
+data "seerr_users" "all" {}
+
+data "seerr_jobs" "all" {}
+
+data "seerr_notification_agents" "all" {}
+
 provider "seerr" {
   url     = var.url
   api_key = var.api_key

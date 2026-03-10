@@ -236,6 +236,9 @@ func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewUserWatchlistSettingsDataSource,
 		NewAPIKeyDataSource,
 		NewUserDataSource,
+		NewUsersDataSource,
+		NewJobsDataSource,
+		NewNotificationAgentsDataSource,
 		NewTautulliSettingsDataSource,
 	}
 }

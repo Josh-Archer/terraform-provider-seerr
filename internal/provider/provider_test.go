@@ -9,6 +9,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
+const (
+	providerConfig = `
+provider "seerr" {
+  url      = "http://localhost:5055"
+  api_key  = "dummy_api_key_for_testing"
+}
+`
+)
+
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
 	"seerr": providerserver.NewProtocol6WithError(New("test")()),
 }
