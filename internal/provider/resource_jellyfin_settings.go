@@ -348,7 +348,7 @@ func (r *JellyfinSettingsResource) Update(ctx context.Context, req resource.Upda
 
 func (r *JellyfinSettingsResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
 	// There is no concept of "deleting" Jellyfin settings in Seerr; it is a singleton.
-	// This method only removes the resource from Terraform state. 
+	// This method only removes the resource from Terraform state.
 	// The settings remain as-is on the Seerr instance.
 }
 

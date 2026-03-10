@@ -23,7 +23,7 @@ type NotificationAgentSummaryModel struct {
 }
 
 type NotificationAgentsDataSourceModel struct {
-	ID     types.String                   `tfsdk:"id"`
+	ID     types.String                    `tfsdk:"id"`
 	Agents []NotificationAgentSummaryModel `tfsdk:"agents"`
 }
 
