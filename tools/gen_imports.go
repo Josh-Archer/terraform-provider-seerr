@@ -26,14 +26,14 @@ var resources = map[string]string{
 
 func main() {
 	baseDir := filepath.Join("examples", "resources")
-	
+
 	for resName, idExample := range resources {
 		targetDir := filepath.Join(baseDir, resName)
 		if err := os.MkdirAll(targetDir, 0755); err != nil {
 			fmt.Printf("Error creating dir %s: %v\n", targetDir, err)
 			continue
 		}
-		
+
 		content := fmt.Sprintf(`# In Terraform 1.5.0 and later, use an import block to import %s. For example:
 #
 # import {
@@ -44,7 +44,7 @@ func main() {
 # Otherwise, use the terraform import command:
 terraform import %s.example %s
 `, resName, resName, idExample, resName, idExample)
-		
+
 		filePath := filepath.Join(targetDir, "import.sh")
 		if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 			fmt.Printf("Error writing file %s: %v\n", filePath, err)
