@@ -45,3 +45,21 @@ resource "seerr_emby_settings" "default" {
 - `response_json` (String) Raw JSON response body from the latest operation.
 - `server_id` (String) The unique server ID of the connected Emby server.
 - `status_code` (Number) HTTP status code from the latest operation.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_emby_settings. For example:
+#
+# import {
+#   to = seerr_emby_settings.example
+#   id = "emby"
+# }
+#
+# Otherwise, use the terraform import command:
+terraform import seerr_emby_settings.example emby
+```

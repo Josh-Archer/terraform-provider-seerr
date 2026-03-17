@@ -26,3 +26,21 @@ Manage Seerr user watchlist sync settings via /api/v1/user/{userId}/settings/mai
 - `id` (String) The ID of this resource.
 - `response_json` (String) Raw JSON response body from the latest operation.
 - `status_code` (Number) HTTP status code from the latest operation.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_user_watchlist_settings. For example:
+#
+# import {
+#   to = seerr_user_watchlist_settings.example
+#   id = "1"
+# }
+#
+# Otherwise, use the terraform import command:
+terraform import seerr_user_watchlist_settings.example 1
+```

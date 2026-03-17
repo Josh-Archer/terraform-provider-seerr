@@ -1,0 +1,1 @@
+{"body":"Add a resource to interact with the API to generate multi-use or single-use invitation links (\\seerr_user_invitation\\). This allows piping invitation URLs into other Terraform resources (e.g., Slack, email) for automated onboarding.","title":"Feature: User Invitation Management (\\seerr_user_invitation\\)"}

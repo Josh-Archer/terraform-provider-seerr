@@ -40,3 +40,21 @@ Read-Only:
 
 - `id` (Number) The internal ID of the slider.
 - `is_built_in` (Boolean) Whether this is a built-in slider.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_discover_slider. For example:
+#
+# import {
+#   to = seerr_discover_slider.example
+#   id = "1"
+# }
+#
+# Otherwise, use the terraform import command:
+terraform import seerr_discover_slider.example 1
+```

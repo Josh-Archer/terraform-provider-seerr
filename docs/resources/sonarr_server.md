@@ -59,3 +59,21 @@ resource "seerr_sonarr_server" "example" {
 - `id` (String) The ID of this resource.
 - `response_json` (String)
 - `server_id` (Number)
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_sonarr_server. For example:
+#
+# import {
+#   to = seerr_sonarr_server.example
+#   id = "0"
+# }
+#
+# Otherwise, use the terraform import command:
+terraform import seerr_sonarr_server.example 0
+```

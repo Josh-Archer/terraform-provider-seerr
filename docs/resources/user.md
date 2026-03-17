@@ -100,12 +100,21 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-# User can be imported by ID
+# In Terraform 1.5.0 and later, use an import block to import seerr_user. For example:
+#
+# import {
+#   to = seerr_user.example
+#   id = "1
+
+# Additionally, you can import by username or email:
+# terraform import seerr_user.example jdoe
+# terraform import seerr_user.example jdoe@example.com"
+# }
+#
+# Otherwise, use the terraform import command:
 terraform import seerr_user.example 1
 
-# Additionally, the user can be imported by username
-terraform import seerr_user.example jdoe
-
-# Or the user can be imported by their email address
-terraform import seerr_user.example jdoe@example.com
+# Additionally, you can import by username or email:
+# terraform import seerr_user.example jdoe
+# terraform import seerr_user.example jdoe@example.com
 ```

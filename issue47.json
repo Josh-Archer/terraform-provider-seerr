@@ -1,0 +1,1 @@
+{"body":"Add a \\seerr_backup_settings\\ resource to configure automated backup schedules, retention policies, and storage paths via IaC.","title":"Feature: Overseerr/Jellyseerr Backup Schedules (\\seerr_backup_settings\\)"}

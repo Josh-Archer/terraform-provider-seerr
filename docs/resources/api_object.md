@@ -52,3 +52,21 @@ resource "seerr_api_object" "main_settings" {
 - `id` (String) Terraform resource identifier.
 - `response_body_json` (String) Raw JSON response body from the latest operation.
 - `status_code` (Number) HTTP status code from the latest operation.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_api_object. For example:
+#
+# import {
+#   to = seerr_api_object.example
+#   id = "GET:/api/v1/status"
+# }
+#
+# Otherwise, use the terraform import command:
+terraform import seerr_api_object.example GET:/api/v1/status
+```

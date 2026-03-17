@@ -1,0 +1,4 @@
+47	OPEN	Feature: Overseerr/Jellyseerr Backup Schedules (\seerr_backup_settings\)		2026-03-17T18:16:17Z
+46	OPEN	Feature: User Invitation Management (\seerr_user_invitation\)		2026-03-17T18:16:14Z
+33	OPEN	Improve provider validation, transport options, and Terraform-native ergonomics		2026-03-08T20:07:53Z
+31	OPEN	Add reproducible integration test environment and broader acceptance coverage		2026-03-08T20:07:53Z
