@@ -240,6 +240,8 @@ func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewJobsDataSource,
 		NewNotificationAgentsDataSource,
 		NewTautulliSettingsDataSource,
+		NewIssuesDataSource,
+		NewRequestsDataSource,
 	}
 }
 
