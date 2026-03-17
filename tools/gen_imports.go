@@ -1,3 +1,6 @@
+// Copyright (c) Josh Archer
+// SPDX-License-Identifier: MPL-2.0
+
 package main
 
 import (
