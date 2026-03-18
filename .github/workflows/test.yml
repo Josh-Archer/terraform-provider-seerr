@@ -75,6 +75,10 @@ jobs:
             bash ./scripts/ci-docker-up.sh >> "$GITHUB_ENV"
             echo "TEST_ENV_CREATED=true" >> "$GITHUB_ENV"
           fi
+      - name: Initialize OpenTofu Test Modules
+        working-directory: tests
+        shell: bash
+        run: tofu init
       - name: OpenTofu Test
         working-directory: tests
         shell: bash
