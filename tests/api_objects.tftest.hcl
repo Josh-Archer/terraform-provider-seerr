@@ -6,7 +6,7 @@ run "api_object_lifecycle" {
     create_method = "POST"
     update_method = "POST"
     skip_delete   = true
-    request_body  = jsonencode({ applicationTitle = "tofu_api_test" })
+    request_body  = "{\"applicationTitle\":\"tofu_api_test\"}"
   }
 
   module {

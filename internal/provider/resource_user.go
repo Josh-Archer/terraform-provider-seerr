@@ -245,12 +245,6 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 			return
 		}
 
-		// Immediately after import, update the permissions to match what Terraform expects (since import might not set them)
-		updateBody, _ := json.Marshal(map[string]any{
-			"permissions": data.Permissions.ValueInt64(),
-		})
-		_, _ = r.client.Request(ctx, "PUT", "/api/v1/user/"+userIDStr, string(updateBody), nil)
-
 	} else {
 		// Create Local User
 		createBody, _ := json.Marshal(map[string]any{
@@ -278,6 +272,13 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	data.ID = types.StringValue(userIDStr)
+
+	// Force permissions to the planned value because the create/import endpoints
+	// can return a server-side default instead of the requested mask.
+	if err := r.updateUserPermissions(ctx, userIDStr, data.Permissions); err != nil {
+		resp.Diagnostics.AddError("Update Permissions Failed", err.Error())
+		return
+	}
 
 	// Update main settings
 	if err := r.updateMainSettings(ctx, userIDStr, &data); err != nil {
@@ -388,11 +389,13 @@ func (r *UserResource) readUser(ctx context.Context, userID string, data *UserMo
 	}
 
 	// Read Notification Settings
-	notifRes, err := r.client.Request(ctx, "GET", fmt.Sprintf("/api/v1/user/%s/settings/notifications", userID), "", nil)
-	if err == nil && StatusIsOK(notifRes.StatusCode) {
-		var notifMap map[string]any
-		if err := json.Unmarshal(notifRes.Body, &notifMap); err == nil {
-			data.NotificationSettings = r.mapNotificationSettings(notifMap)
+	if data.NotificationSettings != nil {
+		notifRes, err := r.client.Request(ctx, "GET", fmt.Sprintf("/api/v1/user/%s/settings/notifications", userID), "", nil)
+		if err == nil && StatusIsOK(notifRes.StatusCode) {
+			var notifMap map[string]any
+			if err := json.Unmarshal(notifRes.Body, &notifMap); err == nil {
+				data.NotificationSettings = r.mapNotificationSettings(notifMap)
+			}
 		}
 	}
 
@@ -542,6 +545,24 @@ func (r *UserResource) updateMainSettings(ctx context.Context, userID string, da
 	}
 	if !StatusIsOK(res.StatusCode) {
 		return fmt.Errorf("main settings status %d: %s", res.StatusCode, string(res.Body))
+	}
+	return nil
+}
+
+func (r *UserResource) updateUserPermissions(ctx context.Context, userID string, permissions types.Int64) error {
+	if permissions.IsNull() || permissions.IsUnknown() {
+		return nil
+	}
+
+	body, _ := json.Marshal(map[string]any{
+		"permissions": permissions.ValueInt64(),
+	})
+	res, err := r.client.Request(ctx, "PUT", "/api/v1/user/"+userID, string(body), nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("permissions status %d: %s", res.StatusCode, string(res.Body))
 	}
 	return nil
 }
