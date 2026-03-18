@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -78,15 +81,27 @@ func (r *RadarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 				Computed: true,
 				Default:  stringdefault.StaticString("Radarr"),
 			},
-			"url": schema.StringAttribute{Optional: true},
+			"url": schema.StringAttribute{
+				Optional: true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("hostname")),
+					stringvalidator.ConflictsWith(path.MatchRoot("port")),
+				},
+			},
 			"hostname": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
 				Default:  stringdefault.StaticString("radarr-service"),
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("url")),
+				},
 			},
 			"port": schema.Int64Attribute{
 				Optional: true,
 				Computed: true,
+				Validators: []validator.Int64{
+					int64validator.ConflictsWith(path.MatchRoot("url")),
+				},
 			},
 			"api_key": schema.StringAttribute{
 				Required:  true,
@@ -218,6 +233,7 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 			data.UseSSL.ValueBool(),
 			data.BaseURL.ValueString(),
 			data.APIKey.ValueString(),
+			r.client.Timeout(),
 			&profileID,
 			nil,
 		)

@@ -15,6 +15,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const defaultRequestTimeout = 2 * time.Minute
+
+func normalizeRequestTimeout(timeout time.Duration) time.Duration {
+	if timeout <= 0 {
+		return defaultRequestTimeout
+	}
+	return timeout
+}
+
 func normalizeServerIdentity(id, fallbackID types.String, serverID, fallbackServerID types.Int64) (types.String, types.Int64) {
 	if serverID.IsNull() || serverID.IsUnknown() {
 		serverID = fallbackServerID
@@ -134,7 +143,7 @@ func buildArrBaseURL(rawURL, hostname string, port int64, useSSL bool, baseURL s
 	return fmt.Sprintf("%s://%s%s", scheme, host, strings.TrimRight(path, "/")), nil
 }
 
-func fetchArrProfiles(ctx context.Context, rawURL, hostname string, port int64, useSSL bool, baseURL, apiKey string) ([]map[string]any, string, error) {
+func fetchArrProfiles(ctx context.Context, rawURL, hostname string, port int64, useSSL bool, baseURL, apiKey string, timeout time.Duration) ([]map[string]any, string, error) {
 	base, err := buildArrBaseURL(rawURL, hostname, port, useSSL, baseURL)
 	if err != nil {
 		return nil, "", err
@@ -147,7 +156,7 @@ func fetchArrProfiles(ctx context.Context, rawURL, hostname string, port int64, 
 	}
 	req.Header.Set("X-Api-Key", apiKey)
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := &http.Client{Timeout: normalizeRequestTimeout(timeout)}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, profilesURL, err
@@ -176,8 +185,8 @@ type arrProfileMatch struct {
 	Body []byte
 }
 
-func findArrProfile(ctx context.Context, rawURL, hostname string, port int64, useSSL bool, baseURL, apiKey string, profileID *int64, profileName *string) (*arrProfileMatch, error) {
-	profiles, profilesURL, err := fetchArrProfiles(ctx, rawURL, hostname, port, useSSL, baseURL, apiKey)
+func findArrProfile(ctx context.Context, rawURL, hostname string, port int64, useSSL bool, baseURL, apiKey string, timeout time.Duration, profileID *int64, profileName *string) (*arrProfileMatch, error) {
+	profiles, profilesURL, err := fetchArrProfiles(ctx, rawURL, hostname, port, useSSL, baseURL, apiKey, timeout)
 	if err != nil {
 		return nil, err
 	}
