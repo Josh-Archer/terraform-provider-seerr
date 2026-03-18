@@ -103,22 +103,6 @@ func assertResourceSchemaLacksKey(t *testing.T, s rschema.Schema, key string) {
 	}
 }
 
-func assertResourceInt64AttributeHasNoDefault(t *testing.T, s rschema.Schema, key string) {
-	t.Helper()
-	attr, ok := s.Attributes[key]
-	if !ok {
-		t.Fatalf("expected resource schema to contain %q", key)
-	}
-
-	intAttr, ok := attr.(rschema.Int64Attribute)
-	if !ok {
-		t.Fatalf("expected %q to be an Int64Attribute, got %T", key, attr)
-	}
-	if intAttr.Default != nil {
-		t.Fatalf("expected %q to have no default", key)
-	}
-}
-
 func assertDataSourceSchemaHasKey(t *testing.T, s dschema.Schema, key string) {
 	t.Helper()
 	if _, ok := s.Attributes[key]; !ok {
