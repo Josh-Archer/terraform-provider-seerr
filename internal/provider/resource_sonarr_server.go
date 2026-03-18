@@ -241,6 +241,7 @@ func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerMod
 			data.UseSSL.ValueBool(),
 			data.BaseURL.ValueString(),
 			data.APIKey.ValueString(),
+			r.client.Timeout(),
 			&profileID,
 			nil,
 		)

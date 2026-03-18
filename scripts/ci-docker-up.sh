@@ -64,8 +64,22 @@ except FileNotFoundError:
 
 settings.setdefault("main", {})["apiKey"] = "${api_key}"
 settings.setdefault("public", {})["initialized"] = True
-settings_path.write_text(json.dumps(settings, indent=1) + "\n")
 
+email_opts = {
+    "emailFrom": "test@example.com",
+    "emailUrlBase": "http://127.0.0.1:15055",
+    "senderName": "Seerr Test",
+    "smtpHost": "127.0.0.1",
+    "smtpPort": 25,
+    "secure": False,
+    "ignoreTls": True,
+    "requireTls": False,
+    "allowSelfSigned": True
+}
+settings.setdefault("notifications", {}).setdefault("email", {})["enabled"] = True
+settings["notifications"]["email"]["options"] = email_opts
+
+settings_path.write_text(json.dumps(settings, indent=1) + "\n")
 db_path = db_dir / "db.sqlite3"
 db = sqlite3.connect(str(db_path))
 user_result = db.execute(

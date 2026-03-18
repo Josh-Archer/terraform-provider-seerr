@@ -318,6 +318,25 @@ func (r *MainSettingsResource) Create(ctx context.Context, req resource.CreateRe
 		data.SeriesRequestLimit = types.Int64Value(int64(v))
 	}
 
+	if data.AppTitle.IsUnknown() { data.AppTitle = types.StringNull() }
+	if data.ApplicationURL.IsUnknown() { data.ApplicationURL = types.StringNull() }
+	if data.TrustProxy.IsUnknown() { data.TrustProxy = types.BoolNull() }
+	if data.CSRFProtection.IsUnknown() { data.CSRFProtection = types.BoolNull() }
+	if data.ImageProxy.IsUnknown() { data.ImageProxy = types.BoolNull() }
+	if data.Locale.IsUnknown() { data.Locale = types.StringNull() }
+	if data.Region.IsUnknown() { data.Region = types.StringNull() }
+	if data.OriginalLanguage.IsUnknown() { data.OriginalLanguage = types.StringNull() }
+	if data.HideAvailable.IsUnknown() { data.HideAvailable = types.BoolNull() }
+	if data.PartialRequests.IsUnknown() { data.PartialRequests = types.BoolNull() }
+	if data.LocalLogin.IsUnknown() { data.LocalLogin = types.BoolNull() }
+	if data.NewPlexLogin.IsUnknown() { data.NewPlexLogin = types.BoolNull() }
+	if data.PlexLogin.IsUnknown() { data.PlexLogin = types.BoolNull() }
+	if data.MovieRequestsEnabled.IsUnknown() { data.MovieRequestsEnabled = types.BoolNull() }
+	if data.SeriesRequestsEnabled.IsUnknown() { data.SeriesRequestsEnabled = types.BoolNull() }
+	if data.EnableReportAnIssue.IsUnknown() { data.EnableReportAnIssue = types.BoolNull() }
+	if data.MovieRequestLimit.IsUnknown() { data.MovieRequestLimit = types.Int64Null() }
+	if data.SeriesRequestLimit.IsUnknown() { data.SeriesRequestLimit = types.Int64Null() }
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
