@@ -44,8 +44,8 @@ func TestNotificationClientResourceMetadataAndSchema(t *testing.T) {
 			assertResourceSchemaLacksKey(t, schemaResp.Schema, tt.absentKey)
 			assertResourceSchemaLacksKey(t, schemaResp.Schema, "agent")
 			assertResourceSchemaHasKey(t, schemaResp.Schema, "enabled")
-			assertResourceSchemaHasKey(t, schemaResp.Schema, "on_request_pending")
-			assertResourceInt64AttributeHasNoDefault(t, schemaResp.Schema, "types")
+			assertResourceSchemaHasKey(t, schemaResp.Schema, "notification_types")
+			assertResourceSchemaLacksKey(t, schemaResp.Schema, "types")
 		})
 	}
 }
@@ -84,7 +84,7 @@ func TestNotificationClientDataSourceMetadataAndSchema(t *testing.T) {
 			assertDataSourceSchemaLacksKey(t, schemaResp.Schema, tt.absentKey)
 			assertDataSourceSchemaLacksKey(t, schemaResp.Schema, "agent")
 			assertDataSourceSchemaHasKey(t, schemaResp.Schema, "enabled")
-			assertDataSourceSchemaHasKey(t, schemaResp.Schema, "on_request_pending")
+			assertDataSourceSchemaHasKey(t, schemaResp.Schema, "notification_types")
 		})
 	}
 }
