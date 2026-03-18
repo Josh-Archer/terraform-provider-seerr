@@ -16,7 +16,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 )
 
 var _ resource.Resource = &SonarrServerResource{}
@@ -80,13 +83,28 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 				Computed: true,
 				Default:  stringdefault.StaticString("Sonarr"),
 			},
-			"url": schema.StringAttribute{Optional: true},
+			"url": schema.StringAttribute{
+				Optional: true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("hostname")),
+					stringvalidator.ConflictsWith(path.MatchRoot("port")),
+				},
+			},
 			"hostname": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
 				Default:  stringdefault.StaticString("sonarr-service"),
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("url")),
+				},
 			},
-			"port": schema.Int64Attribute{Optional: true, Computed: true},
+			"port": schema.Int64Attribute{
+				Optional: true,
+				Computed: true,
+				Validators: []validator.Int64{
+					int64validator.ConflictsWith(path.MatchRoot("url")),
+				},
+			},
 			"api_key": schema.StringAttribute{
 				Required:  true,
 				Sensitive: true,
