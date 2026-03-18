@@ -1,0 +1,19 @@
+﻿job_schedule.tftest.hcl... [32mpass[0m[0m
+  run "job_schedule_lifecycle"... [32mpass[0m[0m
+  run "job_schedule_update"... [32mpass[0m[0m
+servers.tftest.hcl... [32mpass[0m[0m
+  run "radarr_lifecycle"... [32mpass[0m[0m
+  run "radarr_no_drift"... [32mpass[0m[0m
+  run "sonarr_lifecycle"... [32mpass[0m[0m
+  run "sonarr_no_drift"... [32mpass[0m[0m
+settings.tftest.hcl... [32mpass[0m[0m
+  run "public_settings_read"... [32mpass[0m[0m
+  run "main_settings_lifecycle"... [32mpass[0m[0m
+  run "plex_settings_lifecycle"... [32mpass[0m[0m
+  run "jellyfin_settings_lifecycle"... [32mpass[0m[0m
+  run "notification_ntfy_lifecycle"... [32mpass[0m[0m
+  run "notification_pushover_lifecycle"... [32mpass[0m[0m
+  run "watchlist_settings_lifecycle"... [32mpass[0m[0m
+  run "tautulli_settings_lifecycle"... [32mpass[0m[0m
+
+[32mSuccess![0m[0m 14 passed, 0 failed.

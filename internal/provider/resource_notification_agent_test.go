@@ -1,9 +1,11 @@
 package provider
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -12,15 +14,14 @@ func TestAccNotificationAgentResource(t *testing.T) {
 }
 
 func TestNotificationBitmaskMapping(t *testing.T) {
+	ctx := context.Background()
 	// Test case: request_pending (2) and issue_created (256)
 	data := &NotificationAgentModel{
-		Agent:            types.StringValue("discord"),
-		OnRequestPending: types.BoolValue(true),
-		OnIssueCreated:   types.BoolValue(true),
-		TypesMask:        types.Int64Value(0),
+		Agent:             types.StringValue("discord"),
+		NotificationTypes: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("MEDIA_PENDING"), types.StringValue("ISSUE_CREATED")}),
 	}
 
-	payloadStr, err := buildPayload(data)
+	payloadStr, err := buildPayload(ctx, data)
 	if err != nil {
 		t.Fatalf("buildPayload failed: %v", err)
 	}
@@ -39,27 +40,35 @@ func TestNotificationBitmaskMapping(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json marshal failed: %v", err)
 	}
-	if err := parsePayload(newData, payloadBytes); err != nil {
+	if err := parsePayload(ctx, newData, payloadBytes); err != nil {
 		t.Fatalf("parsePayload failed: %v", err)
 	}
 
-	if !newData.OnRequestPending.ValueBool() {
-		t.Error("OnRequestPending should be true after parsing")
+	var parsedTypes []string
+	newData.NotificationTypes.ElementsAs(ctx, &parsedTypes, false)
+	foundPending := false
+	foundIssue := false
+	for _, pt := range parsedTypes {
+		if pt == "MEDIA_PENDING" {
+			foundPending = true
+		}
+		if pt == "ISSUE_CREATED" {
+			foundIssue = true
+		}
 	}
-	if !newData.OnIssueCreated.ValueBool() {
-		t.Error("OnIssueCreated should be true after parsing")
+	if !foundPending {
+		t.Error("MEDIA_PENDING should be true after parsing")
 	}
-	if newData.OnMediaAvailable.ValueBool() {
-		t.Error("OnMediaAvailable should be false")
+	if !foundIssue {
+		t.Error("ISSUE_CREATED should be true after parsing")
 	}
 
 	// Test case: media_auto_requested (4096)
 	data2 := &NotificationAgentModel{
-		Agent:                types.StringValue("discord"),
-		OnMediaAutoRequested: types.BoolValue(true),
-		TypesMask:            types.Int64Value(0),
+		Agent:             types.StringValue("discord"),
+		NotificationTypes: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("MEDIA_AUTO_REQUESTED")}),
 	}
-	payloadStr2, err := buildPayload(data2)
+	payloadStr2, err := buildPayload(ctx, data2)
 	if err != nil {
 		t.Fatalf("buildPayload failed: %v", err)
 	}
@@ -76,45 +85,61 @@ func TestNotificationBitmaskMapping(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json marshal failed: %v", err)
 	}
-	if err := parsePayload(newData2, payloadBytes2); err != nil {
+	if err := parsePayload(ctx, newData2, payloadBytes2); err != nil {
 		t.Fatalf("parsePayload failed: %v", err)
 	}
-	if !newData2.OnMediaAutoRequested.ValueBool() {
-		t.Error("OnMediaAutoRequested should be true after parsing")
+	var parsedTypes2 []string
+	newData2.NotificationTypes.ElementsAs(ctx, &parsedTypes2, false)
+	foundAuto := false
+	for _, pt := range parsedTypes2 {
+		if pt == "MEDIA_AUTO_REQUESTED" {
+			foundAuto = true
+		}
+	}
+	if !foundAuto {
+		t.Error("MEDIA_AUTO_REQUESTED should be true after parsing")
 	}
 }
 
 func TestNotificationAgentUnknownResolution(t *testing.T) {
+	ctx := context.Background()
 	// This test simulates the case where a field is Unknown in the plan
 	// and verifies that parsePayload sets it to a Known value from the API response.
 	data := &NotificationAgentModel{
-		Agent:           types.StringValue("pushover"),
-		OnMediaFollowed: types.BoolUnknown(), // Simulate Unknown from Plan
+		Agent:             types.StringValue("pushover"),
+		NotificationTypes: types.SetUnknown(types.StringType), // Simulate Unknown from Plan
 	}
 
 	// Mock API response body
 	responseBody := `{"enabled":true,"types":2048,"options":{"accessToken":"secret","userToken":"secret"}}`
 
-	if err := parsePayload(data, []byte(responseBody)); err != nil {
+	if err := parsePayload(ctx, data, []byte(responseBody)); err != nil {
 		t.Fatalf("parsePayload failed: %v", err)
 	}
 
-	if data.OnMediaFollowed.IsUnknown() {
-		t.Error("OnMediaFollowed should NOT be Unknown after parsePayload")
+	if data.NotificationTypes.IsUnknown() {
+		t.Error("NotificationTypes should NOT be Unknown after parsePayload")
 	}
-	if !data.OnMediaFollowed.ValueBool() {
-		t.Error("OnMediaFollowed should be true (mask 2048)")
+	var parsedTypes []string
+	data.NotificationTypes.ElementsAs(ctx, &parsedTypes, false)
+	found := false
+	for _, pt := range parsedTypes {
+		if pt == "ISSUE_REOPENED" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("ISSUE_REOPENED should be true (mask 2048)")
 	}
 }
 
 func TestNotificationTypesMaskIgnoresMissingDefaultAndDerivesFromFlags(t *testing.T) {
+	ctx := context.Background()
 	data := &NotificationAgentModel{
-		TypesMask:        types.Int64Null(),
-		OnRequestPending: types.BoolValue(true),
-		OnIssueCreated:   types.BoolValue(true),
+		NotificationTypes: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("MEDIA_PENDING"), types.StringValue("ISSUE_CREATED")}),
 	}
 
-	if got, want := notificationTypesMask(data), int64(258); got != want {
+	if got, want := notificationTypesMask(ctx, data), int64(258); got != want {
 		t.Fatalf("notificationTypesMask() = %d, want %d", got, want)
 	}
 }

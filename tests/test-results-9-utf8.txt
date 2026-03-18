@@ -1,0 +1,348 @@
+﻿api_objects.tftest.hcl... [31mfail[0m[0m
+  run "api_object_lifecycle"... [31mfail[0m[0m
+  run "api_request_data_source"... [37mskip[0m[0m
+tofu : [31mΓò╖[0m[0m
+At line:1 char:125
++ ... I_KEY="seerr-ci-a
+pi-key"; tofu test > 
+test-results-9.txt 
+2>&1; Get-Co ...
++                      
+         ~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ([31mΓò╖[0m   
+ [0m:String) [], Re    
+moteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mUnknown 
+condition run[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+on 
+api_objects.tftest.hcl 
+line 14, in run 
+"api_object_lifecycle":
+[31mΓöé[0m [0m  14: 
+    condition     = [4
+mseerr_api_object.test.
+status_code == 
+200[0m[0m
+[31mΓöé[0m [0m    [
+90mΓö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓö
+ÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓ
+öÇΓöÇΓöÇ[0m
+[31mΓöé[0m [0m[0m  
+  [90mΓöé[0m [1mseer
+r_api_object.test.statu
+s_code[0m is a number
+[31mΓöé[0m [0m[0m
+[31mΓöé[0m 
+[0mCondition 
+expression could not 
+be evaluated at this 
+time.
+[31mΓò╡[0m[0m
+data_sources.tftest.hcl... [31mfail[0m[0m
+  run "test_users_data_source"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mUnknown 
+variable[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+on data_sources.tftest.
+hcl line 9, in run "tes
+t_users_data_source":
+[31mΓöé[0m [0m   9: 
+    condition     = [4
+mdata[0m.seerr_users.a
+ll.id != ""[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThere 
+is no variable named 
+"data".
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mReference 
+to undeclared 
+resource[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+on data_sources.tftest.
+hcl line 9, in run "tes
+t_users_data_source":
+[31mΓöé[0m [0m   9: 
+    condition     = [4
+mdata.seerr_users.all[
+0m.id != ""[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThere 
+is no data resource 
+"seerr_users" "all" 
+definition in the root
+[31mΓöé[0m 
+[0mmodule.
+  run "test_jobs_data_source"... [37mskip[0m[0m
+  run "test_notification_agents_data_source"... [37mskip[0m[0m
+[31mΓò╡[0m[0m
+discover.tftest.hcl... [31mfail[0m[0m
+  run "apply_discover_sliders"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mCreate 
+Failed[0m
+[31mΓöé[0m [0m
+  run "verify_reorder"... [37mskip[0m[0m
+[31mΓöé[0m [0m[0m  
+with seerr_discover_sli
+der.all,
+[31mΓöé[0m [0m  on m
+odules\discover_slider\
+main.tf line 9, in 
+resource "seerr_discove
+r_slider" "all":
+[31mΓöé[0m [0m   9: 
+resource "seerr_discove
+r_slider" "all" 
+[4m{[0m[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0mstatus 400: {"messa
+ge":"request.body[0] 
+should have required 
+property
+[31mΓöé[0m 
+[0m'title', 
+request.body[0] should 
+have required property 
+'data',
+[31mΓöé[0m 
+[0mrequest.body[1] 
+should have required 
+property 'title', 
+request.body[1]
+[31mΓöé[0m 
+[0mshould have 
+required property 
+'data', 
+request.body[2] should 
+have required
+[31mΓöé[0m 
+[0mproperty 'title', 
+request.body[2] should 
+have required property
+[31mΓöé[0m [0m'data'
+","errors":[{"path":".b
+ody[0].title","message"
+:"should have required
+[31mΓöé[0m 
+[0mproperty
+[31mΓöé[0m [0m'title
+'","errorCode":"require
+d.openapi.validation"},
+{"path":".body[0].data"
+,"message":"should
+[31mΓöé[0m [0mhave 
+required property
+[31mΓöé[0m [0m'data'
+","errorCode":"required
+.openapi.validation"},{
+"path":".body[1].title"
+,"message":"should
+[31mΓöé[0m [0mhave 
+required property
+[31mΓöé[0m [0m'title
+'","errorCode":"require
+d.openapi.validation"},
+{"path":".body[1].data"
+,"message":"should
+[31mΓöé[0m [0mhave 
+required property
+[31mΓöé[0m [0m'data'
+","errorCode":"required
+.openapi.validation"},{
+"path":".body[2].title"
+,"message":"should
+[31mΓöé[0m [0mhave 
+required property
+[31mΓöé[0m [0m'title
+'","errorCode":"require
+d.openapi.validation"},
+{"path":".body[2].data"
+,"message":"should
+[31mΓöé[0m [0mhave 
+required property 'data
+'","errorCode":"require
+d.openapi.validation"}]
+}
+[31mΓò╡[0m[0m
+job_schedule.tftest.hcl... [32mpass[0m[0m
+  run "job_schedule_lifecycle"... [32mpass[0m[0m
+  run "job_schedule_update"... [32mpass[0m[0m
+servers.tftest.hcl... [32mpass[0m[0m
+  run "radarr_lifecycle"... [32mpass[0m[0m
+  run "radarr_no_drift"... [32mpass[0m[0m
+  run "sonarr_lifecycle"... [32mpass[0m[0m
+  run "sonarr_no_drift"... [32mpass[0m[0m
+settings.tftest.hcl... [32mpass[0m[0m
+  run "public_settings_read"... [32mpass[0m[0m
+  run "main_settings_lifecycle"... [32mpass[0m[0m
+  run "plex_settings_lifecycle"... [32mpass[0m[0m
+  run "jellyfin_settings_lifecycle"... [32mpass[0m[0m
+  run "notification_ntfy_lifecycle"... [32mpass[0m[0m
+  run "notification_pushover_lifecycle"... [32mpass[0m[0m
+  run "watchlist_settings_lifecycle"... [32mpass[0m[0m
+  run "tautulli_settings_lifecycle"... [32mpass[0m[0m
+user.tftest.hcl... [31mfail[0m[0m
+  run "user_lifecycle"... [32mpass[0m[0m
+  run "user_data_source"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mUser Not 
+Found[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+with 
+data.seerr_user.test,
+[31mΓöé[0m [0m  on m
+odules\user_data\main.t
+f line 11, in data 
+"seerr_user" "test":
+[31mΓöé[0m [0m  11: 
+data "seerr_user" 
+"test" [4m{[0m[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mNo 
+user found matching 
+the provided criteria.
+[31mΓò╡[0m[0m
+user_permissions.tftest.hcl... [31mfail[0m[0m
+  run "setup_user"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: [0
+m[0m[1mUnsupported 
+attribute[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+on user_permissions.tft
+est.hcl line 12, in 
+run "setup_user":
+[31mΓöé[0m [0m  12: 
+    username    = var[
+4m.username[0m[0m
+[31mΓöé[0m [0m    [
+90mΓö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓö
+ÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓ
+öÇΓöÇΓöÇ[0m
+[31mΓöé[0m [0m[0m  
+  [90mΓöé[0m 
+[1mvar[0m is object 
+with no attributes
+[31mΓöé[0m [0m[0m
+[31mΓöé[0m [0mThis 
+object does not have 
+an attribute named 
+"username".
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: [0
+m[0m[1mUnsupported 
+attribute[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+on user_permissions.tft
+est.hcl line 13, in 
+run "setup_user":
+[31mΓöé[0m [0m  13: 
+    email       = 
+var[4m.email[0m[0m
+[31mΓöé[0m [0m    [
+90mΓö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓö
+ÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓ
+öÇΓöÇΓöÇ[0m
+[31mΓöé[0m [0m[0m  
+  [90mΓöé[0m 
+[1mvar[0m is object 
+with no attributes
+[31mΓöé[0m [0m[0m
+[31mΓöé[0m [0mThis 
+object does not have 
+an attribute named 
+"email".
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mNo value 
+for required 
+variable[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+on 
+modules\user\main.tf 
+line 9:
+[31mΓöé[0m [0m   9: 
+[4mvariable 
+"username"[0m { type 
+= string }[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+root module input 
+variable "username" is 
+not set, and has no 
+default
+[31mΓöé[0m 
+[0mvalue. Use a -var 
+or -var-file command 
+line argument to 
+provide a value for
+[31mΓöé[0m [0mthis 
+variable.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mNo value 
+for required 
+variable[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+on 
+modules\user\main.tf 
+line 10:
+[31mΓöé[0m [0m  10: 
+[4mvariable 
+"email"[0m { type = 
+string }[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+root module input 
+variable "email" is 
+not set, and has no 
+default
+[31mΓöé[0m 
+[0mvalue. Use a -var 
+or -var-file command 
+line argument to 
+provide a value for
+[31mΓöé[0m [0mthis 
+variable.
+[31mΓò╡[0m[0m
+  run "user_permissions_lifecycle"... [37mskip[0m[0m
+  run "user_permissions_update"... [37mskip[0m[0m
+
+[31mFailure![0m[0m 15 passed, 5 failed, 6 skipped.

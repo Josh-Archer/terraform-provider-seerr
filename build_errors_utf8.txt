@@ -1,0 +1,83 @@
+﻿go : # github.com/Josh-
+Archer/terraform-provid
+er-seerr/internal/provi
+der
+At line:1 char:1
++ go build ./... > 
+build_errors.txt 2>&1; 
+Get-Content 
+build_errors.txt  ...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : 
+NotSpecified:     (# 
+github.com/Jo...t    
+ernal/provider:Strin   
+ g) [], RemoteExcepti  
+  on
+    + 
+FullyQualifiedErro    
+rId : NativeCommandE   
+ rror
+ 
+internal\provider\data_
+source_notification_age
+nt.go:108:40: not 
+enough arguments in 
+call to parsePayload
+	have (*NotificationAge
+ntModel, []byte)
+	want 
+(context.Context, *Noti
+ficationAgentModel, 
+[]byte)
+internal\provider\resou
+rce_notification_agent.
+go:651:32: not enough 
+arguments in call to 
+parsePayload
+	have (*NotificationAge
+ntModel, []byte)
+	want 
+(context.Context, *Noti
+ficationAgentModel, 
+[]byte)
+internal\provider\resou
+rce_notification_agent.
+go:658:7: 
+data.TypesMask 
+undefined (type 
+NotificationAgentModel 
+has no field or method 
+TypesMask)
+internal\provider\resou
+rce_notification_agent.
+go:680:32: not enough 
+arguments in call to 
+parsePayload
+	have (*NotificationAge
+ntModel, []byte)
+	want 
+(context.Context, *Noti
+ficationAgentModel, 
+[]byte)
+internal\provider\resou
+rce_notification_agent.
+go:722:32: not enough 
+arguments in call to 
+parsePayload
+	have (*NotificationAge
+ntModel, []byte)
+	want 
+(context.Context, *Noti
+ficationAgentModel, 
+[]byte)
+internal\provider\resou
+rce_notification_agent.
+go:729:7: 
+data.TypesMask 
+undefined (type 
+NotificationAgentModel 
+has no field or method 
+TypesMask)

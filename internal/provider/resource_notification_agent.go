@@ -21,36 +21,20 @@ type NotificationAgentModel struct {
 	Agent       types.String `tfsdk:"agent"`
 	Enabled     types.Bool   `tfsdk:"enabled"`
 	EmbedPoster types.Bool   `tfsdk:"embed_poster"`
-	TypesMask   types.Int64  `tfsdk:"types"`
 
-	Discord               *NotificationAgentDiscordModel    `tfsdk:"discord"`
-	Slack                 *NotificationAgentSlackModel      `tfsdk:"slack"`
-	Email                 *NotificationAgentEmailModel      `tfsdk:"email"`
-	LunaSea               *NotificationAgentLunaSeaModel    `tfsdk:"lunasea"`
-	Telegram              *NotificationAgentTelegramModel   `tfsdk:"telegram"`
-	Pushbullet            *NotificationAgentPushbulletModel `tfsdk:"pushbullet"`
-	Pushover              *NotificationAgentPushoverModel   `tfsdk:"pushover"`
-	Ntfy                  *NotificationAgentNtfyModel       `tfsdk:"ntfy"`
-	Webhook               *NotificationAgentWebhookModel    `tfsdk:"webhook"`
-	Gotify                *NotificationAgentGotifyModel     `tfsdk:"gotify"`
-	Webpush               *NotificationAgentWebpushModel    `tfsdk:"webpush"`
-	OnRequestPending      types.Bool                        `tfsdk:"on_request_pending"`
-	OnRequestApproved     types.Bool                        `tfsdk:"on_request_approved"`
-	OnRequestRejected     types.Bool                        `tfsdk:"on_request_rejected"`
-	OnRequestFailed       types.Bool                        `tfsdk:"on_request_failed"`
-	OnRequestAvailable    types.Bool                        `tfsdk:"on_request_available"`
-	OnRequestDeclined     types.Bool                        `tfsdk:"on_request_declined"`
-	OnRequestAutoApproved types.Bool                        `tfsdk:"on_request_auto_approved"`
-	OnMediaAvailable      types.Bool                        `tfsdk:"on_media_available"`
-	OnMediaFailed         types.Bool                        `tfsdk:"on_media_failed"`
-	OnMediaSkipped        types.Bool                        `tfsdk:"on_media_skipped"`
-	OnMediaIssued         types.Bool                        `tfsdk:"on_media_issued"`
-	OnMediaFollowed       types.Bool                        `tfsdk:"on_media_followed"`
-	OnIssueCreated        types.Bool                        `tfsdk:"on_issue_created"`
-	OnIssueComment        types.Bool                        `tfsdk:"on_issue_comment"`
-	OnIssueResolved       types.Bool                        `tfsdk:"on_issue_resolved"`
-	OnIssueReopened       types.Bool                        `tfsdk:"on_issue_reopened"`
-	OnMediaAutoRequested  types.Bool                        `tfsdk:"on_media_auto_requested"`
+	Discord           *NotificationAgentDiscordModel    `tfsdk:"discord"`
+	Slack             *NotificationAgentSlackModel      `tfsdk:"slack"`
+	Email             *NotificationAgentEmailModel      `tfsdk:"email"`
+	LunaSea           *NotificationAgentLunaSeaModel    `tfsdk:"lunasea"`
+	Telegram          *NotificationAgentTelegramModel   `tfsdk:"telegram"`
+	Pushbullet        *NotificationAgentPushbulletModel `tfsdk:"pushbullet"`
+	Pushover          *NotificationAgentPushoverModel   `tfsdk:"pushover"`
+	Ntfy              *NotificationAgentNtfyModel       `tfsdk:"ntfy"`
+	Webhook           *NotificationAgentWebhookModel    `tfsdk:"webhook"`
+	Gotify            *NotificationAgentGotifyModel     `tfsdk:"gotify"`
+	Webpush           *NotificationAgentWebpushModel    `tfsdk:"webpush"`
+	NotificationTypes types.Set                         `tfsdk:"notification_types"`
+	TypesMask         types.Int64                       `tfsdk:"types"`
 }
 
 type notificationAgentPayload struct {
@@ -61,28 +45,11 @@ type notificationAgentPayload struct {
 }
 
 type notificationClientCommonModel struct {
-	ID          types.String `tfsdk:"id"`
-	Enabled     types.Bool   `tfsdk:"enabled"`
-	EmbedPoster types.Bool   `tfsdk:"embed_poster"`
-	TypesMask   types.Int64  `tfsdk:"types"`
-
-	OnRequestPending      types.Bool `tfsdk:"on_request_pending"`
-	OnRequestApproved     types.Bool `tfsdk:"on_request_approved"`
-	OnRequestRejected     types.Bool `tfsdk:"on_request_rejected"`
-	OnRequestFailed       types.Bool `tfsdk:"on_request_failed"`
-	OnRequestAvailable    types.Bool `tfsdk:"on_request_available"`
-	OnRequestDeclined     types.Bool `tfsdk:"on_request_declined"`
-	OnRequestAutoApproved types.Bool `tfsdk:"on_request_auto_approved"`
-	OnMediaAvailable      types.Bool `tfsdk:"on_media_available"`
-	OnMediaFailed         types.Bool `tfsdk:"on_media_failed"`
-	OnMediaSkipped        types.Bool `tfsdk:"on_media_skipped"`
-	OnMediaIssued         types.Bool `tfsdk:"on_media_issued"`
-	OnMediaFollowed       types.Bool `tfsdk:"on_media_followed"`
-	OnIssueCreated        types.Bool `tfsdk:"on_issue_created"`
-	OnIssueComment        types.Bool `tfsdk:"on_issue_comment"`
-	OnIssueResolved       types.Bool `tfsdk:"on_issue_resolved"`
-	OnIssueReopened       types.Bool `tfsdk:"on_issue_reopened"`
-	OnMediaAutoRequested  types.Bool `tfsdk:"on_media_auto_requested"`
+	ID                types.String `tfsdk:"id"`
+	Enabled           types.Bool   `tfsdk:"enabled"`
+	EmbedPoster       types.Bool   `tfsdk:"embed_poster"`
+	NotificationTypes types.Set    `tfsdk:"notification_types"`
+	TypesMask         types.Int64  `tfsdk:"types"`
 }
 
 type notificationAttributeReader interface {
@@ -155,10 +122,6 @@ func (r *NotificationClientResource) Schema(_ context.Context, _ resource.Schema
 			Computed: true,
 			Default:  booldefault.StaticBool(false),
 		},
-		"types": schema.Int64Attribute{
-			Optional: true,
-			Computed: true,
-		},
 	}
 	for name, attr := range notificationAgentResourceEventAttributes() {
 		attributes[name] = attr
@@ -197,49 +160,17 @@ func applyCommonNotificationFields(data *NotificationAgentModel, common notifica
 	data.ID = common.ID
 	data.Enabled = common.Enabled
 	data.EmbedPoster = common.EmbedPoster
+	data.NotificationTypes = common.NotificationTypes
 	data.TypesMask = common.TypesMask
-	data.OnRequestPending = common.OnRequestPending
-	data.OnRequestApproved = common.OnRequestApproved
-	data.OnRequestRejected = common.OnRequestRejected
-	data.OnRequestFailed = common.OnRequestFailed
-	data.OnRequestAvailable = common.OnRequestAvailable
-	data.OnRequestDeclined = common.OnRequestDeclined
-	data.OnRequestAutoApproved = common.OnRequestAutoApproved
-	data.OnMediaAvailable = common.OnMediaAvailable
-	data.OnMediaFailed = common.OnMediaFailed
-	data.OnMediaSkipped = common.OnMediaSkipped
-	data.OnMediaIssued = common.OnMediaIssued
-	data.OnMediaFollowed = common.OnMediaFollowed
-	data.OnIssueCreated = common.OnIssueCreated
-	data.OnIssueComment = common.OnIssueComment
-	data.OnIssueResolved = common.OnIssueResolved
-	data.OnIssueReopened = common.OnIssueReopened
-	data.OnMediaAutoRequested = common.OnMediaAutoRequested
 }
 
 func commonNotificationFields(data *NotificationAgentModel) notificationClientCommonModel {
 	return notificationClientCommonModel{
-		ID:                    data.ID,
-		Enabled:               data.Enabled,
-		EmbedPoster:           data.EmbedPoster,
-		TypesMask:             data.TypesMask,
-		OnRequestPending:      data.OnRequestPending,
-		OnRequestApproved:     data.OnRequestApproved,
-		OnRequestRejected:     data.OnRequestRejected,
-		OnRequestFailed:       data.OnRequestFailed,
-		OnRequestAvailable:    data.OnRequestAvailable,
-		OnRequestDeclined:     data.OnRequestDeclined,
-		OnRequestAutoApproved: data.OnRequestAutoApproved,
-		OnMediaAvailable:      data.OnMediaAvailable,
-		OnMediaFailed:         data.OnMediaFailed,
-		OnMediaSkipped:        data.OnMediaSkipped,
-		OnMediaIssued:         data.OnMediaIssued,
-		OnMediaFollowed:       data.OnMediaFollowed,
-		OnIssueCreated:        data.OnIssueCreated,
-		OnIssueComment:        data.OnIssueComment,
-		OnIssueResolved:       data.OnIssueResolved,
-		OnIssueReopened:       data.OnIssueReopened,
-		OnMediaAutoRequested:  data.OnMediaAutoRequested,
+		ID:                data.ID,
+		Enabled:           data.Enabled,
+		EmbedPoster:       data.EmbedPoster,
+		NotificationTypes: data.NotificationTypes,
+		TypesMask:         data.TypesMask,
 	}
 }
 
@@ -254,24 +185,8 @@ func readNotificationClientModel(ctx context.Context, reader notificationAttribu
 		{name: "id", target: &common.ID},
 		{name: "enabled", target: &common.Enabled},
 		{name: "embed_poster", target: &common.EmbedPoster},
+		{name: "notification_types", target: &common.NotificationTypes},
 		{name: "types", target: &common.TypesMask},
-		{name: "on_request_pending", target: &common.OnRequestPending},
-		{name: "on_request_approved", target: &common.OnRequestApproved},
-		{name: "on_request_rejected", target: &common.OnRequestRejected},
-		{name: "on_request_failed", target: &common.OnRequestFailed},
-		{name: "on_request_available", target: &common.OnRequestAvailable},
-		{name: "on_request_declined", target: &common.OnRequestDeclined},
-		{name: "on_request_auto_approved", target: &common.OnRequestAutoApproved},
-		{name: "on_media_available", target: &common.OnMediaAvailable},
-		{name: "on_media_failed", target: &common.OnMediaFailed},
-		{name: "on_media_skipped", target: &common.OnMediaSkipped},
-		{name: "on_media_issued", target: &common.OnMediaIssued},
-		{name: "on_media_followed", target: &common.OnMediaFollowed},
-		{name: "on_issue_created", target: &common.OnIssueCreated},
-		{name: "on_issue_comment", target: &common.OnIssueComment},
-		{name: "on_issue_resolved", target: &common.OnIssueResolved},
-		{name: "on_issue_reopened", target: &common.OnIssueReopened},
-		{name: "on_media_auto_requested", target: &common.OnMediaAutoRequested},
 	} {
 		diags.Append(reader.GetAttribute(ctx, path.Root(field.name), field.target)...)
 	}
@@ -320,24 +235,8 @@ func setNotificationClientState(ctx context.Context, writer notificationAttribut
 		{name: "id", value: common.ID},
 		{name: "enabled", value: common.Enabled},
 		{name: "embed_poster", value: common.EmbedPoster},
+		{name: "notification_types", value: common.NotificationTypes},
 		{name: "types", value: common.TypesMask},
-		{name: "on_request_pending", value: common.OnRequestPending},
-		{name: "on_request_approved", value: common.OnRequestApproved},
-		{name: "on_request_rejected", value: common.OnRequestRejected},
-		{name: "on_request_failed", value: common.OnRequestFailed},
-		{name: "on_request_available", value: common.OnRequestAvailable},
-		{name: "on_request_declined", value: common.OnRequestDeclined},
-		{name: "on_request_auto_approved", value: common.OnRequestAutoApproved},
-		{name: "on_media_available", value: common.OnMediaAvailable},
-		{name: "on_media_failed", value: common.OnMediaFailed},
-		{name: "on_media_skipped", value: common.OnMediaSkipped},
-		{name: "on_media_issued", value: common.OnMediaIssued},
-		{name: "on_media_followed", value: common.OnMediaFollowed},
-		{name: "on_issue_created", value: common.OnIssueCreated},
-		{name: "on_issue_comment", value: common.OnIssueComment},
-		{name: "on_issue_resolved", value: common.OnIssueResolved},
-		{name: "on_issue_reopened", value: common.OnIssueReopened},
-		{name: "on_media_auto_requested", value: common.OnMediaAutoRequested},
 	} {
 		diags.Append(writer.SetAttribute(ctx, path.Root(field.name), field.value)...)
 	}
@@ -372,11 +271,11 @@ func setNotificationClientState(ctx context.Context, writer notificationAttribut
 	return diags
 }
 
-func buildPayload(data *NotificationAgentModel) (string, error) {
+func buildPayload(ctx context.Context, data *NotificationAgentModel) (string, error) {
 	payload := notificationAgentPayload{
 		Enabled:     data.Enabled.ValueBool(),
 		EmbedPoster: data.EmbedPoster.ValueBool(),
-		Types:       notificationTypesMask(data),
+		Types:       notificationTypesMask(ctx, data),
 		Options:     make(map[string]interface{}),
 	}
 
@@ -543,67 +442,94 @@ func buildPayload(data *NotificationAgentModel) (string, error) {
 	return string(b), err
 }
 
-func notificationTypesMask(data *NotificationAgentModel) int64 {
-	mask := data.TypesMask.ValueInt64()
-	updateMask := func(val types.Bool, bit int64) {
-		if !val.IsNull() && !val.IsUnknown() {
-			if val.ValueBool() {
-				mask |= bit
-			} else {
-				mask &= ^bit
-			}
+func notificationTypesMask(ctx context.Context, data *NotificationAgentModel) int64 {
+	if data.NotificationTypes.IsNull() || data.NotificationTypes.IsUnknown() {
+		return 0
+	}
+	var typesList []string
+	data.NotificationTypes.ElementsAs(ctx, &typesList, false)
+
+	var mask int64 = 0
+	for _, t := range typesList {
+		switch t {
+		case "MEDIA_PENDING":
+			mask |= 2
+		case "MEDIA_APPROVED":
+			mask |= 4
+		case "MEDIA_AVAILABLE":
+			mask |= 8
+		case "MEDIA_FAILED":
+			mask |= 16
+		case "MEDIA_DECLINED":
+			mask |= 64
+		case "MEDIA_AUTO_APPROVED":
+			mask |= 128
+		case "ISSUE_CREATED":
+			mask |= 256
+		case "ISSUE_COMMENT":
+			mask |= 512
+		case "ISSUE_RESOLVED":
+			mask |= 1024
+		case "ISSUE_REOPENED":
+			mask |= 2048
+		case "MEDIA_AUTO_REQUESTED":
+			mask |= 4096
 		}
 	}
-
-	updateMask(data.OnRequestPending, 2)
-	updateMask(data.OnRequestApproved, 4)
-	updateMask(data.OnMediaAvailable, 8)
-	updateMask(data.OnMediaFailed, 16)
-	updateMask(data.OnRequestDeclined, 64)
-	updateMask(data.OnRequestAutoApproved, 128)
-	updateMask(data.OnIssueCreated, 256)
-	updateMask(data.OnIssueComment, 512)
-	updateMask(data.OnIssueResolved, 1024)
-	updateMask(data.OnIssueReopened, 2048)
-	updateMask(data.OnMediaAutoRequested, 4096)
-
-	updateMask(data.OnRequestRejected, 4)
-	updateMask(data.OnRequestFailed, 8)
-	updateMask(data.OnRequestAvailable, 16)
-	updateMask(data.OnMediaSkipped, 512)
-	updateMask(data.OnMediaIssued, 1024)
-	updateMask(data.OnMediaFollowed, 2048)
 
 	return mask
 }
 
-func parsePayload(data *NotificationAgentModel, body []byte) error {
+func parsePayload(ctx context.Context, data *NotificationAgentModel, body []byte) error {
 	var payload notificationAgentPayload
 	if err := json.Unmarshal(body, &payload); err != nil {
 		return err
 	}
 	data.Enabled = types.BoolValue(payload.Enabled)
 	data.EmbedPoster = types.BoolValue(payload.EmbedPoster)
-	data.TypesMask = types.Int64Value(payload.Types)
 
 	mask := payload.Types
-	data.OnRequestPending = types.BoolValue(mask&2 != 0)
-	data.OnRequestApproved = types.BoolValue(mask&4 != 0)
-	data.OnRequestRejected = types.BoolValue(mask&4 != 0)
-	data.OnRequestFailed = types.BoolValue(mask&8 != 0)
-	data.OnRequestAvailable = types.BoolValue(mask&16 != 0)
-	data.OnRequestDeclined = types.BoolValue(mask&64 != 0)
-	data.OnRequestAutoApproved = types.BoolValue(mask&128 != 0)
-	data.OnMediaAvailable = types.BoolValue(mask&8 != 0)
-	data.OnMediaFailed = types.BoolValue(mask&16 != 0)
-	data.OnMediaSkipped = types.BoolValue(mask&512 != 0)
-	data.OnMediaIssued = types.BoolValue(mask&1024 != 0)
-	data.OnMediaFollowed = types.BoolValue(mask&2048 != 0)
-	data.OnIssueCreated = types.BoolValue(mask&256 != 0)
-	data.OnIssueComment = types.BoolValue(mask&512 != 0)
-	data.OnIssueResolved = types.BoolValue(mask&1024 != 0)
-	data.OnIssueReopened = types.BoolValue(mask&2048 != 0)
-	data.OnMediaAutoRequested = types.BoolValue(mask&4096 != 0)
+	var eventNames []string
+	if mask&2 != 0 {
+		eventNames = append(eventNames, "MEDIA_PENDING")
+	}
+	if mask&4 != 0 {
+		eventNames = append(eventNames, "MEDIA_APPROVED")
+	}
+	if mask&8 != 0 {
+		eventNames = append(eventNames, "MEDIA_AVAILABLE")
+	}
+	if mask&16 != 0 {
+		eventNames = append(eventNames, "MEDIA_FAILED")
+	}
+	if mask&64 != 0 {
+		eventNames = append(eventNames, "MEDIA_DECLINED")
+	}
+	if mask&128 != 0 {
+		eventNames = append(eventNames, "MEDIA_AUTO_APPROVED")
+	}
+	if mask&256 != 0 {
+		eventNames = append(eventNames, "ISSUE_CREATED")
+	}
+	if mask&512 != 0 {
+		eventNames = append(eventNames, "ISSUE_COMMENT")
+	}
+	if mask&1024 != 0 {
+		eventNames = append(eventNames, "ISSUE_RESOLVED")
+	}
+	if mask&2048 != 0 {
+		eventNames = append(eventNames, "ISSUE_REOPENED")
+	}
+	if mask&4096 != 0 {
+		eventNames = append(eventNames, "MEDIA_AUTO_REQUESTED")
+	}
+
+	setVal, diags := types.SetValueFrom(ctx, types.StringType, eventNames)
+	if diags.HasError() {
+		return fmt.Errorf("build notification_types set: %v", diags)
+	}
+	data.NotificationTypes = setVal
+	data.TypesMask = types.Int64Value(mask)
 
 	opt := payload.Options
 	getString := func(key string) types.String {
@@ -710,7 +636,7 @@ func (r *NotificationClientResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	payloadStr, err := buildPayload(&data)
+	payloadStr, err := buildPayload(ctx, &data)
 	if err != nil {
 		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
@@ -729,14 +655,13 @@ func (r *NotificationClientResource) Create(ctx context.Context, req resource.Cr
 	// Capture plan state to preserve sensitive fields
 	planData := data
 
-	if err := parsePayload(&data, res.Body); err != nil {
+	if err := parsePayload(ctx, &data, res.Body); err != nil {
 		resp.Diagnostics.AddError("Parse Failed", err.Error())
 		return
 	}
 
 	// Preserve sensitive fields from plan if API didn't return them
 	preserveSensitiveNotificationFields(&data, &planData)
-	data.TypesMask = types.Int64Value(notificationTypesMask(&data))
 	data.ID = types.StringValue(r.agent)
 	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &data)...)
 }
@@ -758,7 +683,7 @@ func (r *NotificationClientResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-	if err := parsePayload(&data, res.Body); err != nil {
+	if err := parsePayload(ctx, &data, res.Body); err != nil {
 		resp.Diagnostics.AddError("Parse Failed", err.Error())
 		return
 	}
@@ -781,7 +706,7 @@ func (r *NotificationClientResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	payloadStr, err := buildPayload(&data)
+	payloadStr, err := buildPayload(ctx, &data)
 	if err != nil {
 		resp.Diagnostics.AddError("Update Failed", err.Error())
 		return
@@ -800,14 +725,13 @@ func (r *NotificationClientResource) Update(ctx context.Context, req resource.Up
 	// Capture plan state to preserve sensitive fields
 	planData := data
 
-	if err := parsePayload(&data, res.Body); err != nil {
+	if err := parsePayload(ctx, &data, res.Body); err != nil {
 		resp.Diagnostics.AddError("Parse Failed", err.Error())
 		return
 	}
 
 	// Preserve sensitive fields from plan if API didn't return them
 	preserveSensitiveNotificationFields(&data, &planData)
-	data.TypesMask = types.Int64Value(notificationTypesMask(&data))
 	data.ID = types.StringValue(r.agent)
 	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &data)...)
 }

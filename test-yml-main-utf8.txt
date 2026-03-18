@@ -1,0 +1,141 @@
+﻿name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Build and Test
+    runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go mod download
+      - name: Verify generated docs and formatting are up to date
+        run: bash ./tools/check-generated.sh
+      - run: go build ./...
+      - run: go test ./...
+      - name: Run linters
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: v2.5.0
+
+  tofu-test:
+    name: OpenTofu Integration Tests
+    runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    env:
+      USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED }}
+      LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
+      LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
+      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build Provider
+        run: go build -v -o ${{ github.workspace }}/terraform-provider-seerr
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.6.0
+      - name: Setup Dev Overrides
+        run: |
+          cat > $HOME/.tofurc << EOF
+          provider_installation {
+            dev_overrides {
+              "josh-archer/seerr" = "${{ github.workspace }}"
+            }
+            direct {}
+          }
+          EOF
+          echo "TF_CLI_CONFIG_FILE=$HOME/.tofurc" >> $GITHUB_ENV
+      - name: Setup Seerr Test Target
+        shell: bash
+        run: |
+          if [[ "${USE_SELF_HOSTED}" == "true" || "${USE_SELF_HOSTED}" == "True" ]]; then
+            namespace="seerr-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            echo "SEERR_NAMESPACE=${namespace}" >> "$GITHUB_ENV"
+            bash ./scripts/ci-seerr-up.sh "${namespace}"
+            SEERR_TEST_USE_PORT_FORWARD=false bash ./scripts/ci-seerr-bootstrap.sh "${namespace}" >> "$GITHUB_ENV"
+          else
+            if [[ -z "${LEGACY_SEERR_URL}" ]]; then
+              echo "Skipping integration tests: SEERR_URL not set"
+              exit 0
+            fi
+            echo "SEERR_URL=${LEGACY_SEERR_URL}" >> "$GITHUB_ENV"
+            echo "SEERR_API_KEY=${LEGACY_SEERR_API_KEY}" >> "$GITHUB_ENV"
+          fi
+      - name: OpenTofu Test
+        working-directory: tests
+        shell: bash
+        run: |
+          if [[ -z "${SEERR_URL:-}" ]]; then
+            echo "Skipping integration tests: SEERR_URL not set"
+            exit 0
+          fi
+          if [[ -n "${SEERR_NAMESPACE:-}" ]]; then
+            kubectl port-forward -n "$SEERR_NAMESPACE" service/seerr 15055:5055 >/tmp/seerr-port-forward.log 2>&1 &
+            PF_PID=$!
+            trap 'kill "$PF_PID" || true' EXIT
+            for _ in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1:15055/api/v1/status >/dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            tofu test -var="url=http://127.0.0.1:15055" -var="api_key=$SEERR_API_KEY"
+          else
+            tofu test -var="url=$SEERR_URL" -var="api_key=$SEERR_API_KEY"
+          fi
+      - name: Collect Seerr Diagnostics
+        if: failure() && env.SEERR_NAMESPACE != ''
+        shell: bash
+        run: |
+          kubectl get all -n "$SEERR_NAMESPACE" || true
+          kubectl describe pods -n "$SEERR_NAMESPACE" || true
+          kubectl logs deployment/seerr -n "$SEERR_NAMESPACE" --tail=500 || true
+      - name: Tear Down Seerr Test Target
+        if: always() && env.SEERR_NAMESPACE != ''
+        shell: bash
+        run: bash ./scripts/ci-seerr-down.sh "$SEERR_NAMESPACE"
+
+  auto-tag:
+    name: Auto Tag
+    needs: [build-test, tofu-test]
+    permissions:
+      contents: write
+      actions: write
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          create_annotated_tag: true
+          tag_prefix: v
+
+      - name: Trigger release workflow for new tag
+        if: steps.tag_version.outputs.new_tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run release.yml --ref ${{ steps.tag_version.outputs.new_tag }}

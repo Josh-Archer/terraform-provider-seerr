@@ -105,7 +105,7 @@ func (d *NotificationClientDataSource) Read(ctx context.Context, _ datasource.Re
 	}
 
 	resourceData := NotificationAgentModel{Agent: types.StringValue(d.agent)}
-	if err := parsePayload(&resourceData, res.Body); err != nil {
+	if err := parsePayload(ctx, &resourceData, res.Body); err != nil {
 		resp.Diagnostics.AddError("Parse Failed", err.Error())
 		return
 	}
