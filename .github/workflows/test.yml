@@ -72,7 +72,9 @@ jobs:
       - name: Initialize OpenTofu Test Modules
         working-directory: tests
         shell: bash
-        run: tofu init -plugin-dir=${{ github.workspace }}/provider-mirror
+        run: |
+          rm -f .terraform.lock.hcl
+          tofu init -plugin-dir=${{ github.workspace }}/provider-mirror
       - name: OpenTofu Test
         working-directory: tests
         shell: bash
