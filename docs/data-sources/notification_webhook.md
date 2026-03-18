@@ -20,7 +20,6 @@ Read Seerr webhook notification settings via /api/v1/settings/notifications/webh
 - `embed_poster` (Boolean)
 - `enabled` (Boolean)
 - `notification_types` (Set of String)
-- `types` (Number)
 - `webhook` (Attributes) (see [below for nested schema](#nestedatt--webhook))
 
 <a id="nestedatt--webhook"></a>

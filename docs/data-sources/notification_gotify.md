@@ -21,7 +21,6 @@ Read Seerr gotify notification settings via /api/v1/settings/notifications/gotif
 - `enabled` (Boolean)
 - `gotify` (Attributes) (see [below for nested schema](#nestedatt--gotify))
 - `notification_types` (Set of String)
-- `types` (Number)
 
 <a id="nestedatt--gotify"></a>
 ### Nested Schema for `gotify`

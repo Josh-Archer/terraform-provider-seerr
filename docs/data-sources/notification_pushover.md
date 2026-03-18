@@ -21,7 +21,6 @@ Read Seerr pushover notification settings via /api/v1/settings/notifications/pus
 - `enabled` (Boolean)
 - `notification_types` (Set of String)
 - `pushover` (Attributes) (see [below for nested schema](#nestedatt--pushover))
-- `types` (Number)
 
 <a id="nestedatt--pushover"></a>
 ### Nested Schema for `pushover`

@@ -20,7 +20,6 @@ Read Seerr webpush notification settings via /api/v1/settings/notifications/webp
 - `embed_poster` (Boolean)
 - `enabled` (Boolean)
 - `notification_types` (Set of String)
-- `types` (Number)
 - `webpush` (Attributes) (see [below for nested schema](#nestedatt--webpush))
 
 <a id="nestedatt--webpush"></a>

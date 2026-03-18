@@ -21,7 +21,6 @@ Read Seerr slack notification settings via /api/v1/settings/notifications/slack.
 - `enabled` (Boolean)
 - `notification_types` (Set of String)
 - `slack` (Attributes) (see [below for nested schema](#nestedatt--slack))
-- `types` (Number)
 
 <a id="nestedatt--slack"></a>
 ### Nested Schema for `slack`

@@ -21,7 +21,6 @@ Read Seerr telegram notification settings via /api/v1/settings/notifications/tel
 - `enabled` (Boolean)
 - `notification_types` (Set of String)
 - `telegram` (Attributes) (see [below for nested schema](#nestedatt--telegram))
-- `types` (Number)
 
 <a id="nestedatt--telegram"></a>
 ### Nested Schema for `telegram`

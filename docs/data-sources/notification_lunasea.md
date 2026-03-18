@@ -21,7 +21,6 @@ Read Seerr lunasea notification settings via /api/v1/settings/notifications/luna
 - `enabled` (Boolean)
 - `lunasea` (Attributes) (see [below for nested schema](#nestedatt--lunasea))
 - `notification_types` (Set of String)
-- `types` (Number)
 
 <a id="nestedatt--lunasea"></a>
 ### Nested Schema for `lunasea`

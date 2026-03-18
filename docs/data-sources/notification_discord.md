@@ -21,7 +21,6 @@ Read Seerr discord notification settings via /api/v1/settings/notifications/disc
 - `embed_poster` (Boolean)
 - `enabled` (Boolean)
 - `notification_types` (Set of String)
-- `types` (Number)
 
 <a id="nestedatt--discord"></a>
 ### Nested Schema for `discord`

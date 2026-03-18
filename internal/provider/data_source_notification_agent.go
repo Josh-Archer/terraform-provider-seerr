@@ -62,7 +62,6 @@ func (d *NotificationClientDataSource) Schema(_ context.Context, _ datasource.Sc
 	attributes := map[string]schema.Attribute{
 		"enabled":      schema.BoolAttribute{Computed: true},
 		"embed_poster": schema.BoolAttribute{Computed: true},
-		"types":        schema.Int64Attribute{Computed: true},
 	}
 	for name, attr := range notificationAgentDataSourceEventAttributes() {
 		attributes[name] = attr

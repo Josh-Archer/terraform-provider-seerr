@@ -1,0 +1,144 @@
+﻿api_objects.tftest.hcl... [32mpass[0m[0m
+  run "api_object_lifecycle"... [32mpass[0m[0m
+  run "api_request_data_source"... [32mpass[0m[0m
+data_sources.tftest.hcl... [32mpass[0m[0m
+  run "test_users_data_source"... [32mpass[0m[0m
+discover.tftest.hcl... [32mpass[0m[0m
+  run "apply_discover_sliders"... [32mpass[0m[0m
+job_schedule.tftest.hcl... [32mpass[0m[0m
+  run "job_schedule_lifecycle"... [32mpass[0m[0m
+  run "job_schedule_update"... [32mpass[0m[0m
+servers.tftest.hcl... [32mpass[0m[0m
+  run "radarr_lifecycle"... [32mpass[0m[0m
+  run "radarr_no_drift"... [32mpass[0m[0m
+  run "sonarr_lifecycle"... [32mpass[0m[0m
+  run "sonarr_no_drift"... [32mpass[0m[0m
+settings.tftest.hcl... [32mpass[0m[0m
+  run "public_settings_read"... [32mpass[0m[0m
+  run "main_settings_lifecycle"... [32mpass[0m[0m
+  run "plex_settings_lifecycle"... [32mpass[0m[0m
+  run "jellyfin_settings_lifecycle"... [32mpass[0m[0m
+  run "notification_ntfy_lifecycle"... [32mpass[0m[0m
+  run "notification_pushover_lifecycle"... [32mpass[0m[0m
+  run "watchlist_settings_lifecycle"... [32mpass[0m[0m
+  run "tautulli_settings_lifecycle"... [32mpass[0m[0m
+user.tftest.hcl... [31mfail[0m[0m
+  run "user_lifecycle"... [31mfail[0m[0m
+  run "user_data_source"... [37mskip[0m[0m
+tofu : [31mΓò╖[0m[0m
+At line:1 char:232
++ ... 
+seerr-ci-api-key"; 
+tofu test > test_output
+_final_v10.txt 2>&1; 
+Get-Co ...
++                      
+  ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ([31mΓò╖[0m   
+ [0m:String) [], Re    
+moteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+produced inconsistent 
+result after apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mWhen applying 
+changes to 
+seerr_user.test, 
+provider
+[31mΓöé[0m [0m"provi
+der[\"registry.opentofu
+.org/josh-archer/seerr\
+"]" produced an
+[31mΓöé[0m 
+[0munexpected new 
+value: .notification_se
+ttings: was absent, 
+but now present.
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThis 
+is a bug in the 
+provider, which should 
+be reported in the 
+provider's
+[31mΓöé[0m [0mown 
+issue tracker.
+[31mΓò╡[0m[0m
+user_permissions.tftest.hcl... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+produced inconsistent 
+result after apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mWhen applying 
+changes to 
+seerr_user.test, 
+provider
+[31mΓöé[0m [0m"provi
+der[\"registry.opentofu
+.org/josh-archer/seerr\
+"]" produced an
+[31mΓöé[0m 
+[0munexpected new 
+value: .permissions: 
+was 
+cty.NumberIntVal(0), 
+but now
+[31mΓöé[0m [0mcty.Nu
+mberIntVal(32).
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThis 
+is a bug in the 
+provider, which should 
+be reported in the 
+provider's
+[31mΓöé[0m [0mown 
+issue tracker.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+produced inconsistent 
+result after apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mWhen applying 
+changes to 
+seerr_user.test, 
+provider
+[31mΓöé[0m [0m"provi
+der[\"registry.opentofu
+.org/josh-archer/seerr\
+"]" produced an
+[31mΓöé[0m 
+[0munexpected new 
+value: .notification_se
+ttings: was absent, 
+but now present.
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThis 
+is a bug in the 
+provider, which should 
+be reported in the 
+provider's
+[31mΓöé[0m [0mown 
+issue tracker.
+[31mΓò╡[0m[0m
+  run "setup_user"... [31mfail[0m[0m
+  run "user_permissions_lifecycle"... [37mskip[0m[0m
+  run "user_permissions_update"... [37mskip[0m[0m
+
+[31mFailure![0m[0m 18 passed, 2 failed, 3 skipped.

@@ -21,7 +21,6 @@ Read Seerr email notification settings via /api/v1/settings/notifications/email.
 - `embed_poster` (Boolean)
 - `enabled` (Boolean)
 - `notification_types` (Set of String)
-- `types` (Number)
 
 <a id="nestedatt--email"></a>
 ### Nested Schema for `email`

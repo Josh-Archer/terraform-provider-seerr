@@ -21,7 +21,6 @@ Read Seerr ntfy notification settings via /api/v1/settings/notifications/ntfy.
 - `enabled` (Boolean)
 - `notification_types` (Set of String)
 - `ntfy` (Attributes) (see [below for nested schema](#nestedatt--ntfy))
-- `types` (Number)
 
 <a id="nestedatt--ntfy"></a>
 ### Nested Schema for `ntfy`

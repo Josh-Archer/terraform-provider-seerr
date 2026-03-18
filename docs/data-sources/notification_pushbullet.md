@@ -21,7 +21,6 @@ Read Seerr pushbullet notification settings via /api/v1/settings/notifications/p
 - `enabled` (Boolean)
 - `notification_types` (Set of String)
 - `pushbullet` (Attributes) (see [below for nested schema](#nestedatt--pushbullet))
-- `types` (Number)
 
 <a id="nestedatt--pushbullet"></a>
 ### Nested Schema for `pushbullet`
