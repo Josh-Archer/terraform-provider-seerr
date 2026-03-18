@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+exec 3>&1
+exec 1>&2
+
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 tests_dir="${script_dir}/../tests"
 port="${SEERR_TEST_PORT:-5055}"
@@ -130,5 +133,5 @@ curl -fsS -H "X-Api-Key: ${api_key}" -H "Content-Type: application/json" \
 api_key="${api_key//$'\r'/}"
 api_key="${api_key//$'\n'/}"
 
-printf 'SEERR_URL=%s\n' "http://127.0.0.1:${local_port}"
-printf 'SEERR_API_KEY=%s\n' "${api_key}"
+printf 'SEERR_URL=%s\n' "http://127.0.0.1:${local_port}" >&3
+printf 'SEERR_API_KEY=%s\n' "${api_key}" >&3
