@@ -119,6 +119,7 @@ func (d *RadarrQualityProfileDataSource) Read(ctx context.Context, req datasourc
 		useSSL,
 		baseURL,
 		data.APIKey.ValueString(),
+		defaultRequestTimeout,
 		nil,
 		&profileName,
 	)

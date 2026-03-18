@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	stringvalidator "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -29,6 +32,7 @@ type SeerrProviderModel struct {
 	PlexToken          types.String `tfsdk:"plex_token"`
 	InsecureSkipVerify types.Bool   `tfsdk:"insecure_skip_verify"`
 	UserAgent          types.String `tfsdk:"user_agent"`
+	RequestTimeout     types.Int64  `tfsdk:"request_timeout_seconds"`
 }
 
 func (p *SeerrProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -41,8 +45,8 @@ func (p *SeerrProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 		MarkdownDescription: "Provider for Seerr APIs.",
 		Attributes: map[string]schema.Attribute{
 			"url": schema.StringAttribute{
-				MarkdownDescription: "Base URL for Seerr, for example `https://seerr.example.com`.",
-				Required:            true,
+				MarkdownDescription: "Base URL for Seerr, for example `https://seerr.example.com`. Can also be configured via the `SEERR_URL` environment variable.",
+				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.RegexMatches(
 						urlRegex(),
@@ -51,7 +55,7 @@ func (p *SeerrProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 				},
 			},
 			"api_key": schema.StringAttribute{
-				MarkdownDescription: "Seerr API key used as the `X-Api-Key` header. Required if `plex_token` is not set.",
+				MarkdownDescription: "Seerr API key used as the `X-Api-Key` header. Required if `plex_token` is not set. Can also be configured via the `SEERR_API_KEY` environment variable.",
 				Optional:            true,
 				Sensitive:           true,
 			},
@@ -68,6 +72,10 @@ func (p *SeerrProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 				MarkdownDescription: "Optional custom User-Agent header.",
 				Optional:            true,
 			},
+			"request_timeout_seconds": schema.Int64Attribute{
+				MarkdownDescription: "HTTP request timeout in seconds for Seerr API calls and ARR quality-profile lookups. Defaults to 120 seconds. Can also be configured via the `SEERR_REQUEST_TIMEOUT_SECONDS` environment variable.",
+				Optional:            true,
+			},
 		},
 	}
 }
@@ -80,7 +88,15 @@ func (p *SeerrProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	}
 
 	baseURL := strings.TrimSpace(data.URL.ValueString())
+	if baseURL == "" {
+		baseURL = strings.TrimSpace(os.Getenv("SEERR_URL"))
+	}
+
 	apiKey := strings.TrimSpace(data.APIKey.ValueString())
+	if apiKey == "" {
+		apiKey = strings.TrimSpace(os.Getenv("SEERR_API_KEY"))
+	}
+
 	plexToken := strings.TrimSpace(data.PlexToken.ValueString())
 
 	if baseURL == "" {
@@ -112,7 +128,19 @@ func (p *SeerrProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		insecure = data.InsecureSkipVerify.ValueBool()
 	}
 
-	client := NewClient(parsed, apiKey, userAgent, insecure)
+	requestTimeout := defaultRequestTimeout
+	if !data.RequestTimeout.IsNull() && !data.RequestTimeout.IsUnknown() {
+		requestTimeout = normalizeRequestTimeout(time.Duration(data.RequestTimeout.ValueInt64()) * time.Second)
+	} else if rawTimeout := strings.TrimSpace(os.Getenv("SEERR_REQUEST_TIMEOUT_SECONDS")); rawTimeout != "" {
+		timeoutSeconds, convErr := strconv.ParseInt(rawTimeout, 10, 64)
+		if convErr != nil {
+			resp.Diagnostics.AddError("Invalid Request Timeout", fmt.Sprintf("Cannot parse SEERR_REQUEST_TIMEOUT_SECONDS %q: %s", rawTimeout, convErr))
+			return
+		}
+		requestTimeout = normalizeRequestTimeout(time.Duration(timeoutSeconds) * time.Second)
+	}
+
+	client := NewClient(parsed, apiKey, userAgent, insecure, requestTimeout)
 
 	// Authentication flow logic
 	if apiKey == "" && plexToken != "" {

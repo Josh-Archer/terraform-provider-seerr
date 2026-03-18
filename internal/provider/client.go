@@ -27,7 +27,7 @@ type APIResponse struct {
 	Headers    http.Header
 }
 
-func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bool) *APIClient {
+func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bool, timeout time.Duration) *APIClient {
 	baseTransport, ok := http.DefaultTransport.(*http.Transport)
 	if !ok {
 		baseTransport = &http.Transport{}
@@ -44,9 +44,16 @@ func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bo
 		userAgent: userAgent,
 		client: &http.Client{
 			Transport: transport,
-			Timeout:   30 * time.Second,
+			Timeout:   normalizeRequestTimeout(timeout),
 		},
 	}
+}
+
+func (c *APIClient) Timeout() time.Duration {
+	if c == nil || c.client == nil {
+		return defaultRequestTimeout
+	}
+	return normalizeRequestTimeout(c.client.Timeout)
 }
 
 func (c *APIClient) SetAPIKey(key string) {

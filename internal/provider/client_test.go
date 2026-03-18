@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 )
 
 func TestClientRequest(t *testing.T) {
@@ -26,7 +27,7 @@ func TestClientRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	client := NewClient(base, "abc123", "test-agent", false)
+	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second)
 	resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -54,7 +55,7 @@ func TestClientSessionCookieRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	client := NewClient(base, "", "test-agent", false)
+	client := NewClient(base, "", "test-agent", false, 45*time.Second)
 	client.SetSessionCookie("connect.sid=session-xyz")
 	resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
 	if err != nil {
@@ -62,5 +63,23 @@ func TestClientSessionCookieRequest(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+}
+
+func TestClientTimeoutUsesConfiguredValue(t *testing.T) {
+	base, err := url.Parse("http://example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client := NewClient(base, "abc123", "test-agent", false, 90*time.Second)
+	if got, want := client.Timeout(), 90*time.Second; got != want {
+		t.Fatalf("expected timeout %s, got %s", want, got)
+	}
+}
+
+func TestNormalizeRequestTimeoutFallsBackToDefault(t *testing.T) {
+	if got := normalizeRequestTimeout(0); got != defaultRequestTimeout {
+		t.Fatalf("expected default timeout %s, got %s", defaultRequestTimeout, got)
 	}
 }
