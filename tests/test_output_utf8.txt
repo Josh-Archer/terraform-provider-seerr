@@ -1,0 +1,74 @@
+﻿job_schedule.tftest.hcl... [32mpass[0m[0m
+  run "job_schedule_lifecycle"... [32mpass[0m[0m
+  run "job_schedule_update"... [32mpass[0m[0m
+servers.tftest.hcl... [32mpass[0m[0m
+  run "radarr_lifecycle"... [32mpass[0m[0m
+  run "radarr_no_drift"... [32mpass[0m[0m
+  run "sonarr_lifecycle"... [32mpass[0m[0m
+  run "sonarr_no_drift"... [32mpass[0m[0m
+settings.tftest.hcl... [31mfail[0m[0m
+  run "public_settings_read"... [32mpass[0m[0m
+  run "main_settings_lifecycle"... [32mpass[0m[0m
+  run "plex_settings_lifecycle"... [32mpass[0m[0m
+  run "jellyfin_settings_lifecycle"... [32mpass[0m[0m
+  run "notification_ntfy_lifecycle"... [31mfail[0m[0m
+tofu : [31mΓò╖[0m[0m
+At line:1 char:177
++ ... _API_KEY="seerr-ci-ap
+i-key"; tofu test > 
+test_output.txt 2>&1; 
+Get-Co ...
++                          
+        ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: ([3  
+  1mΓò╖[0m[0m:String)    
+ [], RemoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mUnsupported 
+argument[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on m
+odules\notification_ntfy\ma
+in.tf line 38, in resource 
+"seerr_notification_ntfy" 
+"test":
+[31mΓöé[0m [0m  38:   
+[4mon_request_pending[0m 
+= true[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mAn 
+argument named 
+"on_request_pending" is 
+not expected here.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mUnsupported 
+argument[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on m
+odules\notification_ntfy\ma
+in.tf line 39, in resource 
+"seerr_notification_ntfy" 
+"test":
+[31mΓöé[0m [0m  39:   
+[4mon_issue_created[0m   
+= true[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mAn 
+argument named 
+"on_issue_created" is not 
+expected here.
+[31mΓò╡[0m[0m
+  run "notification_pushover_lifecycle"... [37mskip[0m[0m
+  run "watchlist_settings_lifecycle"... [37mskip[0m[0m
+  run "tautulli_settings_lifecycle"... [37mskip[0m[0m
+
+[31mFailure![0m[0m 10 passed, 1 failed, 3 skipped.

@@ -35,6 +35,5 @@ resource "seerr_notification_ntfy" "test" {
     priority          = var.priority
   }
 
-  on_request_pending = true
-  on_issue_created   = true
+  notification_types = ["MEDIA_PENDING", "ISSUE_CREATED"]
 }

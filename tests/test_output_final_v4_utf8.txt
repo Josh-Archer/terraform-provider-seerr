@@ -1,0 +1,539 @@
+﻿api_objects.tftest.hcl... [31mfail[0m[0m
+  run "api_object_lifecycle"... [31mfail[0m[0m
+  run "api_request_data_source"... [37mskip[0m[0m
+tofu : [31mΓò╖[0m[0m
+At line:1 char:232
++ ... 
+"seerr-ci-api-key"; 
+tofu test > test_output
+_final_v4.txt 2>&1; 
+Get-Co ...
++                      
+   ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ([31mΓò╖[0m   
+ [0m:String) [], Re    
+moteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mCreate 
+Failed[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+with 
+seerr_api_object.test,
+[31mΓöé[0m [0m  on m
+odules\api_object\main.
+tf line 24, in 
+resource 
+"seerr_api_object" 
+"test":
+[31mΓöé[0m [0m  24: 
+resource 
+"seerr_api_object" 
+"test" [4m{[0m[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mSeerr 
+returned status 405: 
+{"message":"PUT method 
+not
+[31mΓöé[0m [0mallowe
+d","errors":[{"path":"/
+api/v1/settings/main","
+message":"PUT method
+[31mΓöé[0m [0mnot 
+allowed"}]}
+[31mΓò╡[0m[0m
+data_sources.tftest.hcl... [32mpass[0m[0m
+  run "test_users_data_source"... [32mpass[0m[0m
+discover.tftest.hcl... [31mfail[0m[0m
+  run "apply_discover_sliders"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mTest 
+assertion failed[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+on discover.tftest.hcl 
+line 10, in run "apply_
+discover_sliders":
+[31mΓöé[0m [0m  10: 
+    condition     = 
+[4moutput.slider_id 
+== "settings"[0m[0m
+[31mΓöé[0m [0m    [
+90mΓö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓö
+ÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓ
+öÇΓöÇΓöÇ[0m
+[31mΓöé[0m [0m[0m  
+  [90mΓöé[0m [1moutp
+ut.slider_id[0m is 
+null
+[31mΓöé[0m [0m[0m  
+  [90mΓö£ΓöÇΓöÇΓöÇΓöÇΓ
+öÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ΓöÇΓöÇΓöÇΓöÇ[0m
+[31mΓöé[0m [0m[0m  
+  [90mΓöé[0m 
+[1mDiff: [0m[0m
+[31mΓöé[0m [0m    
+[90mΓöé[0m [0m    
+"settings"
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0mDiscover slider ID 
+should be 'settings'
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+produced inconsistent 
+result after apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mWhen applying 
+changes to seerr_discov
+er_slider.all, provider
+[31mΓöé[0m [0m"provi
+der[\"registry.opentofu
+.org/josh-archer/seerr\
+"]" produced an
+[31mΓöé[0m 
+[0munexpected new 
+value: .sliders: block 
+count changed from 3 
+to 21.
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThis 
+is a bug in the 
+provider, which should 
+be reported in the 
+provider's
+[31mΓöé[0m [0mown 
+issue tracker.
+[31mΓò╡[0m[0m
+  run "verify_reorder"... [31mfail[0m[0m
+job_schedule.tftest.hcl... [32mpass[0m[0m
+  run "job_schedule_lifecycle"... [32mpass[0m[0m
+  run "job_schedule_update"... [32mpass[0m[0m
+servers.tftest.hcl... [32mpass[0m[0m
+  run "radarr_lifecycle"... [32mpass[0m[0m
+  run "radarr_no_drift"... [32mpass[0m[0m
+  run "sonarr_lifecycle"... [32mpass[0m[0m
+  run "sonarr_no_drift"... [32mpass[0m[0m
+settings.tftest.hcl... [32mpass[0m[0m
+  run "public_settings_read"... [32mpass[0m[0m
+  run "main_settings_lifecycle"... [32mpass[0m[0m
+  run "plex_settings_lifecycle"... [32mpass[0m[0m
+  run "jellyfin_settings_lifecycle"... [32mpass[0m[0m
+  run "notification_ntfy_lifecycle"... [32mpass[0m[0m
+  run "notification_pushover_lifecycle"... [32mpass[0m[0m
+  run "watchlist_settings_lifecycle"... [32mpass[0m[0m
+  run "tautulli_settings_lifecycle"... [32mpass[0m[0m
+user.tftest.hcl... [31mfail[0m[0m
+  run "user_lifecycle"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid 
+result object after 
+apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mAfter the 
+apply operation, the 
+provider still 
+indicated an unknown 
+value
+[31mΓöé[0m [0mfor se
+err_user.test.discover_
+region. All values 
+must be known after 
+apply,
+[31mΓöé[0m [0mso 
+this is always a bug 
+in the provider and 
+should be reported in 
+the
+[31mΓöé[0m 
+[0mprovider's own 
+repository. OpenTofu 
+will still save the 
+other known object
+[31mΓöé[0m 
+[0mvalues in the 
+state.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid 
+result object after 
+apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mAfter the 
+apply operation, the 
+provider still 
+indicated an unknown 
+value
+[31mΓöé[0m [0mfor se
+err_user.test.locale. 
+All values must be 
+known after apply, so 
+this
+[31mΓöé[0m [0mis 
+always a bug in the 
+provider and should be 
+reported in the 
+provider's
+[31mΓöé[0m [0mown 
+repository. OpenTofu 
+will still save the 
+other known object 
+values in
+[31mΓöé[0m [0mthe 
+state.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid 
+result object after 
+apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mAfter the 
+apply operation, the 
+provider still 
+indicated an unknown 
+value
+[31mΓöé[0m [0mfor se
+err_user.test.original_
+language. All values 
+must be known after
+[31mΓöé[0m 
+[0mapply, so this is 
+always a bug in the 
+provider and should be 
+reported in
+[31mΓöé[0m [0mthe 
+provider's own 
+repository. OpenTofu 
+will still save the 
+other known
+[31mΓöé[0m 
+[0mobject values in 
+the state.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid 
+result object after 
+apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mAfter the 
+apply operation, the 
+provider still 
+indicated an unknown 
+value
+[31mΓöé[0m [0mfor se
+err_user.test.streaming
+_region. All values 
+must be known after 
+apply,
+[31mΓöé[0m [0mso 
+this is always a bug 
+in the provider and 
+should be reported in 
+the
+[31mΓöé[0m 
+[0mprovider's own 
+repository. OpenTofu 
+will still save the 
+other known object
+[31mΓöé[0m 
+[0mvalues in the 
+state.
+[31mΓò╡[0m[0m
+  run "user_data_source"... [37mskip[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid 
+result object after 
+apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mAfter the 
+apply operation, the 
+provider still 
+indicated an unknown 
+value
+[31mΓöé[0m [0mfor se
+err_user.test.watchlist
+_sync_movies. All 
+values must be known 
+after
+[31mΓöé[0m 
+[0mapply, so this is 
+always a bug in the 
+provider and should be 
+reported in
+[31mΓöé[0m [0mthe 
+provider's own 
+repository. OpenTofu 
+will still save the 
+other known
+[31mΓöé[0m 
+[0mobject values in 
+the state.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid 
+result object after 
+apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mAfter the 
+apply operation, the 
+provider still 
+indicated an unknown 
+value
+[31mΓöé[0m [0mfor se
+err_user.test.watchlist
+_sync_tv. All values 
+must be known after
+[31mΓöé[0m 
+[0mapply, so this is 
+always a bug in the 
+provider and should be 
+reported in
+[31mΓöé[0m [0mthe 
+provider's own 
+repository. OpenTofu 
+will still save the 
+other known
+[31mΓöé[0m 
+[0mobject values in 
+the state.
+[31mΓò╡[0m[0m
+user_permissions.tftest.hcl... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid 
+result object after 
+apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mAfter the 
+apply operation, the 
+provider still 
+indicated an unknown 
+value
+[31mΓöé[0m [0mfor se
+err_user.test.discover_
+region. All values 
+must be known after 
+apply,
+[31mΓöé[0m [0mso 
+this is always a bug 
+in the provider and 
+should be reported in 
+the
+[31mΓöé[0m 
+[0mprovider's own 
+repository. OpenTofu 
+will still save the 
+other known object
+[31mΓöé[0m 
+[0mvalues in the 
+state.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid 
+result object after 
+apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mAfter the 
+apply operation, the 
+provider still 
+indicated an unknown 
+value
+[31mΓöé[0m [0mfor se
+err_user.test.locale. 
+All values must be 
+known after apply, so 
+this
+[31mΓöé[0m [0mis 
+always a bug in the 
+provider and should be 
+reported in the 
+provider's
+[31mΓöé[0m [0mown 
+repository. OpenTofu 
+will still save the 
+other known object 
+values in
+[31mΓöé[0m [0mthe 
+state.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid 
+result object after 
+apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mAfter the 
+apply operation, the 
+provider still 
+indicated an unknown 
+value
+  run "setup_user"... [31mfail[0m[0m
+[31mΓöé[0m [0mfor se
+err_user.test.original_
+language. All values 
+must be known after
+[31mΓöé[0m 
+[0mapply, so this is 
+always a bug in the 
+provider and should be 
+reported in
+[31mΓöé[0m [0mthe 
+provider's own 
+repository. OpenTofu 
+will still save the 
+other known
+[31mΓöé[0m 
+[0mobject values in 
+the state.
+  run "user_permissions_lifecycle"... [37mskip[0m[0m
+  run "user_permissions_update"... [37mskip[0m[0m
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid 
+result object after 
+apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mAfter the 
+apply operation, the 
+provider still 
+indicated an unknown 
+value
+[31mΓöé[0m [0mfor se
+err_user.test.streaming
+_region. All values 
+must be known after 
+apply,
+[31mΓöé[0m [0mso 
+this is always a bug 
+in the provider and 
+should be reported in 
+the
+[31mΓöé[0m 
+[0mprovider's own 
+repository. OpenTofu 
+will still save the 
+other known object
+[31mΓöé[0m 
+[0mvalues in the 
+state.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid 
+result object after 
+apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mAfter the 
+apply operation, the 
+provider still 
+indicated an unknown 
+value
+[31mΓöé[0m [0mfor se
+err_user.test.watchlist
+_sync_movies. All 
+values must be known 
+after
+[31mΓöé[0m 
+[0mapply, so this is 
+always a bug in the 
+provider and should be 
+reported in
+[31mΓöé[0m [0mthe 
+provider's own 
+repository. OpenTofu 
+will still save the 
+other known
+[31mΓöé[0m 
+[0mobject values in 
+the state.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid 
+result object after 
+apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m 
+[0m[0mAfter the 
+apply operation, the 
+provider still 
+indicated an unknown 
+value
+[31mΓöé[0m [0mfor se
+err_user.test.watchlist
+_sync_tv. All values 
+must be known after
+[31mΓöé[0m 
+[0mapply, so this is 
+always a bug in the 
+provider and should be 
+reported in
+[31mΓöé[0m [0mthe 
+provider's own 
+repository. OpenTofu 
+will still save the 
+other known
+[31mΓöé[0m 
+[0mobject values in 
+the state.
+[31mΓò╡[0m[0m
+
+[31mFailure![0m[0m 15 passed, 5 failed, 4 skipped.

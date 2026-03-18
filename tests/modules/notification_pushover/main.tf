@@ -29,6 +29,5 @@ resource "seerr_notification_pushover" "test" {
     sound        = var.sound
   }
 
-  on_request_pending = true
-  on_issue_created   = true
+  notification_types = ["MEDIA_PENDING", "ISSUE_CREATED"]
 }

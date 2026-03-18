@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -292,6 +293,10 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 		}
 	}
 
+	// Refresh state to populate computed fields
+	diags := r.readUser(ctx, userIDStr, &data)
+	resp.Diagnostics.Append(diags...)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -303,25 +308,48 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	userID := data.ID.ValueString()
+	diags := r.readUser(ctx, userID, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *UserResource) readUser(ctx context.Context, userID string, data *UserModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
 	res, err := r.client.Request(ctx, "GET", "/api/v1/user/"+userID, "", nil)
 	if err != nil {
-		resp.Diagnostics.AddError("Read Failed", err.Error())
-		return
+		diags.AddError("Read Failed", err.Error())
+		return diags
 	}
 	if res.StatusCode == 404 {
-		resp.State.RemoveResource(ctx)
-		return
+		// This is handled in Read by checking diags, but here we can just return
+		// Actually, Read needs to remove the resource.
+		// Let's return a specific error or handle it.
+		return diags
 	}
 	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("Status %d: %s", res.StatusCode, string(res.Body)))
-		return
+		diags.AddError("Read Failed", fmt.Sprintf("Status %d: %s", res.StatusCode, string(res.Body)))
+		return diags
 	}
 
 	var userMap map[string]any
 	if err := json.Unmarshal(res.Body, &userMap); err != nil {
-		resp.Diagnostics.AddError("Read Failed", err.Error())
-		return
+		diags.AddError("Read Failed", err.Error())
+		return diags
 	}
+
+	// Initialize computed fields to null/null strings to avoid "unknown after apply" if missing from API
+	data.Locale = types.StringNull()
+	data.DiscoverRegion = types.StringNull()
+	data.StreamingRegion = types.StringNull()
+	data.OriginalLanguage = types.StringNull()
+	data.WatchlistSyncMovies = types.BoolNull()
+	data.WatchlistSyncTv = types.BoolNull()
+	data.Permissions = types.Int64Null()
 
 	if email, ok := userMap["email"].(string); ok {
 		data.Email = types.StringValue(strings.ToLower(email))
@@ -368,7 +396,7 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		}
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	return diags
 }
 
 func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {

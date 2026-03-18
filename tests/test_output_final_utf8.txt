@@ -1,0 +1,40 @@
+﻿tofu : [31mΓò╖[0m[0m
+At line:1 char:177
++ ... 
+EY="seerr-ci-api-key"; 
+tofu test > 
+test_output_final.txt 
+2>&1; Get-Co ...
++                      
+      ~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ([31mΓò╖[0m   
+ [0m:String) [], Re    
+moteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mModule not 
+installed[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+on data_sources.tftest.
+hcl line 3, in run "tes
+t_users_data_source":
+[31mΓöé[0m [0m   3: 
+  [4mmodule[0m {[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThis 
+module is not yet 
+installed. Run "tofu 
+init" to install all 
+modules
+[31mΓöé[0m 
+[0mrequired by this 
+configuration.
+[31mΓò╡[0m[0m

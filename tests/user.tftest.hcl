@@ -1,10 +1,10 @@
 run "user_lifecycle" {
-  command = plan
+  command = apply
 
   variables {
-    username    = "tofu_test_user"
+    username    = "tofu_test"
     email       = "tofu_test@example.com"
-    permissions = 0
+    permissions = 32
   }
 
   module {

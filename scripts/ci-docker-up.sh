@@ -122,6 +122,11 @@ if ! curl -fsS -H "X-Api-Key: ${api_key}" "http://127.0.0.1:${local_port}/api/v1
   exit 1
 fi
 
+echo "Enabling email notifications via API..."
+curl -fsS -H "X-Api-Key: ${api_key}" -H "Content-Type: application/json" \
+  -X POST "http://127.0.0.1:${local_port}/api/v1/settings/notifications/email" \
+  -d '{"enabled":true,"types":0,"options":{"emailFrom":"noreply@example.com","senderName":"Seerr CI","smtpHost":"127.0.0.1","smtpPort":25}}'
+
 api_key="${api_key//$'\r'/}"
 api_key="${api_key//$'\n'/}"
 

@@ -1,0 +1,277 @@
+﻿api_objects.tftest.hcl... [31mfail[0m[0m
+  run "api_object_lifecycle"... [31mfail[0m[0m
+tofu : [31mΓò╖[0m[0m
+At line:1 char:56
++ ... v.tfrc"; tofu init; 
+tofu test > 
+test_output_final_v2.txt 
+2>&1; Get-Co ...
++                         ~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: ([3  
+  1mΓò╖[0m[0m:String)    
+ [], RemoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mCreate 
+Failed[0m
+  run "api_request_data_source"... [37mskip[0m[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+with seerr_api_object.test,
+[31mΓöé[0m [0m  on 
+modules\api_object\main.tf 
+line 12, in resource 
+"seerr_api_object" "test":
+[31mΓöé[0m [0m  12: 
+resource 
+"seerr_api_object" "test" 
+[4m{[0m[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mSeerr 
+returned status 405: 
+{"message":"PUT method not
+[31mΓöé[0m [0mallowed","
+errors":[{"path":"/api/v1/s
+ettings/main","message":"PU
+T method
+[31mΓöé[0m [0mnot 
+allowed"}]}
+[31mΓò╡[0m[0m
+data_sources.tftest.hcl... [32mpass[0m[0m
+  run "test_users_data_source"... [32mpass[0m[0m
+discover.tftest.hcl... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid result 
+object after apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0mAfter 
+the apply operation, the 
+provider still indicated 
+an unknown value
+[31mΓöé[0m [0mfor seerr_
+discover_slider.all.sliders
+[0].id. All values must be 
+known after
+[31mΓöé[0m [0mapply, so 
+this is always a bug in 
+the provider and should be 
+reported in
+[31mΓöé[0m [0mthe 
+provider's own repository. 
+OpenTofu will still save 
+the other known
+[31mΓöé[0m [0mobject 
+values in the state.
+[31mΓò╡[0m[0m
+  run "apply_discover_sliders"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid result 
+object after apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0mAfter 
+the apply operation, the 
+provider still indicated 
+an unknown value
+[31mΓöé[0m [0mfor seerr_
+discover_slider.all.sliders
+[0].is_built_in. All 
+values must be
+  run "verify_reorder"... [37mskip[0m[0m
+[31mΓöé[0m [0mknown 
+after apply, so this is 
+always a bug in the 
+provider and should be
+[31mΓöé[0m [0mreported 
+in the provider's own 
+repository. OpenTofu will 
+still save the
+[31mΓöé[0m [0mother 
+known object values in the 
+state.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid result 
+object after apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0mAfter 
+the apply operation, the 
+provider still indicated 
+an unknown value
+[31mΓöé[0m [0mfor seerr_
+discover_slider.all.sliders
+[1].id. All values must be 
+known after
+[31mΓöé[0m [0mapply, so 
+this is always a bug in 
+the provider and should be 
+reported in
+[31mΓöé[0m [0mthe 
+provider's own repository. 
+OpenTofu will still save 
+the other known
+[31mΓöé[0m [0mobject 
+values in the state.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid result 
+object after apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0mAfter 
+the apply operation, the 
+provider still indicated 
+an unknown value
+[31mΓöé[0m [0mfor seerr_
+discover_slider.all.sliders
+[1].is_built_in. All 
+values must be
+[31mΓöé[0m [0mknown 
+after apply, so this is 
+always a bug in the 
+provider and should be
+[31mΓöé[0m [0mreported 
+in the provider's own 
+repository. OpenTofu will 
+still save the
+[31mΓöé[0m [0mother 
+known object values in the 
+state.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid result 
+object after apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0mAfter 
+the apply operation, the 
+provider still indicated 
+an unknown value
+[31mΓöé[0m [0mfor seerr_
+discover_slider.all.sliders
+[2].id. All values must be 
+known after
+[31mΓöé[0m [0mapply, so 
+this is always a bug in 
+the provider and should be 
+reported in
+[31mΓöé[0m [0mthe 
+provider's own repository. 
+OpenTofu will still save 
+the other known
+[31mΓöé[0m [0mobject 
+values in the state.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mProvider 
+returned invalid result 
+object after apply[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0mAfter 
+the apply operation, the 
+provider still indicated 
+an unknown value
+[31mΓöé[0m [0mfor seerr_
+discover_slider.all.sliders
+[2].is_built_in. All 
+values must be
+[31mΓöé[0m [0mknown 
+after apply, so this is 
+always a bug in the 
+provider and should be
+[31mΓöé[0m [0mreported 
+in the provider's own 
+repository. OpenTofu will 
+still save the
+[31mΓöé[0m [0mother 
+known object values in the 
+state.
+[31mΓò╡[0m[0m
+job_schedule.tftest.hcl... [32mpass[0m[0m
+  run "job_schedule_lifecycle"... [32mpass[0m[0m
+  run "job_schedule_update"... [32mpass[0m[0m
+servers.tftest.hcl... [32mpass[0m[0m
+  run "radarr_lifecycle"... [32mpass[0m[0m
+  run "radarr_no_drift"... [32mpass[0m[0m
+  run "sonarr_lifecycle"... [32mpass[0m[0m
+  run "sonarr_no_drift"... [32mpass[0m[0m
+settings.tftest.hcl... [32mpass[0m[0m
+  run "public_settings_read"... [32mpass[0m[0m
+  run "main_settings_lifecycle"... [32mpass[0m[0m
+  run "plex_settings_lifecycle"... [32mpass[0m[0m
+  run "jellyfin_settings_lifecycle"... [32mpass[0m[0m
+  run "notification_ntfy_lifecycle"... [32mpass[0m[0m
+  run "notification_pushover_lifecycle"... [32mpass[0m[0m
+  run "watchlist_settings_lifecycle"... [32mpass[0m[0m
+  run "tautulli_settings_lifecycle"... [32mpass[0m[0m
+user.tftest.hcl... [31mfail[0m[0m
+  run "user_lifecycle"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mCreate 
+Failed[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+with seerr_user.test,
+  run "user_data_source"... [37mskip[0m[0m
+[31mΓöé[0m [0m  on 
+modules\user\main.tf line 
+13, in resource 
+"seerr_user" "test":
+[31mΓöé[0m [0m  13: 
+resource "seerr_user" 
+"test" [4m{[0m[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mStatus 
+500: {"message":"Email 
+notifications must be 
+enabled"}
+[31mΓò╡[0m[0m
+user_permissions.tftest.hcl... [31mfail[0m[0m
+  run "setup_user"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mCreate 
+Failed[0m
+  run "user_permissions_lifecycle"... [37mskip[0m[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  
+with seerr_user.test,
+  run "user_permissions_update"... [37mskip[0m[0m
+[31mΓöé[0m [0m  on 
+modules\user\main.tf line 
+13, in resource 
+"seerr_user" "test":
+[31mΓöé[0m [0m  13: 
+resource "seerr_user" 
+"test" [4m{[0m[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mStatus 
+500: {"message":"Email 
+notifications must be 
+enabled"}
+[31mΓò╡[0m[0m
+
+[31mFailure![0m[0m 15 passed, 4 failed, 5 skipped.

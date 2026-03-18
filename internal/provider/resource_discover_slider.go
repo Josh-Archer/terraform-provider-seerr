@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -105,9 +106,9 @@ func (r *DiscoverSliderResource) Create(ctx context.Context, req resource.Create
 	}
 
 	data.ID = types.StringValue("settings")
+	resp.Diagnostics.Append(r.readSliders(ctx, &data)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
-
 func (r *DiscoverSliderResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data DiscoverSliderModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -115,21 +116,29 @@ func (r *DiscoverSliderResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
+	data.ID = types.StringValue("settings")
+	resp.Diagnostics.Append(r.readSliders(ctx, &data)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *DiscoverSliderResource) readSliders(ctx context.Context, data *DiscoverSliderModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
 	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/discover", "", nil)
 	if err != nil {
-		resp.Diagnostics.AddError("Read Failed", err.Error())
-		return
+		diags.AddError("Read Failed", err.Error())
+		return diags
 	}
 
 	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
-		return
+		diags.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
+		return diags
 	}
 
 	var apiSliders []map[string]any
 	if err := json.Unmarshal(res.Body, &apiSliders); err != nil {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
+		diags.AddError("Read Failed", fmt.Sprintf("failed to decode response: %s", err))
+		return diags
 	}
 
 	data.Sliders = make([]DiscoverSliderItemModel, 0, len(apiSliders))
@@ -155,8 +164,7 @@ func (r *DiscoverSliderResource) Read(ctx context.Context, req resource.ReadRequ
 		data.Sliders = append(data.Sliders, item)
 	}
 
-	data.ID = types.StringValue("settings")
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	return diags
 }
 
 func (r *DiscoverSliderResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -172,6 +180,7 @@ func (r *DiscoverSliderResource) Update(ctx context.Context, req resource.Update
 	}
 
 	data.ID = types.StringValue("settings")
+	resp.Diagnostics.Append(r.readSliders(ctx, &data)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -192,9 +201,13 @@ func (r *DiscoverSliderResource) updateSliders(ctx context.Context, sliders []Di
 		}
 		if !s.Title.IsNull() && !s.Title.IsUnknown() {
 			item["title"] = s.Title.ValueString()
+		} else {
+			item["title"] = ""
 		}
 		if !s.Data.IsNull() && !s.Data.IsUnknown() {
 			item["data"] = s.Data.ValueString()
+		} else {
+			item["data"] = ""
 		}
 		payload = append(payload, item)
 	}
