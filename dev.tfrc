@@ -1,1 +1,0 @@
-provider_installation { dev_overrides { "josh-archer/seerr" = "C:/Code/terraform-provider-seerr" } direct {} }
