@@ -155,6 +155,20 @@ func TestReadSonarrStateFromJSON_UserSuppliedFieldsUntouched(t *testing.T) {
 	}
 }
 
+// TestReadSonarrStateFromJSON_PopulatesAPIKeyWhenUnset verifies that the
+// helper can populate api_key for the data source path when the field is not
+// already present in state.
+func TestReadSonarrStateFromJSON_PopulatesAPIKeyWhenUnset(t *testing.T) {
+	raw := `{"id": 1, "name": "Sonarr", "apiKey": "server-key"}`
+	data := &SonarrServerModel{}
+	if err := readSonarrStateFromJSON(context.Background(), []byte(raw), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if data.APIKey.ValueString() != "server-key" {
+		t.Errorf("APIKey: got %q, want %q", data.APIKey.ValueString(), "server-key")
+	}
+}
+
 // TestParseSonarrURLIntoModel_HTTPS verifies that an https URL is decomposed
 // into hostname, port, use_ssl, and base_url correctly.
 func TestParseSonarrURLIntoModel_HTTPS(t *testing.T) {

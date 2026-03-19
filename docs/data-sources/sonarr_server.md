@@ -21,5 +21,23 @@ Read a Seerr Sonarr server configuration via /api/v1/settings/sonarr.
 
 ### Read-Only
 
-- `response_json` (String) Raw JSON response body for the matched server.
-- `status_code` (Number) HTTP status code.
+- `active_anime_directory` (String) The active Sonarr anime download directory.
+- `active_directory` (String) The active Sonarr download directory.
+- `anime_tags` (List of Number) The Sonarr anime tag IDs attached to the server.
+- `api_key` (String, Sensitive) The Sonarr API key reported by Seerr.
+- `base_url` (String) The Sonarr base URL reported by Seerr.
+- `enable_scan` (Boolean) Whether scan is enabled for the Sonarr server.
+- `enable_season_folders` (Boolean) Whether season folders are enabled for the Sonarr server.
+- `hostname` (String) The Sonarr hostname reported by Seerr.
+- `id` (String) The ID of the matched Sonarr server.
+- `is_4k` (Boolean) Whether the Sonarr server is configured for 4K.
+- `is_default` (Boolean) Whether this is the default Sonarr server.
+- `name` (String) The Sonarr server name reported by Seerr.
+- `port` (Number) The Sonarr port reported by Seerr.
+- `prevent_search` (Boolean) Whether search is prevented for the Sonarr server.
+- `quality_profile_id` (Number) The active Sonarr quality profile ID.
+- `quality_profile_name` (String) The active Sonarr quality profile name.
+- `sync_enabled` (Boolean) Whether sync is enabled for the Sonarr server.
+- `tag_requests_with_user` (Boolean) Whether requests are tagged with the user.
+- `tags` (List of Number) The Sonarr tag IDs attached to the server.
+- `use_ssl` (Boolean) Whether Sonarr uses HTTPS.

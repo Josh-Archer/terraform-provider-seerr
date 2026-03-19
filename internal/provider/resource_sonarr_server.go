@@ -53,7 +53,6 @@ type SonarrServerModel struct {
 	PreventSearch        types.Bool   `tfsdk:"prevent_search"`
 	TagRequestsWithUser  types.Bool   `tfsdk:"tag_requests_with_user"`
 	ExtraPayloadJSON     types.String `tfsdk:"extra_payload_json"`
-	ResponseJSON         types.String `tfsdk:"response_json"`
 }
 
 func NewSonarrServerResource() resource.Resource { return &SonarrServerResource{} }
@@ -170,7 +169,6 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 				Default:  booldefault.StaticBool(true),
 			},
 			"extra_payload_json": schema.StringAttribute{Optional: true},
-			"response_json":      schema.StringAttribute{Computed: true},
 		},
 	}
 }
@@ -330,14 +328,15 @@ func (r *SonarrServerResource) Create(ctx context.Context, req resource.CreateRe
 	parsed, _ := requireInt64ID(id)
 	data.ServerID = types.Int64Value(parsed)
 	data.ID = types.StringValue(id)
-	data.ResponseJSON = types.StringValue(string(res.Body))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 // readSonarrStateFromJSON populates all API-sourced fields of data from the
 // JSON object representing a single Sonarr server entry returned by Overseerr.
-// Fields that are user-supplied and never echoed by the API (api_key, url,
-// extra_payload_json) are intentionally left untouched.
+// Fields that are user-supplied and never echoed by the API (url and
+// extra_payload_json) are intentionally left untouched. api_key is preserved
+// from state when it is already set, but data source reads can still populate
+// it when the API returns a value.
 func readSonarrStateFromJSON(ctx context.Context, item []byte, data *SonarrServerModel) error {
 	var m map[string]any
 	if err := json.Unmarshal(item, &m); err != nil {
@@ -391,6 +390,11 @@ func readSonarrStateFromJSON(ctx context.Context, item []byte, data *SonarrServe
 	}
 	if v, ok := m["tagRequests"].(bool); ok {
 		data.TagRequestsWithUser = types.BoolValue(v)
+	}
+	if data.APIKey.IsNull() || data.APIKey.IsUnknown() {
+		if v, ok := m["apiKey"].(string); ok {
+			data.APIKey = types.StringValue(v)
+		}
 	}
 
 	// tags
@@ -475,8 +479,6 @@ func (r *SonarrServerResource) Read(ctx context.Context, req resource.ReadReques
 	data.APIKey = state.APIKey
 	data.URL = state.URL
 	data.ExtraPayloadJSON = state.ExtraPayloadJSON
-
-	data.ResponseJSON = types.StringValue(string(item))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -510,7 +512,6 @@ func (r *SonarrServerResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 	data.ID = types.StringValue(fmt.Sprintf("%d", data.ServerID.ValueInt64()))
-	data.ResponseJSON = types.StringValue(string(res.Body))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
