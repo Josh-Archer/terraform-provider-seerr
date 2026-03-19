@@ -179,7 +179,14 @@ func (r *UserSettingsPermissionsResource) ImportState(ctx context.Context, req r
 }
 
 func (r *UserSettingsPermissionsResource) updatePermissions(ctx context.Context, data *UserSettingsPermissionsModel) error {
-	payload := map[string]any{}
+	permissions, err := r.getUserPermissions(ctx, data.UserID.ValueInt64())
+	if err != nil {
+		return err
+	}
+
+	payload := map[string]any{
+		"permissions": permissions,
+	}
 	if !data.AutoApproveMovies.IsNull() && !data.AutoApproveMovies.IsUnknown() {
 		payload["autoApproveMovies"] = data.AutoApproveMovies.ValueBool()
 	}
@@ -207,4 +214,34 @@ func (r *UserSettingsPermissionsResource) updatePermissions(ctx context.Context,
 	}
 
 	return nil
+}
+
+func (r *UserSettingsPermissionsResource) getUserPermissions(ctx context.Context, userID int64) (int64, error) {
+	res, err := r.client.Request(ctx, "GET", fmt.Sprintf("/api/v1/user/%d", userID), "", nil)
+	if err != nil {
+		return 0, err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return 0, fmt.Errorf("read user status %d: %s", res.StatusCode, string(res.Body))
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		return 0, fmt.Errorf("failed to decode user response: %w", err)
+	}
+
+	switch v := decoded["permissions"].(type) {
+	case float64:
+		return int64(v), nil
+	case int64:
+		return v, nil
+	case string:
+		var parsed int64
+		if _, err := fmt.Sscan(v, &parsed); err != nil {
+			return 0, fmt.Errorf("failed to parse user permissions %q: %w", v, err)
+		}
+		return parsed, nil
+	default:
+		return 0, fmt.Errorf("user permissions missing from response")
+	}
 }
