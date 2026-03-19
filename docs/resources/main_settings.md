@@ -51,3 +51,21 @@ resource "seerr_main_settings" "main" {
 - `id` (String) The ID of this resource.
 - `response_json` (String) Raw JSON response body.
 - `status_code` (Number) HTTP status code.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_main_settings. For example:
+#
+# import {
+#   to = seerr_main_settings.example
+#   id = "main"
+# }
+#
+# Otherwise, use the terraform import command:
+terraform import seerr_main_settings.example main
+```

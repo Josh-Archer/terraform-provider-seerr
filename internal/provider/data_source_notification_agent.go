@@ -62,7 +62,6 @@ func (d *NotificationClientDataSource) Schema(_ context.Context, _ datasource.Sc
 	attributes := map[string]schema.Attribute{
 		"enabled":      schema.BoolAttribute{Computed: true},
 		"embed_poster": schema.BoolAttribute{Computed: true},
-		"types":        schema.Int64Attribute{Computed: true},
 	}
 	for name, attr := range notificationAgentDataSourceEventAttributes() {
 		attributes[name] = attr
@@ -105,7 +104,7 @@ func (d *NotificationClientDataSource) Read(ctx context.Context, _ datasource.Re
 	}
 
 	resourceData := NotificationAgentModel{Agent: types.StringValue(d.agent)}
-	if err := parsePayload(&resourceData, res.Body); err != nil {
+	if err := parsePayload(ctx, &resourceData, res.Body); err != nil {
 		resp.Diagnostics.AddError("Parse Failed", err.Error())
 		return
 	}

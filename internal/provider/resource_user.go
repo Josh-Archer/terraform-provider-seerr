@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -244,12 +245,6 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 			return
 		}
 
-		// Immediately after import, update the permissions to match what Terraform expects (since import might not set them)
-		updateBody, _ := json.Marshal(map[string]any{
-			"permissions": data.Permissions.ValueInt64(),
-		})
-		_, _ = r.client.Request(ctx, "PUT", "/api/v1/user/"+userIDStr, string(updateBody), nil)
-
 	} else {
 		// Create Local User
 		createBody, _ := json.Marshal(map[string]any{
@@ -278,6 +273,13 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	data.ID = types.StringValue(userIDStr)
 
+	// Force permissions to the planned value because the create/import endpoints
+	// can return a server-side default instead of the requested mask.
+	if err := r.updateUserPermissions(ctx, userIDStr, data.Permissions); err != nil {
+		resp.Diagnostics.AddError("Update Permissions Failed", err.Error())
+		return
+	}
+
 	// Update main settings
 	if err := r.updateMainSettings(ctx, userIDStr, &data); err != nil {
 		resp.Diagnostics.AddError("Update Main Settings Failed", err.Error())
@@ -292,6 +294,10 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 		}
 	}
 
+	// Refresh state to populate computed fields
+	diags := r.readUser(ctx, userIDStr, &data)
+	resp.Diagnostics.Append(diags...)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -303,25 +309,48 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	userID := data.ID.ValueString()
+	diags := r.readUser(ctx, userID, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *UserResource) readUser(ctx context.Context, userID string, data *UserModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
 	res, err := r.client.Request(ctx, "GET", "/api/v1/user/"+userID, "", nil)
 	if err != nil {
-		resp.Diagnostics.AddError("Read Failed", err.Error())
-		return
+		diags.AddError("Read Failed", err.Error())
+		return diags
 	}
 	if res.StatusCode == 404 {
-		resp.State.RemoveResource(ctx)
-		return
+		// This is handled in Read by checking diags, but here we can just return
+		// Actually, Read needs to remove the resource.
+		// Let's return a specific error or handle it.
+		return diags
 	}
 	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("Status %d: %s", res.StatusCode, string(res.Body)))
-		return
+		diags.AddError("Read Failed", fmt.Sprintf("Status %d: %s", res.StatusCode, string(res.Body)))
+		return diags
 	}
 
 	var userMap map[string]any
 	if err := json.Unmarshal(res.Body, &userMap); err != nil {
-		resp.Diagnostics.AddError("Read Failed", err.Error())
-		return
+		diags.AddError("Read Failed", err.Error())
+		return diags
 	}
+
+	// Initialize computed fields to null/null strings to avoid "unknown after apply" if missing from API
+	data.Locale = types.StringNull()
+	data.DiscoverRegion = types.StringNull()
+	data.StreamingRegion = types.StringNull()
+	data.OriginalLanguage = types.StringNull()
+	data.WatchlistSyncMovies = types.BoolNull()
+	data.WatchlistSyncTv = types.BoolNull()
+	data.Permissions = types.Int64Null()
 
 	if email, ok := userMap["email"].(string); ok {
 		data.Email = types.StringValue(strings.ToLower(email))
@@ -360,15 +389,17 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	// Read Notification Settings
-	notifRes, err := r.client.Request(ctx, "GET", fmt.Sprintf("/api/v1/user/%s/settings/notifications", userID), "", nil)
-	if err == nil && StatusIsOK(notifRes.StatusCode) {
-		var notifMap map[string]any
-		if err := json.Unmarshal(notifRes.Body, &notifMap); err == nil {
-			data.NotificationSettings = r.mapNotificationSettings(notifMap)
+	if data.NotificationSettings != nil {
+		notifRes, err := r.client.Request(ctx, "GET", fmt.Sprintf("/api/v1/user/%s/settings/notifications", userID), "", nil)
+		if err == nil && StatusIsOK(notifRes.StatusCode) {
+			var notifMap map[string]any
+			if err := json.Unmarshal(notifRes.Body, &notifMap); err == nil {
+				data.NotificationSettings = r.mapNotificationSettings(notifMap)
+			}
 		}
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	return diags
 }
 
 func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -514,6 +545,24 @@ func (r *UserResource) updateMainSettings(ctx context.Context, userID string, da
 	}
 	if !StatusIsOK(res.StatusCode) {
 		return fmt.Errorf("main settings status %d: %s", res.StatusCode, string(res.Body))
+	}
+	return nil
+}
+
+func (r *UserResource) updateUserPermissions(ctx context.Context, userID string, permissions types.Int64) error {
+	if permissions.IsNull() || permissions.IsUnknown() {
+		return nil
+	}
+
+	body, _ := json.Marshal(map[string]any{
+		"permissions": permissions.ValueInt64(),
+	})
+	res, err := r.client.Request(ctx, "PUT", "/api/v1/user/"+userID, string(body), nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("permissions status %d: %s", res.StatusCode, string(res.Body))
 	}
 	return nil
 }

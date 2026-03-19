@@ -3,6 +3,7 @@ package provider
 import (
 	dschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func notificationAgentResourceOptionAttributes() map[string]schema.Attribute {
@@ -207,45 +208,21 @@ func notificationAgentDataSourceOptionAttributes() map[string]dschema.Attribute 
 
 func notificationAgentResourceEventAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"on_request_pending":       schema.BoolAttribute{Optional: true, Computed: true},
-		"on_request_approved":      schema.BoolAttribute{Optional: true, Computed: true},
-		"on_request_rejected":      schema.BoolAttribute{Optional: true, Computed: true},
-		"on_request_failed":        schema.BoolAttribute{Optional: true, Computed: true},
-		"on_request_available":     schema.BoolAttribute{Optional: true, Computed: true},
-		"on_request_declined":      schema.BoolAttribute{Optional: true, Computed: true},
-		"on_request_auto_approved": schema.BoolAttribute{Optional: true, Computed: true},
-		"on_media_available":       schema.BoolAttribute{Optional: true, Computed: true},
-		"on_media_failed":          schema.BoolAttribute{Optional: true, Computed: true},
-		"on_media_skipped":         schema.BoolAttribute{Optional: true, Computed: true},
-		"on_media_issued":          schema.BoolAttribute{Optional: true, Computed: true},
-		"on_media_followed":        schema.BoolAttribute{Optional: true, Computed: true},
-		"on_issue_created":         schema.BoolAttribute{Optional: true, Computed: true},
-		"on_issue_comment":         schema.BoolAttribute{Optional: true, Computed: true},
-		"on_issue_resolved":        schema.BoolAttribute{Optional: true, Computed: true},
-		"on_issue_reopened":        schema.BoolAttribute{Optional: true, Computed: true},
-		"on_media_auto_requested":  schema.BoolAttribute{Optional: true, Computed: true},
+		"notification_types": schema.SetAttribute{
+			Optional:            true,
+			Computed:            true,
+			ElementType:         types.StringType,
+			MarkdownDescription: "Set of notification event types. Valid values include `MEDIA_PENDING`, `MEDIA_APPROVED`, `MEDIA_AVAILABLE`, `MEDIA_FAILED`, `MEDIA_DECLINED`, `MEDIA_AUTO_APPROVED`, `ISSUE_CREATED`, `ISSUE_COMMENT`, `ISSUE_RESOLVED`, `ISSUE_REOPENED`, `MEDIA_AUTO_REQUESTED`.",
+		},
 	}
 }
 
 func notificationAgentDataSourceEventAttributes() map[string]dschema.Attribute {
 	return map[string]dschema.Attribute{
-		"on_request_pending":       dschema.BoolAttribute{Computed: true},
-		"on_request_approved":      dschema.BoolAttribute{Computed: true},
-		"on_request_rejected":      dschema.BoolAttribute{Computed: true},
-		"on_request_failed":        dschema.BoolAttribute{Computed: true},
-		"on_request_available":     dschema.BoolAttribute{Computed: true},
-		"on_request_declined":      dschema.BoolAttribute{Computed: true},
-		"on_request_auto_approved": dschema.BoolAttribute{Computed: true},
-		"on_media_available":       dschema.BoolAttribute{Computed: true},
-		"on_media_failed":          dschema.BoolAttribute{Computed: true},
-		"on_media_skipped":         dschema.BoolAttribute{Computed: true},
-		"on_media_issued":          dschema.BoolAttribute{Computed: true},
-		"on_media_followed":        dschema.BoolAttribute{Computed: true},
-		"on_issue_created":         dschema.BoolAttribute{Computed: true},
-		"on_issue_comment":         dschema.BoolAttribute{Computed: true},
-		"on_issue_resolved":        dschema.BoolAttribute{Computed: true},
-		"on_issue_reopened":        dschema.BoolAttribute{Computed: true},
-		"on_media_auto_requested":  dschema.BoolAttribute{Computed: true},
+		"notification_types": dschema.SetAttribute{
+			Computed:    true,
+			ElementType: types.StringType,
+		},
 	}
 }
 

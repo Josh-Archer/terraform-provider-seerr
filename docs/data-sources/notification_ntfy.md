@@ -19,25 +19,8 @@ Read Seerr ntfy notification settings via /api/v1/settings/notifications/ntfy.
 
 - `embed_poster` (Boolean)
 - `enabled` (Boolean)
+- `notification_types` (Set of String)
 - `ntfy` (Attributes) (see [below for nested schema](#nestedatt--ntfy))
-- `on_issue_comment` (Boolean)
-- `on_issue_created` (Boolean)
-- `on_issue_reopened` (Boolean)
-- `on_issue_resolved` (Boolean)
-- `on_media_auto_requested` (Boolean)
-- `on_media_available` (Boolean)
-- `on_media_failed` (Boolean)
-- `on_media_followed` (Boolean)
-- `on_media_issued` (Boolean)
-- `on_media_skipped` (Boolean)
-- `on_request_approved` (Boolean)
-- `on_request_auto_approved` (Boolean)
-- `on_request_available` (Boolean)
-- `on_request_declined` (Boolean)
-- `on_request_failed` (Boolean)
-- `on_request_pending` (Boolean)
-- `on_request_rejected` (Boolean)
-- `types` (Number)
 
 <a id="nestedatt--ntfy"></a>
 ### Nested Schema for `ntfy`

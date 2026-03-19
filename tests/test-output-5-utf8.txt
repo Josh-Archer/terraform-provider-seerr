@@ -1,0 +1,347 @@
+﻿tofu : There are some 
+problems with the CLI 
+configuration:
+At line:1 char:125
++ ... i-api-key"; tofu 
+test 
+-var="username=testuser1" 
+-var="email=test1@exa ...
++                 ~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (The  
+  re are some ... config   
+ uration::String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+Γò╖
+Γöé Error: Error parsing C:
+\Code\terraform-provider-se
+err\tests\..\dev.tfrc: At 
+1:67: illegal char escape
+Γöé
+Γò╡
+
+As a result of the above 
+problems, OpenTofu may not 
+behave as intended.
+
+
+api_objects.tftest.hcl... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+  run "api_object_lifecycle"... [31mfail[0m[0m
+  run "api_request_data_source"... [37mskip[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mMissing 
+required attribute[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on p
+rovider["registry.opentofu.
+org\josh-archer\seerr"] 
+with no configuration line 
+1:
+[31mΓöé[0m [0m  (source 
+code not available)
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+attribute "api_key" is 
+required, but no 
+definition was found.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mMissing 
+required attribute[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on p
+rovider["registry.opentofu.
+org\josh-archer\seerr"] 
+with no configuration line 
+1:
+[31mΓöé[0m [0m  (source 
+code not available)
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+attribute "url" is 
+required, but no 
+definition was found.
+[31mΓò╡[0m[0m
+data_sources.tftest.hcl... [31mfail[0m[0m
+  run "test_users_data_source"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mInvalid data 
+source[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on 
+provider.tf line 27, in 
+data "seerr_users" "all":
+[31mΓöé[0m [0m  27: 
+data [4m"seerr_users"[0m 
+"all" {}[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+provider josh-archer/seerr 
+does not support data 
+source "seerr_users".
+[31mΓöé[0m [0mDid you 
+mean "seerr_user"?
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mInvalid data 
+source[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on 
+provider.tf line 29, in 
+data "seerr_jobs" "all":
+[31mΓöé[0m [0m  29: 
+data [4m"seerr_jobs"[0m 
+"all" {}[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+provider josh-archer/seerr 
+does not support data 
+source "seerr_jobs".
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mInvalid data 
+source[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on 
+provider.tf line 31, in 
+data "seerr_notification_ag
+ents" "all":
+[31mΓöé[0m [0m  31: 
+data [4m"seerr_notificatio
+n_agents"[0m "all" {}[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+provider josh-archer/seerr 
+does not support data 
+source
+[31mΓöé[0m [0m"seerr_not
+ification_agents". Did you 
+mean 
+"seerr_notification_agent"?
+[31mΓò╡[0m[0m
+  run "test_jobs_data_source"... [37mskip[0m[0m
+  run "test_notification_agents_data_source"... [37mskip[0m[0m
+discover.tftest.hcl... [31mfail[0m[0m
+  run "apply_discover_sliders"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mInvalid 
+resource type[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on m
+odules\discover_slider\main
+.tf line 9, in resource 
+"seerr_discover_slider" 
+"all":
+[31mΓöé[0m [0m   9: 
+resource [4m"seerr_discove
+r_slider"[0m "all" {[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+provider josh-archer/seerr 
+does not support resource 
+type
+[31mΓöé[0m [0m"seerr_dis
+cover_slider".
+[31mΓò╡[0m[0m
+  run "verify_reorder"... [37mskip[0m[0m
+job_schedule.tftest.hcl... [31mfail[0m[0m
+  run "job_schedule_lifecycle"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mInvalid 
+resource type[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on m
+odules\job_schedule\main.tf
+ line 17, in resource 
+"seerr_job_schedule" 
+"test":
+[31mΓöé[0m [0m  17: 
+resource [4m"seerr_job_sch
+edule"[0m "test" {[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+provider josh-archer/seerr 
+does not support resource 
+type
+[31mΓöé[0m 
+[0m"seerr_job_schedule".
+[31mΓò╡[0m[0m
+  run "job_schedule_update"... [37mskip[0m[0m
+servers.tftest.hcl... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mMissing 
+required attribute[0m
+[31mΓöé[0m [0m
+  run "radarr_lifecycle"... [31mfail[0m[0m
+  run "radarr_no_drift"... [37mskip[0m[0m
+  run "sonarr_lifecycle"... [37mskip[0m[0m
+  run "sonarr_no_drift"... [37mskip[0m[0m
+[31mΓöé[0m [0m[0m  on p
+rovider["registry.opentofu.
+org\josh-archer\seerr"] 
+with no configuration line 
+1:
+[31mΓöé[0m [0m  (source 
+code not available)
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+attribute "api_key" is 
+required, but no 
+definition was found.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mMissing 
+required attribute[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on p
+rovider["registry.opentofu.
+org\josh-archer\seerr"] 
+with no configuration line 
+1:
+[31mΓöé[0m [0m  (source 
+code not available)
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+attribute "url" is 
+required, but no 
+definition was found.
+[31mΓò╡[0m[0m
+settings.tftest.hcl... [31mfail[0m[0m
+  run "public_settings_read"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mInvalid data 
+source[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on m
+odules\public_settings\main
+.tf line 9, in data 
+"seerr_public_settings" 
+"test":
+[31mΓöé[0m [0m   9: 
+data [4m"seerr_public_sett
+ings"[0m "test" {}[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+provider josh-archer/seerr 
+does not support data 
+source
+[31mΓöé[0m [0m"seerr_pub
+lic_settings".
+  run "main_settings_lifecycle"... [37mskip[0m[0m
+  run "plex_settings_lifecycle"... [37mskip[0m[0m
+  run "jellyfin_settings_lifecycle"... [37mskip[0m[0m
+  run "notification_ntfy_lifecycle"... [37mskip[0m[0m
+  run "notification_pushover_lifecycle"... [37mskip[0m[0m
+  run "watchlist_settings_lifecycle"... [37mskip[0m[0m
+  run "tautulli_settings_lifecycle"... [37mskip[0m[0m
+[31mΓò╡[0m[0m
+user.tftest.hcl... [31mfail[0m[0m
+  run "user_lifecycle"... [31mfail[0m[0m
+  run "user_data_source"... [37mskip[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mMissing 
+required attribute[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on p
+rovider["registry.opentofu.
+org\josh-archer\seerr"] 
+with no configuration line 
+1:
+[31mΓöé[0m [0m  (source 
+code not available)
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+attribute "api_key" is 
+required, but no 
+definition was found.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mMissing 
+required attribute[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on p
+rovider["registry.opentofu.
+org\josh-archer\seerr"] 
+with no configuration line 
+1:
+[31mΓöé[0m [0m  (source 
+code not available)
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+attribute "url" is 
+required, but no 
+definition was found.
+[31mΓò╡[0m[0m
+user_permissions.tftest.hcl... [31mfail[0m[0m
+  run "setup_user"... [31mfail[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mMissing 
+required attribute[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on p
+rovider["registry.opentofu.
+org\josh-archer\seerr"] 
+with no configuration line 
+1:
+[31mΓöé[0m [0m  (source 
+code not available)
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+attribute "api_key" is 
+required, but no 
+definition was found.
+[31mΓò╡[0m[0m
+[31mΓò╖[0m[0m
+[31mΓöé[0m 
+[0m[1m[31mError: 
+[0m[0m[1mMissing 
+required attribute[0m
+[31mΓöé[0m [0m
+[31mΓöé[0m [0m[0m  on p
+rovider["registry.opentofu.
+org\josh-archer\seerr"] 
+with no configuration line 
+1:
+[31mΓöé[0m [0m  (source 
+code not available)
+[31mΓöé[0m [0m
+[31mΓöé[0m [0mThe 
+attribute "url" is 
+required, but no 
+definition was found.
+[31mΓò╡[0m[0m
+  run "user_permissions_lifecycle"... [37mskip[0m[0m
+  run "user_permissions_update"... [37mskip[0m[0m
+
+[31mFailure![0m[0m 0 passed, 8 failed, 18 skipped.

@@ -52,33 +52,29 @@ jobs:
         uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: 1.6.0
-      - name: Setup Dev Overrides
+      - name: Setup Provider Mirror
         run: |
-          cat > $HOME/.tofurc << EOF
-          provider_installation {
-            dev_overrides {
-              "josh-archer/seerr" = "${{ github.workspace }}"
-            }
-            direct {}
-          }
-          EOF
-          echo "TF_CLI_CONFIG_FILE=$HOME/.tofurc" >> $GITHUB_ENV
+          MIRROR_PATH="${{ github.workspace }}/provider-mirror/registry.opentofu.org/josh-archer/seerr/99.99.99/linux_amd64"
+          mkdir -p "$MIRROR_PATH"
+          cp terraform-provider-seerr "$MIRROR_PATH/"
       - name: Setup Seerr Test Target
         shell: bash
         run: |
-          if [[ "${USE_SELF_HOSTED}" == "true" || "${USE_SELF_HOSTED}" == "True" ]]; then
-            namespace="seerr-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-            echo "SEERR_NAMESPACE=${namespace}" >> "$GITHUB_ENV"
-            bash ./scripts/ci-seerr-up.sh "${namespace}"
-            SEERR_TEST_USE_PORT_FORWARD=false bash ./scripts/ci-seerr-bootstrap.sh "${namespace}" >> "$GITHUB_ENV"
-          else
-            if [[ -z "${LEGACY_SEERR_URL}" ]]; then
-              echo "Skipping integration tests: SEERR_URL not set"
-              exit 0
-            fi
+          if [[ -n "${LEGACY_SEERR_URL:-}" ]] && [[ "${USE_SELF_HOSTED:-false}" == "false" ]]; then
+            echo "Using Legacy External Seerr Instance"
             echo "SEERR_URL=${LEGACY_SEERR_URL}" >> "$GITHUB_ENV"
             echo "SEERR_API_KEY=${LEGACY_SEERR_API_KEY}" >> "$GITHUB_ENV"
+          else
+            echo "Setting up local Docker Compose Seerr environment..."
+            bash ./scripts/ci-docker-up.sh >> "$GITHUB_ENV"
+            echo "TEST_ENV_CREATED=true" >> "$GITHUB_ENV"
           fi
+      - name: Initialize OpenTofu Test Modules
+        working-directory: tests
+        shell: bash
+        run: |
+          rm -f .terraform.lock.hcl
+          tofu init -plugin-dir=${{ github.workspace }}/provider-mirror
       - name: OpenTofu Test
         working-directory: tests
         shell: bash
@@ -87,31 +83,16 @@ jobs:
             echo "Skipping integration tests: SEERR_URL not set"
             exit 0
           fi
-          if [[ -n "${SEERR_NAMESPACE:-}" ]]; then
-            kubectl port-forward -n "$SEERR_NAMESPACE" service/seerr 15055:5055 >/tmp/seerr-port-forward.log 2>&1 &
-            PF_PID=$!
-            trap 'kill "$PF_PID" || true' EXIT
-            for _ in $(seq 1 30); do
-              if curl -fsS http://127.0.0.1:15055/api/v1/status >/dev/null 2>&1; then
-                break
-              fi
-              sleep 1
-            done
-            tofu test -var="url=http://127.0.0.1:15055" -var="api_key=$SEERR_API_KEY"
-          else
-            tofu test -var="url=$SEERR_URL" -var="api_key=$SEERR_API_KEY"
-          fi
+          tofu test -var="url=$SEERR_URL" -var="api_key=$SEERR_API_KEY"
       - name: Collect Seerr Diagnostics
-        if: failure() && env.SEERR_NAMESPACE != ''
+        if: failure() && env.TEST_ENV_CREATED == 'true'
         shell: bash
         run: |
-          kubectl get all -n "$SEERR_NAMESPACE" || true
-          kubectl describe pods -n "$SEERR_NAMESPACE" || true
-          kubectl logs deployment/seerr -n "$SEERR_NAMESPACE" --tail=500 || true
+          cd tests && { docker compose logs || docker-compose logs; }
       - name: Tear Down Seerr Test Target
-        if: always() && env.SEERR_NAMESPACE != ''
+        if: always() && env.TEST_ENV_CREATED == 'true'
         shell: bash
-        run: bash ./scripts/ci-seerr-down.sh "$SEERR_NAMESPACE"
+        run: bash ./scripts/ci-docker-down.sh
 
   auto-tag:
     name: Auto Tag

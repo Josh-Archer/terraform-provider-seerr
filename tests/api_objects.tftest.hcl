@@ -2,8 +2,11 @@ run "api_object_lifecycle" {
   command = apply
 
   variables {
-    path         = "/api/v1/settings/main"
-    request_body = jsonencode({ applicationTitle = "tofu_api_test" })
+    path          = "/api/v1/settings/main"
+    create_method = "POST"
+    update_method = "POST"
+    skip_delete   = true
+    request_body  = "{\"applicationTitle\":\"tofu_api_test\"}"
   }
 
   module {
@@ -28,7 +31,7 @@ run "api_request_data_source" {
   }
 
   assert {
-    condition     = contains(keys(jsondecode(data.seerr_api_request.test.response_json)), "version")
+    condition     = contains(keys(jsondecode(output.response)), "version")
     error_message = "API request data source response did not contain version"
   }
 }

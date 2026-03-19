@@ -44,8 +44,8 @@ func TestNotificationClientResourceMetadataAndSchema(t *testing.T) {
 			assertResourceSchemaLacksKey(t, schemaResp.Schema, tt.absentKey)
 			assertResourceSchemaLacksKey(t, schemaResp.Schema, "agent")
 			assertResourceSchemaHasKey(t, schemaResp.Schema, "enabled")
-			assertResourceSchemaHasKey(t, schemaResp.Schema, "on_request_pending")
-			assertResourceInt64AttributeHasNoDefault(t, schemaResp.Schema, "types")
+			assertResourceSchemaHasKey(t, schemaResp.Schema, "notification_types")
+			assertResourceSchemaLacksKey(t, schemaResp.Schema, "types")
 		})
 	}
 }
@@ -84,7 +84,7 @@ func TestNotificationClientDataSourceMetadataAndSchema(t *testing.T) {
 			assertDataSourceSchemaLacksKey(t, schemaResp.Schema, tt.absentKey)
 			assertDataSourceSchemaLacksKey(t, schemaResp.Schema, "agent")
 			assertDataSourceSchemaHasKey(t, schemaResp.Schema, "enabled")
-			assertDataSourceSchemaHasKey(t, schemaResp.Schema, "on_request_pending")
+			assertDataSourceSchemaHasKey(t, schemaResp.Schema, "notification_types")
 		})
 	}
 }
@@ -100,22 +100,6 @@ func assertResourceSchemaLacksKey(t *testing.T, s rschema.Schema, key string) {
 	t.Helper()
 	if _, ok := s.Attributes[key]; ok {
 		t.Fatalf("expected resource schema to omit %q", key)
-	}
-}
-
-func assertResourceInt64AttributeHasNoDefault(t *testing.T, s rschema.Schema, key string) {
-	t.Helper()
-	attr, ok := s.Attributes[key]
-	if !ok {
-		t.Fatalf("expected resource schema to contain %q", key)
-	}
-
-	intAttr, ok := attr.(rschema.Int64Attribute)
-	if !ok {
-		t.Fatalf("expected %q to be an Int64Attribute, got %T", key, attr)
-	}
-	if intAttr.Default != nil {
-		t.Fatalf("expected %q to have no default", key)
 	}
 }
 

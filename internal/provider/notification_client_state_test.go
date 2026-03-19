@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -47,8 +48,7 @@ func TestReadNotificationClientModelReadsOnlyActiveAttribute(t *testing.T) {
 		values: map[string]any{
 			path.Root("enabled").String():            types.BoolValue(true),
 			path.Root("embed_poster").String():       types.BoolValue(true),
-			path.Root("types").String():              types.Int64Value(258),
-			path.Root("on_request_pending").String(): types.BoolValue(true),
+			path.Root("notification_types").String(): types.SetValueMust(types.StringType, []attr.Value{types.StringValue("MEDIA_PENDING"), types.StringValue("ISSUE_CREATED")}),
 			path.Root("ntfy").String(): &NotificationAgentNtfyModel{
 				Url:      types.StringValue("https://ntfy.example.com"),
 				Topic:    types.StringValue("terraform"),
@@ -81,15 +81,13 @@ func TestSetNotificationClientStateWritesOnlyActiveAttribute(t *testing.T) {
 
 	writer := &fakeNotificationAttributeWriter{}
 	data := &NotificationAgentModel{
-		ID:               types.StringValue("ntfy"),
-		Agent:            types.StringValue("ntfy"),
-		Enabled:          types.BoolValue(true),
-		EmbedPoster:      types.BoolValue(false),
-		TypesMask:        types.Int64Value(258),
-		OnRequestPending: types.BoolValue(true),
-		OnIssueCreated:   types.BoolValue(true),
-		Ntfy:             &NotificationAgentNtfyModel{Topic: types.StringValue("terraform")},
-		Pushover:         &NotificationAgentPushoverModel{Sound: types.StringValue("bike")},
+		ID:                types.StringValue("ntfy"),
+		Agent:             types.StringValue("ntfy"),
+		Enabled:           types.BoolValue(true),
+		EmbedPoster:       types.BoolValue(false),
+		NotificationTypes: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("MEDIA_PENDING"), types.StringValue("ISSUE_CREATED")}),
+		Ntfy:              &NotificationAgentNtfyModel{Topic: types.StringValue("terraform")},
+		Pushover:          &NotificationAgentPushoverModel{Sound: types.StringValue("bike")},
 	}
 
 	diags := setNotificationClientState(context.Background(), writer, data)

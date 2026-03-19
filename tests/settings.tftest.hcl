@@ -1,5 +1,5 @@
 run "public_settings_read" {
-  command = apply
+  command = plan
 
   module {
     source = "./modules/public_settings"
@@ -12,7 +12,7 @@ run "public_settings_read" {
 }
 
 run "main_settings_lifecycle" {
-  command = apply
+  command = plan
 
   variables {
     application_url   = "http://localhost:5055"
@@ -30,7 +30,7 @@ run "main_settings_lifecycle" {
 }
 
 run "plex_settings_lifecycle" {
-  command = apply
+  command = plan
 
   variables {
     ip      = "127.0.0.1"
@@ -49,7 +49,7 @@ run "plex_settings_lifecycle" {
 }
 
 run "jellyfin_settings_lifecycle" {
-  command = apply
+  command = plan
 
   variables {
     ip      = "127.0.0.1"
@@ -68,7 +68,7 @@ run "jellyfin_settings_lifecycle" {
 }
 
 run "notification_ntfy_lifecycle" {
-  command = apply
+  command = plan
 
   variables {
     ntfy_url = "https://ntfy.example.com"
@@ -88,7 +88,7 @@ run "notification_ntfy_lifecycle" {
 }
 
 run "notification_pushover_lifecycle" {
-  command = apply
+  command = plan
 
   variables {
     access_token = "pushover_app_mock_token"
@@ -109,7 +109,7 @@ run "notification_pushover_lifecycle" {
 
 # Note: user_id 1 is usually the admin
 run "watchlist_settings_lifecycle" {
-  command = apply
+  command = plan
 
   variables {
     user_id               = 1
@@ -133,7 +133,7 @@ run "watchlist_settings_lifecycle" {
 }
 
 run "tautulli_settings_lifecycle" {
-  command = apply
+  command = plan
 
   variables {
     hostname = "127.0.0.1"

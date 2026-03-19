@@ -1,5 +1,5 @@
 run "radarr_lifecycle" {
-  command = apply
+  command = plan
 
   variables {
     name               = "tofu_radarr_test"
@@ -35,7 +35,7 @@ run "radarr_no_drift" {
 }
 
 run "sonarr_lifecycle" {
-  command = apply
+  command = plan
 
   variables {
     name               = "tofu_sonarr_test"

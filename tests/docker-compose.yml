@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr-test
+    environment:
+      - LOG_LEVEL=debug
+      - PORT=5055
+    ports:
+      - "15055:5055"
+    volumes:
+      - seerr_config:/app/config
+    restart: always
+
+volumes:
+  seerr_config:

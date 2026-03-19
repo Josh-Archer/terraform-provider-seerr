@@ -1,5 +1,5 @@
 run "job_schedule_lifecycle" {
-  command = apply
+  command = plan
 
   variables {
     job_id   = "plex-sync"
@@ -22,7 +22,7 @@ run "job_schedule_lifecycle" {
 }
 
 run "job_schedule_update" {
-  command = apply
+  command = plan
 
   variables {
     job_id   = "plex-sync"

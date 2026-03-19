@@ -7,30 +7,16 @@ terraform {
   }
 }
 
-variable "url" {
-  type        = string
-  description = "The URL of the Overseerr instance"
-  default     = "http://localhost:5055"
+variable "username" {
+  type = string
+  default = "ci-admin"
 }
 
-variable "api_key" {
-  type        = string
-  description = "The API key for the Overseerr instance"
-  sensitive   = true
-  default     = "dummy"
+variable "email" {
+  type = string
+  default = "ci-admin@example.invalid"
 }
 
 data "seerr_user" "admin" {
-  email = "admin@example.com"
-}
-
-data "seerr_users" "all" {}
-
-data "seerr_jobs" "all" {}
-
-data "seerr_notification_agents" "all" {}
-
-provider "seerr" {
-  url     = var.url
-  api_key = var.api_key
+  email = "ci-admin@example.invalid"
 }

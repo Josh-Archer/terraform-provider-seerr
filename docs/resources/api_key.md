@@ -19,3 +19,21 @@ Manage the Seerr API key. Creating this resource will regenerate the API key.
 
 - `api_key` (String, Sensitive) The current Seerr API key.
 - `status_code` (Number) HTTP status code.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_api_key. For example:
+#
+# import {
+#   to = seerr_api_key.example
+#   id = "1"
+# }
+#
+# Otherwise, use the terraform import command:
+terraform import seerr_api_key.example 1
+```
