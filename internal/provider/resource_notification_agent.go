@@ -34,7 +34,6 @@ type NotificationAgentModel struct {
 	Gotify            *NotificationAgentGotifyModel     `tfsdk:"gotify"`
 	Webpush           *NotificationAgentWebpushModel    `tfsdk:"webpush"`
 	NotificationTypes types.Set                         `tfsdk:"notification_types"`
-	TypesMask         types.Int64                       `tfsdk:"types"`
 }
 
 type notificationAgentPayload struct {
@@ -49,7 +48,6 @@ type notificationClientCommonModel struct {
 	Enabled           types.Bool   `tfsdk:"enabled"`
 	EmbedPoster       types.Bool   `tfsdk:"embed_poster"`
 	NotificationTypes types.Set    `tfsdk:"notification_types"`
-	TypesMask         types.Int64  `tfsdk:"types"`
 }
 
 type notificationAttributeReader interface {
@@ -161,7 +159,6 @@ func applyCommonNotificationFields(data *NotificationAgentModel, common notifica
 	data.Enabled = common.Enabled
 	data.EmbedPoster = common.EmbedPoster
 	data.NotificationTypes = common.NotificationTypes
-	data.TypesMask = common.TypesMask
 }
 
 func commonNotificationFields(data *NotificationAgentModel) notificationClientCommonModel {
@@ -170,7 +167,6 @@ func commonNotificationFields(data *NotificationAgentModel) notificationClientCo
 		Enabled:           data.Enabled,
 		EmbedPoster:       data.EmbedPoster,
 		NotificationTypes: data.NotificationTypes,
-		TypesMask:         data.TypesMask,
 	}
 }
 
@@ -186,7 +182,6 @@ func readNotificationClientModel(ctx context.Context, reader notificationAttribu
 		{name: "enabled", target: &common.Enabled},
 		{name: "embed_poster", target: &common.EmbedPoster},
 		{name: "notification_types", target: &common.NotificationTypes},
-		{name: "types", target: &common.TypesMask},
 	} {
 		diags.Append(reader.GetAttribute(ctx, path.Root(field.name), field.target)...)
 	}
@@ -236,7 +231,6 @@ func setNotificationClientState(ctx context.Context, writer notificationAttribut
 		{name: "enabled", value: common.Enabled},
 		{name: "embed_poster", value: common.EmbedPoster},
 		{name: "notification_types", value: common.NotificationTypes},
-		{name: "types", value: common.TypesMask},
 	} {
 		diags.Append(writer.SetAttribute(ctx, path.Root(field.name), field.value)...)
 	}
@@ -529,7 +523,6 @@ func parsePayload(ctx context.Context, data *NotificationAgentModel, body []byte
 		return fmt.Errorf("build notification_types set: %v", diags)
 	}
 	data.NotificationTypes = setVal
-	data.TypesMask = types.Int64Value(mask)
 
 	opt := payload.Options
 	getString := func(key string) types.String {
