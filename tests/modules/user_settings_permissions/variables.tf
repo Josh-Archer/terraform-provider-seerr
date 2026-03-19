@@ -1,5 +1,11 @@
 variable "user_id" {
-  type = number
+  type    = number
+  default = null
+}
+
+variable "email" {
+  type    = string
+  default = null
 }
 
 variable "auto_approve_movies" {
