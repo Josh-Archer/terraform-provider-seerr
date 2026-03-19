@@ -121,29 +121,10 @@ func (r *PlexSettingsResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	data.ID = types.StringValue("plex")
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
-
-	// Refresh state from response
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("failed to decode response: %s", err))
+	if err := r.readPlexSettings(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
 	}
-	if v, ok := decoded["name"].(string); ok {
-		data.Name = types.StringValue(v)
-	}
-	if v, ok := decoded["ip"].(string); ok {
-		data.IP = types.StringValue(v)
-	}
-	if v, ok := decoded["port"].(float64); ok {
-		data.Port = types.Int64Value(int64(v))
-	}
-	if v, ok := decoded["useSsl"].(bool); ok {
-		data.UseSSL = types.BoolValue(v)
-	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -153,39 +134,10 @@ func (r *PlexSettingsResource) Read(ctx context.Context, req resource.ReadReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/plex", "", nil)
-	if err != nil {
+	if err := r.readPlexSettings(ctx, &data); err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
-		return
-	}
-
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
-	}
-
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
-
-	if v, ok := decoded["name"].(string); ok {
-		data.Name = types.StringValue(v)
-	}
-	if v, ok := decoded["ip"].(string); ok {
-		data.IP = types.StringValue(v)
-	}
-	if v, ok := decoded["port"].(float64); ok {
-		data.Port = types.Int64Value(int64(v))
-	}
-	if v, ok := decoded["useSsl"].(bool); ok {
-		data.UseSSL = types.BoolValue(v)
-	}
-
-	data.ID = types.StringValue("plex")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -220,16 +172,40 @@ func (r *PlexSettingsResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	data.ID = types.StringValue("plex")
+	if err := r.readPlexSettings(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Update Failed", err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *PlexSettingsResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
+	// There is no concept of "deleting" Plex settings in Seerr; it is a singleton.
+	// This method only removes the resource from Terraform state.
+	// The settings remain as-is on the Seerr instance.
+}
+
+func (r *PlexSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *PlexSettingsResource) readPlexSettings(ctx context.Context, data *PlexSettingsModel) error {
+	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/plex", "", nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
 
-	// Refresh state from response
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
-	}
 	if v, ok := decoded["name"].(string); ok {
 		data.Name = types.StringValue(v)
 	}
@@ -243,15 +219,6 @@ func (r *PlexSettingsResource) Update(ctx context.Context, req resource.UpdateRe
 		data.UseSSL = types.BoolValue(v)
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-func (r *PlexSettingsResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
-	// There is no concept of "deleting" Plex settings in Seerr; it is a singleton.
-	// This method only removes the resource from Terraform state.
-	// The settings remain as-is on the Seerr instance.
-}
-
-func (r *PlexSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	data.ID = types.StringValue("plex")
+	return nil
 }

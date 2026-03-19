@@ -151,33 +151,10 @@ func (r *TautulliSettingsResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	data.ID = types.StringValue("tautulli")
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
-
-	// Refresh state from response
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err == nil {
-		if v, ok := decoded["hostname"].(string); ok {
-			data.Hostname = types.StringValue(v)
-		}
-		if v, ok := decoded["port"].(float64); ok {
-			data.Port = types.Int64Value(int64(v))
-		}
-		if v, ok := decoded["useSsl"].(bool); ok {
-			data.UseSSL = types.BoolValue(v)
-		}
-		if v, ok := decoded["urlBase"].(string); ok {
-			data.URLBase = types.StringValue(v)
-		}
-		if v, ok := decoded["apiKey"].(string); ok && v != "" {
-			data.APIKey = types.StringValue(v)
-		}
-		if v, ok := decoded["externalUrl"].(string); ok {
-			data.ExternalURL = types.StringValue(v)
-		}
+	if err := r.readTautulliSettings(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Create Failed", err.Error())
+		return
 	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -188,20 +165,82 @@ func (r *TautulliSettingsResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/tautulli", "", nil)
-	if err != nil {
+	if err := r.readTautulliSettings(ctx, &data); err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *TautulliSettingsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data TautulliSettingsModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	payload := make(map[string]any)
+	if !data.Hostname.IsNull() && !data.Hostname.IsUnknown() {
+		payload["hostname"] = data.Hostname.ValueString()
+	}
+	if !data.Port.IsNull() && !data.Port.IsUnknown() {
+		payload["port"] = data.Port.ValueInt64()
+	}
+	if !data.UseSSL.IsNull() && !data.UseSSL.IsUnknown() {
+		payload["useSsl"] = data.UseSSL.ValueBool()
+	}
+	if !data.URLBase.IsNull() && !data.URLBase.IsUnknown() {
+		payload["urlBase"] = data.URLBase.ValueString()
+	}
+	if !data.APIKey.IsNull() && !data.APIKey.IsUnknown() {
+		payload["apiKey"] = data.APIKey.ValueString()
+	}
+	if !data.ExternalURL.IsNull() && !data.ExternalURL.IsUnknown() {
+		payload["externalUrl"] = data.ExternalURL.ValueString()
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("failed to marshal payload: %s", err))
+		return
+	}
+
+	res, err := r.client.Request(ctx, "POST", "/api/v1/settings/tautulli", string(body), nil)
+	if err != nil {
+		resp.Diagnostics.AddError("Update Failed", err.Error())
+		return
+	}
+	if !StatusIsOK(res.StatusCode) {
+		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
+		return
+	}
+
+	if err := r.readTautulliSettings(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Update Failed", err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *TautulliSettingsResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
+}
+
+func (r *TautulliSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *TautulliSettingsResource) readTautulliSettings(ctx context.Context, data *TautulliSettingsModel) error {
+	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/tautulli", "", nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
 	}
 
 	var decoded map[string]any
 	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Read Failed", err.Error())
-		return
+		return err
 	}
 
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
@@ -227,16 +266,5 @@ func (r *TautulliSettingsResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	data.ID = types.StringValue("tautulli")
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-func (r *TautulliSettingsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	r.Create(ctx, resource.CreateRequest{Plan: req.Plan}, &resource.CreateResponse{State: resp.State, Diagnostics: resp.Diagnostics})
-}
-
-func (r *TautulliSettingsResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
-}
-
-func (r *TautulliSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	return nil
 }
