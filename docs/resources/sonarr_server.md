@@ -57,7 +57,6 @@ resource "seerr_sonarr_server" "example" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-- `response_json` (String)
 - `server_id` (Number)
 
 ## Import

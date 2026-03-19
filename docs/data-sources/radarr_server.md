@@ -21,5 +21,21 @@ Read a Seerr Radarr server configuration via /api/v1/settings/radarr.
 
 ### Read-Only
 
-- `response_json` (String) Raw JSON response body for the matched server.
-- `status_code` (Number) HTTP status code.
+- `active_directory` (String) The active Radarr download directory.
+- `api_key` (String, Sensitive) The Radarr API key reported by Seerr.
+- `base_url` (String) The Radarr base URL reported by Seerr.
+- `enable_scan` (Boolean) Whether scan is enabled for the Radarr server.
+- `hostname` (String) The Radarr hostname reported by Seerr.
+- `id` (String) The ID of the matched Radarr server.
+- `is_4k` (Boolean) Whether the Radarr server is configured for 4K.
+- `is_default` (Boolean) Whether this is the default Radarr server.
+- `minimum_availability` (String) The Radarr minimum availability setting.
+- `name` (String) The Radarr server name reported by Seerr.
+- `port` (Number) The Radarr port reported by Seerr.
+- `prevent_search` (Boolean) Whether search is prevented for the Radarr server.
+- `quality_profile_id` (Number) The active Radarr quality profile ID.
+- `quality_profile_name` (String) The active Radarr quality profile name.
+- `sync_enabled` (Boolean) Whether sync is enabled for the Radarr server.
+- `tag_requests_with_user` (Boolean) Whether requests are tagged with the user.
+- `tags` (List of Number) The Radarr tag IDs attached to the server.
+- `use_ssl` (Boolean) Whether Radarr uses HTTPS.
