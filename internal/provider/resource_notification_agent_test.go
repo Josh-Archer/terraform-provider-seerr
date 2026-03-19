@@ -6,8 +6,19 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+type notificationStateWriter struct {
+	paths []string
+}
+
+func (w *notificationStateWriter) SetAttribute(_ context.Context, p path.Path, _ any) diag.Diagnostics {
+	w.paths = append(w.paths, p.String())
+	return nil
+}
 
 func TestAccNotificationAgentResource(t *testing.T) {
 	// Skip acceptance test in this environment as it requires a Seerr instance
@@ -141,5 +152,24 @@ func TestNotificationTypesMaskIgnoresMissingDefaultAndDerivesFromFlags(t *testin
 
 	if got, want := notificationTypesMask(ctx, data), int64(258); got != want {
 		t.Fatalf("notificationTypesMask() = %d, want %d", got, want)
+	}
+}
+
+func TestSetNotificationClientStateDoesNotWriteLegacyTypes(t *testing.T) {
+	ctx := context.Background()
+	writer := &notificationStateWriter{}
+	data := &NotificationAgentModel{
+		Agent:             types.StringValue("ntfy"),
+		NotificationTypes: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("ISSUE_CREATED")}),
+	}
+
+	if diags := setNotificationClientState(ctx, writer, data); diags.HasError() {
+		t.Fatalf("setNotificationClientState returned diagnostics: %v", diags)
+	}
+
+	for _, p := range writer.paths {
+		if p == "types" {
+			t.Fatalf("setNotificationClientState wrote legacy path %q", p)
+		}
 	}
 }
