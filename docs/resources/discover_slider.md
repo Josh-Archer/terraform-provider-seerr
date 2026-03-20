@@ -54,7 +54,7 @@ The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/c
 #   to = seerr_discover_slider.example
 #   id = "1"
 # }
-#
+
 # Otherwise, use the terraform import command:
 terraform import seerr_discover_slider.example 1
 ```

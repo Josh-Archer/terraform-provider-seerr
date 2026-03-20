@@ -59,7 +59,7 @@ The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/c
 #   to = seerr_emby_settings.example
 #   id = "emby"
 # }
-#
+
 # Otherwise, use the terraform import command:
 terraform import seerr_emby_settings.example emby
 ```
