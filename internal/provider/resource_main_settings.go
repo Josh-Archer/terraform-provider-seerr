@@ -174,13 +174,7 @@ func (r *MainSettingsResource) Configure(_ context.Context, req resource.Configu
 	r.client = c
 }
 
-func (r *MainSettingsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data MainSettingsModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
+func (r *MainSettingsResource) buildPayload(data *MainSettingsModel) map[string]any {
 	payload := make(map[string]any)
 	if !data.AppTitle.IsNull() && !data.AppTitle.IsUnknown() {
 		payload["appTitle"] = data.AppTitle.ValueString()
@@ -237,7 +231,94 @@ func (r *MainSettingsResource) Create(ctx context.Context, req resource.CreateRe
 		payload["seriesRequestLimit"] = data.SeriesRequestLimit.ValueInt64()
 	}
 
-	body, err := json.Marshal(payload)
+	return payload
+}
+
+func (r *MainSettingsResource) applyDecodedSettings(data *MainSettingsModel, decoded map[string]any) {
+	if v, ok := decoded["appTitle"].(string); ok {
+		data.AppTitle = types.StringValue(v)
+	}
+	if v, ok := decoded["applicationUrl"].(string); ok {
+		data.ApplicationURL = types.StringValue(v)
+	}
+	if v, ok := decoded["trustProxy"].(bool); ok {
+		data.TrustProxy = types.BoolValue(v)
+	}
+	if v, ok := decoded["csrfProtection"].(bool); ok {
+		data.CSRFProtection = types.BoolValue(v)
+	}
+	if v, ok := decoded["imageProxy"].(bool); ok {
+		data.ImageProxy = types.BoolValue(v)
+	}
+	if v, ok := decoded["locale"].(string); ok {
+		data.Locale = types.StringValue(v)
+	}
+	if v, ok := decoded["region"].(string); ok {
+		data.Region = types.StringValue(v)
+	}
+	if v, ok := decoded["originalLanguage"].(string); ok {
+		data.OriginalLanguage = types.StringValue(v)
+	}
+	if v, ok := decoded["hideAvailable"].(bool); ok {
+		data.HideAvailable = types.BoolValue(v)
+	}
+	if v, ok := decoded["partialRequests"].(bool); ok {
+		data.PartialRequests = types.BoolValue(v)
+	}
+	if v, ok := decoded["localLogin"].(bool); ok {
+		data.LocalLogin = types.BoolValue(v)
+	}
+	if v, ok := decoded["newPlexLogin"].(bool); ok {
+		data.NewPlexLogin = types.BoolValue(v)
+	}
+	if v, ok := decoded["plexLogin"].(bool); ok {
+		data.PlexLogin = types.BoolValue(v)
+	}
+	if v, ok := decoded["movieRequestsEnabled"].(bool); ok {
+		data.MovieRequestsEnabled = types.BoolValue(v)
+	}
+	if v, ok := decoded["seriesRequestsEnabled"].(bool); ok {
+		data.SeriesRequestsEnabled = types.BoolValue(v)
+	}
+	if v, ok := decoded["enableReportAnIssue"].(bool); ok {
+		data.EnableReportAnIssue = types.BoolValue(v)
+	}
+	if v, ok := decoded["movieRequestLimit"].(float64); ok {
+		data.MovieRequestLimit = types.Int64Value(int64(v))
+	}
+	if v, ok := decoded["seriesRequestLimit"].(float64); ok {
+		data.SeriesRequestLimit = types.Int64Value(int64(v))
+	}
+}
+
+func (r *MainSettingsResource) refreshState(ctx context.Context, data *MainSettingsModel) error {
+	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/main", "", nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		return fmt.Errorf("failed to decode response: %s", err)
+	}
+
+	data.StatusCode = types.Int64Value(int64(res.StatusCode))
+	data.ResponseJSON = types.StringValue(string(res.Body))
+	r.applyDecodedSettings(data, decoded)
+	return nil
+}
+
+func (r *MainSettingsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var data MainSettingsModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	body, err := json.Marshal(r.buildPayload(&data))
 	if err != nil {
 		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("failed to marshal payload: %s", err))
 		return
@@ -256,121 +337,15 @@ func (r *MainSettingsResource) Create(ctx context.Context, req resource.CreateRe
 	data.ID = types.StringValue("main")
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
-
-	// Refresh state from response
 	var decoded map[string]any
 	if err := json.Unmarshal(res.Body, &decoded); err != nil {
 		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("failed to decode response: %s", err))
 		return
 	}
-	if v, ok := decoded["appTitle"].(string); ok {
-		data.AppTitle = types.StringValue(v)
-	}
-	if v, ok := decoded["applicationUrl"].(string); ok {
-		data.ApplicationURL = types.StringValue(v)
-	}
-	if v, ok := decoded["trustProxy"].(bool); ok {
-		data.TrustProxy = types.BoolValue(v)
-	}
-	if v, ok := decoded["csrfProtection"].(bool); ok {
-		data.CSRFProtection = types.BoolValue(v)
-	}
-	if v, ok := decoded["imageProxy"].(bool); ok {
-		data.ImageProxy = types.BoolValue(v)
-	}
-	if v, ok := decoded["locale"].(string); ok {
-		data.Locale = types.StringValue(v)
-	}
-	if v, ok := decoded["region"].(string); ok {
-		data.Region = types.StringValue(v)
-	}
-	if v, ok := decoded["originalLanguage"].(string); ok {
-		data.OriginalLanguage = types.StringValue(v)
-	}
-	if v, ok := decoded["hideAvailable"].(bool); ok {
-		data.HideAvailable = types.BoolValue(v)
-	}
-	if v, ok := decoded["partialRequests"].(bool); ok {
-		data.PartialRequests = types.BoolValue(v)
-	}
-	if v, ok := decoded["localLogin"].(bool); ok {
-		data.LocalLogin = types.BoolValue(v)
-	}
-	if v, ok := decoded["newPlexLogin"].(bool); ok {
-		data.NewPlexLogin = types.BoolValue(v)
-	}
-	if v, ok := decoded["plexLogin"].(bool); ok {
-		data.PlexLogin = types.BoolValue(v)
-	}
-	if v, ok := decoded["movieRequestsEnabled"].(bool); ok {
-		data.MovieRequestsEnabled = types.BoolValue(v)
-	}
-	if v, ok := decoded["seriesRequestsEnabled"].(bool); ok {
-		data.SeriesRequestsEnabled = types.BoolValue(v)
-	}
-	if v, ok := decoded["enableReportAnIssue"].(bool); ok {
-		data.EnableReportAnIssue = types.BoolValue(v)
-	}
-	if v, ok := decoded["movieRequestLimit"].(float64); ok {
-		data.MovieRequestLimit = types.Int64Value(int64(v))
-	}
-	if v, ok := decoded["seriesRequestLimit"].(float64); ok {
-		data.SeriesRequestLimit = types.Int64Value(int64(v))
-	}
-
-	if data.AppTitle.IsUnknown() {
-		data.AppTitle = types.StringNull()
-	}
-	if data.ApplicationURL.IsUnknown() {
-		data.ApplicationURL = types.StringNull()
-	}
-	if data.TrustProxy.IsUnknown() {
-		data.TrustProxy = types.BoolNull()
-	}
-	if data.CSRFProtection.IsUnknown() {
-		data.CSRFProtection = types.BoolNull()
-	}
-	if data.ImageProxy.IsUnknown() {
-		data.ImageProxy = types.BoolNull()
-	}
-	if data.Locale.IsUnknown() {
-		data.Locale = types.StringNull()
-	}
-	if data.Region.IsUnknown() {
-		data.Region = types.StringNull()
-	}
-	if data.OriginalLanguage.IsUnknown() {
-		data.OriginalLanguage = types.StringNull()
-	}
-	if data.HideAvailable.IsUnknown() {
-		data.HideAvailable = types.BoolNull()
-	}
-	if data.PartialRequests.IsUnknown() {
-		data.PartialRequests = types.BoolNull()
-	}
-	if data.LocalLogin.IsUnknown() {
-		data.LocalLogin = types.BoolNull()
-	}
-	if data.NewPlexLogin.IsUnknown() {
-		data.NewPlexLogin = types.BoolNull()
-	}
-	if data.PlexLogin.IsUnknown() {
-		data.PlexLogin = types.BoolNull()
-	}
-	if data.MovieRequestsEnabled.IsUnknown() {
-		data.MovieRequestsEnabled = types.BoolNull()
-	}
-	if data.SeriesRequestsEnabled.IsUnknown() {
-		data.SeriesRequestsEnabled = types.BoolNull()
-	}
-	if data.EnableReportAnIssue.IsUnknown() {
-		data.EnableReportAnIssue = types.BoolNull()
-	}
-	if data.MovieRequestLimit.IsUnknown() {
-		data.MovieRequestLimit = types.Int64Null()
-	}
-	if data.SeriesRequestLimit.IsUnknown() {
-		data.SeriesRequestLimit = types.Int64Null()
+	r.applyDecodedSettings(&data, decoded)
+	if err := r.refreshState(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Create Failed", err.Error())
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -382,78 +357,9 @@ func (r *MainSettingsResource) Read(ctx context.Context, req resource.ReadReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/main", "", nil)
-	if err != nil {
+	if err := r.refreshState(ctx, &data); err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
-	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
-		return
-	}
-
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
-	}
-
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
-
-	if v, ok := decoded["appTitle"].(string); ok {
-		data.AppTitle = types.StringValue(v)
-	}
-	if v, ok := decoded["applicationUrl"].(string); ok {
-		data.ApplicationURL = types.StringValue(v)
-	}
-	if v, ok := decoded["trustProxy"].(bool); ok {
-		data.TrustProxy = types.BoolValue(v)
-	}
-	if v, ok := decoded["csrfProtection"].(bool); ok {
-		data.CSRFProtection = types.BoolValue(v)
-	}
-	if v, ok := decoded["imageProxy"].(bool); ok {
-		data.ImageProxy = types.BoolValue(v)
-	}
-	if v, ok := decoded["locale"].(string); ok {
-		data.Locale = types.StringValue(v)
-	}
-	if v, ok := decoded["region"].(string); ok {
-		data.Region = types.StringValue(v)
-	}
-	if v, ok := decoded["originalLanguage"].(string); ok {
-		data.OriginalLanguage = types.StringValue(v)
-	}
-	if v, ok := decoded["hideAvailable"].(bool); ok {
-		data.HideAvailable = types.BoolValue(v)
-	}
-	if v, ok := decoded["partialRequests"].(bool); ok {
-		data.PartialRequests = types.BoolValue(v)
-	}
-	if v, ok := decoded["localLogin"].(bool); ok {
-		data.LocalLogin = types.BoolValue(v)
-	}
-	if v, ok := decoded["newPlexLogin"].(bool); ok {
-		data.NewPlexLogin = types.BoolValue(v)
-	}
-	if v, ok := decoded["plexLogin"].(bool); ok {
-		data.PlexLogin = types.BoolValue(v)
-	}
-	if v, ok := decoded["movieRequestsEnabled"].(bool); ok {
-		data.MovieRequestsEnabled = types.BoolValue(v)
-	}
-	if v, ok := decoded["seriesRequestsEnabled"].(bool); ok {
-		data.SeriesRequestsEnabled = types.BoolValue(v)
-	}
-	if v, ok := decoded["enableReportAnIssue"].(bool); ok {
-		data.EnableReportAnIssue = types.BoolValue(v)
-	}
-	if v, ok := decoded["movieRequestLimit"].(float64); ok {
-		data.MovieRequestLimit = types.Int64Value(int64(v))
-	}
-	if v, ok := decoded["seriesRequestLimit"].(float64); ok {
-		data.SeriesRequestLimit = types.Int64Value(int64(v))
 	}
 
 	data.ID = types.StringValue("main")
@@ -462,8 +368,44 @@ func (r *MainSettingsResource) Read(ctx context.Context, req resource.ReadReques
 }
 
 func (r *MainSettingsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Re-use Create logic for POST /api/v1/settings/main
-	r.Create(ctx, resource.CreateRequest{Plan: req.Plan}, &resource.CreateResponse{State: resp.State, Diagnostics: resp.Diagnostics})
+	var data MainSettingsModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	body, err := json.Marshal(r.buildPayload(&data))
+	if err != nil {
+		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("failed to marshal payload: %s", err))
+		return
+	}
+
+	res, err := r.client.Request(ctx, "POST", "/api/v1/settings/main", string(body), nil)
+	if err != nil {
+		resp.Diagnostics.AddError("Update Failed", err.Error())
+		return
+	}
+	if !StatusIsOK(res.StatusCode) {
+		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
+		return
+	}
+
+	data.ID = types.StringValue("main")
+	data.StatusCode = types.Int64Value(int64(res.StatusCode))
+	data.ResponseJSON = types.StringValue(string(res.Body))
+
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("failed to decode response: %s", err))
+		return
+	}
+	r.applyDecodedSettings(&data, decoded)
+	if err := r.refreshState(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Update Failed", err.Error())
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (r *MainSettingsResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {

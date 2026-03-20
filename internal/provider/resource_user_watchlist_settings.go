@@ -112,9 +112,10 @@ func (r *UserWatchlistSettingsResource) Create(ctx context.Context, req resource
 		return
 	}
 
-	data.ID = types.StringValue(fmt.Sprintf("%d", data.UserID.ValueInt64()))
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
+	if err := r.readWatchlistSettings(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Create Failed", err.Error())
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -186,9 +187,10 @@ func (r *UserWatchlistSettingsResource) Update(ctx context.Context, req resource
 		return
 	}
 
-	data.ID = types.StringValue(fmt.Sprintf("%d", data.UserID.ValueInt64()))
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
+	if err := r.readWatchlistSettings(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Update Failed", err.Error())
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -204,4 +206,38 @@ func (r *UserWatchlistSettingsResource) ImportState(ctx context.Context, req res
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("user_id"), id)...)
+}
+
+func (r *UserWatchlistSettingsResource) readWatchlistSettings(ctx context.Context, data *UserWatchlistSettingsModel) error {
+	apiPath := userWatchlistPath(data.UserID.ValueInt64())
+	res, err := r.client.Request(ctx, "GET", apiPath, "", nil)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode == 404 {
+		return fmt.Errorf("watchlist settings not found")
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+	if raw, ok := decoded["watchlistSyncMovies"]; ok {
+		if v, ok := raw.(bool); ok {
+			data.WatchlistSyncMovies = types.BoolValue(v)
+		}
+	}
+	if raw, ok := decoded["watchlistSyncTv"]; ok {
+		if v, ok := raw.(bool); ok {
+			data.WatchlistSyncTv = types.BoolValue(v)
+		}
+	}
+
+	data.ID = types.StringValue(fmt.Sprintf("%d", data.UserID.ValueInt64()))
+	data.StatusCode = types.Int64Value(int64(res.StatusCode))
+	data.ResponseJSON = types.StringValue(string(res.Body))
+	return nil
 }

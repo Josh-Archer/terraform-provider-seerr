@@ -168,41 +168,10 @@ func (r *JellyfinSettingsResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	data.ID = types.StringValue("jellyfin")
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
-
-	// Refresh state from response
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("failed to decode response: %s", err))
+	if err := r.readJellyfinSettings(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
 	}
-	if v, ok := decoded["name"].(string); ok {
-		data.Name = types.StringValue(v)
-	}
-	if v, ok := decoded["ip"].(string); ok {
-		data.IP = types.StringValue(v)
-	}
-	if v, ok := decoded["port"].(float64); ok {
-		data.Port = types.Int64Value(int64(v))
-	}
-	if v, ok := decoded["useSsl"].(bool); ok {
-		data.UseSSL = types.BoolValue(v)
-	}
-	if v, ok := decoded["urlBase"].(string); ok {
-		data.URLBase = types.StringValue(v)
-	}
-	if v, ok := decoded["externalHostname"].(string); ok {
-		data.ExternalHostname = types.StringValue(v)
-	}
-	if v, ok := decoded["jellyfinForgotPasswordUrl"].(string); ok {
-		data.JellyfinForgotPasswordURL = types.StringValue(v)
-	}
-	if v, ok := decoded["serverId"].(string); ok {
-		data.ServerID = types.StringValue(v)
-	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -212,55 +181,10 @@ func (r *JellyfinSettingsResource) Read(ctx context.Context, req resource.ReadRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/jellyfin", "", nil)
-	if err != nil {
+	if err := r.readJellyfinSettings(ctx, &data); err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
-		return
-	}
-
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
-	}
-
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
-
-	if v, ok := decoded["name"].(string); ok {
-		data.Name = types.StringValue(v)
-	}
-	if v, ok := decoded["ip"].(string); ok {
-		data.IP = types.StringValue(v)
-	}
-	if v, ok := decoded["port"].(float64); ok {
-		data.Port = types.Int64Value(int64(v))
-	}
-	if v, ok := decoded["useSsl"].(bool); ok {
-		data.UseSSL = types.BoolValue(v)
-	}
-	if v, ok := decoded["urlBase"].(string); ok {
-		data.URLBase = types.StringValue(v)
-	}
-	if v, ok := decoded["externalHostname"].(string); ok {
-		data.ExternalHostname = types.StringValue(v)
-	}
-	if v, ok := decoded["jellyfinForgotPasswordUrl"].(string); ok {
-		data.JellyfinForgotPasswordURL = types.StringValue(v)
-	}
-	// the API key might not always be returned in the read response but usually is in Jellyseerr API
-	if v, ok := decoded["apiKey"].(string); ok && v != "" {
-		data.APIKey = types.StringValue(v)
-	}
-	if v, ok := decoded["serverId"].(string); ok {
-		data.ServerID = types.StringValue(v)
-	}
-
-	data.ID = types.StringValue("jellyfin")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -308,16 +232,40 @@ func (r *JellyfinSettingsResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
-	data.ID = types.StringValue("jellyfin")
+	if err := r.readJellyfinSettings(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Update Failed", err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *JellyfinSettingsResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
+	// There is no concept of "deleting" Jellyfin settings in Seerr; it is a singleton.
+	// This method only removes the resource from Terraform state.
+	// The settings remain as-is on the Seerr instance.
+}
+
+func (r *JellyfinSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *JellyfinSettingsResource) readJellyfinSettings(ctx context.Context, data *JellyfinSettingsModel) error {
+	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/jellyfin", "", nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
 
-	// Refresh state from response
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
-	}
 	if v, ok := decoded["name"].(string); ok {
 		data.Name = types.StringValue(v)
 	}
@@ -339,19 +287,13 @@ func (r *JellyfinSettingsResource) Update(ctx context.Context, req resource.Upda
 	if v, ok := decoded["jellyfinForgotPasswordUrl"].(string); ok {
 		data.JellyfinForgotPasswordURL = types.StringValue(v)
 	}
+	if v, ok := decoded["apiKey"].(string); ok && v != "" {
+		data.APIKey = types.StringValue(v)
+	}
 	if v, ok := decoded["serverId"].(string); ok {
 		data.ServerID = types.StringValue(v)
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-func (r *JellyfinSettingsResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
-	// There is no concept of "deleting" Jellyfin settings in Seerr; it is a singleton.
-	// This method only removes the resource from Terraform state.
-	// The settings remain as-is on the Seerr instance.
-}
-
-func (r *JellyfinSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	data.ID = types.StringValue("jellyfin")
+	return nil
 }

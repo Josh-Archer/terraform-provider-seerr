@@ -99,7 +99,10 @@ func (r *UserSettingsPermissionsResource) Create(ctx context.Context, req resour
 		return
 	}
 
-	data.ID = types.StringValue(fmt.Sprintf("%d", data.UserID.ValueInt64()))
+	if err := r.readPermissions(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Create Failed", err.Error())
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -109,42 +112,14 @@ func (r *UserSettingsPermissionsResource) Read(ctx context.Context, req resource
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	userID := data.UserID.ValueInt64()
-	res, err := r.client.Request(ctx, "GET", fmt.Sprintf("/api/v1/user/%d/settings/permissions", userID), "", nil)
-	if err != nil {
+	if err := r.readPermissions(ctx, &data); err != nil {
+		if err.Error() == "not found" {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
-	if res.StatusCode == 404 {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
-		return
-	}
-
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
-	}
-
-	if v, ok := decoded["autoApproveMovies"].(bool); ok {
-		data.AutoApproveMovies = types.BoolValue(v)
-	}
-	if v, ok := decoded["autoApproveTv"].(bool); ok {
-		data.AutoApproveTV = types.BoolValue(v)
-	}
-	if v, ok := decoded["autoApprove4kMovies"].(bool); ok {
-		data.AutoApprove4KMovies = types.BoolValue(v)
-	}
-	if v, ok := decoded["autoApprove4kTv"].(bool); ok {
-		data.AutoApprove4KTV = types.BoolValue(v)
-	}
-
-	data.ID = types.StringValue(fmt.Sprintf("%d", userID))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -160,7 +135,10 @@ func (r *UserSettingsPermissionsResource) Update(ctx context.Context, req resour
 		return
 	}
 
-	data.ID = types.StringValue(fmt.Sprintf("%d", data.UserID.ValueInt64()))
+	if err := r.readPermissions(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Update Failed", err.Error())
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -244,4 +222,37 @@ func (r *UserSettingsPermissionsResource) getUserPermissions(ctx context.Context
 	default:
 		return 0, fmt.Errorf("user permissions missing from response")
 	}
+}
+
+func (r *UserSettingsPermissionsResource) readPermissions(ctx context.Context, data *UserSettingsPermissionsModel) error {
+	userID := data.UserID.ValueInt64()
+	res, err := r.client.Request(ctx, "GET", fmt.Sprintf("/api/v1/user/%d/settings/permissions", userID), "", nil)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode == 404 {
+		return fmt.Errorf("not found")
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+	if v, ok := decoded["autoApproveMovies"].(bool); ok {
+		data.AutoApproveMovies = types.BoolValue(v)
+	}
+	if v, ok := decoded["autoApproveTv"].(bool); ok {
+		data.AutoApproveTV = types.BoolValue(v)
+	}
+	if v, ok := decoded["autoApprove4kMovies"].(bool); ok {
+		data.AutoApprove4KMovies = types.BoolValue(v)
+	}
+	if v, ok := decoded["autoApprove4kTv"].(bool); ok {
+		data.AutoApprove4KTV = types.BoolValue(v)
+	}
+	data.ID = types.StringValue(fmt.Sprintf("%d", userID))
+	return nil
 }

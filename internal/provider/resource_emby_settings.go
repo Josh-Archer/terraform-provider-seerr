@@ -168,41 +168,10 @@ func (r *EmbySettingsResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	data.ID = types.StringValue("emby")
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
-
-	// Refresh state from response
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("failed to decode response: %s", err))
+	if err := r.readEmbySettings(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
 	}
-	if v, ok := decoded["name"].(string); ok {
-		data.Name = types.StringValue(v)
-	}
-	if v, ok := decoded["ip"].(string); ok {
-		data.IP = types.StringValue(v)
-	}
-	if v, ok := decoded["port"].(float64); ok {
-		data.Port = types.Int64Value(int64(v))
-	}
-	if v, ok := decoded["useSsl"].(bool); ok {
-		data.UseSSL = types.BoolValue(v)
-	}
-	if v, ok := decoded["urlBase"].(string); ok {
-		data.URLBase = types.StringValue(v)
-	}
-	if v, ok := decoded["externalHostname"].(string); ok {
-		data.ExternalHostname = types.StringValue(v)
-	}
-	if v, ok := decoded["embyForgotPasswordUrl"].(string); ok {
-		data.EmbyForgotPasswordURL = types.StringValue(v)
-	}
-	if v, ok := decoded["serverId"].(string); ok {
-		data.ServerID = types.StringValue(v)
-	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -212,54 +181,10 @@ func (r *EmbySettingsResource) Read(ctx context.Context, req resource.ReadReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/emby", "", nil)
-	if err != nil {
+	if err := r.readEmbySettings(ctx, &data); err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
-		return
-	}
-
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
-	}
-
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
-
-	if v, ok := decoded["name"].(string); ok {
-		data.Name = types.StringValue(v)
-	}
-	if v, ok := decoded["ip"].(string); ok {
-		data.IP = types.StringValue(v)
-	}
-	if v, ok := decoded["port"].(float64); ok {
-		data.Port = types.Int64Value(int64(v))
-	}
-	if v, ok := decoded["useSsl"].(bool); ok {
-		data.UseSSL = types.BoolValue(v)
-	}
-	if v, ok := decoded["urlBase"].(string); ok {
-		data.URLBase = types.StringValue(v)
-	}
-	if v, ok := decoded["externalHostname"].(string); ok {
-		data.ExternalHostname = types.StringValue(v)
-	}
-	if v, ok := decoded["embyForgotPasswordUrl"].(string); ok {
-		data.EmbyForgotPasswordURL = types.StringValue(v)
-	}
-	if v, ok := decoded["apiKey"].(string); ok && v != "" {
-		data.APIKey = types.StringValue(v)
-	}
-	if v, ok := decoded["serverId"].(string); ok {
-		data.ServerID = types.StringValue(v)
-	}
-
-	data.ID = types.StringValue("emby")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -307,16 +232,37 @@ func (r *EmbySettingsResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	data.ID = types.StringValue("emby")
+	if err := r.readEmbySettings(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Update Failed", err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *EmbySettingsResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
+}
+
+func (r *EmbySettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *EmbySettingsResource) readEmbySettings(ctx context.Context, data *EmbySettingsModel) error {
+	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/emby", "", nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
 
-	// Refresh state from response
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
-	}
 	if v, ok := decoded["name"].(string); ok {
 		data.Name = types.StringValue(v)
 	}
@@ -338,16 +284,13 @@ func (r *EmbySettingsResource) Update(ctx context.Context, req resource.UpdateRe
 	if v, ok := decoded["embyForgotPasswordUrl"].(string); ok {
 		data.EmbyForgotPasswordURL = types.StringValue(v)
 	}
+	if v, ok := decoded["apiKey"].(string); ok && v != "" {
+		data.APIKey = types.StringValue(v)
+	}
 	if v, ok := decoded["serverId"].(string); ok {
 		data.ServerID = types.StringValue(v)
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-}
-
-func (r *EmbySettingsResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
-}
-
-func (r *EmbySettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	data.ID = types.StringValue("emby")
+	return nil
 }
