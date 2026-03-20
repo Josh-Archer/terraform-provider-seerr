@@ -50,7 +50,7 @@ func (p *SeerrProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 				Validators: []validator.String{
 					stringvalidator.RegexMatches(
 						urlRegex(),
-						"url must start with http:// or https://",
+						"url must start with http:// or https:// and must not have a trailing slash",
 					),
 				},
 			},
@@ -108,13 +108,14 @@ func (p *SeerrProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		return
 	}
 
+	if !urlRegex().MatchString(baseURL) {
+		resp.Diagnostics.AddError("Invalid Base URL", "Provider url must start with http:// or https:// and must not have a trailing slash.")
+		return
+	}
+
 	parsed, err := url.Parse(baseURL)
 	if err != nil {
 		resp.Diagnostics.AddError("Invalid URL", fmt.Sprintf("Cannot parse provider url %q: %s", baseURL, err))
-		return
-	}
-	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		resp.Diagnostics.AddError("Invalid URL Scheme", "Provider url must use http or https.")
 		return
 	}
 
@@ -284,5 +285,5 @@ func New(version string) func() provider.Provider {
 }
 
 func urlRegex() *regexp.Regexp {
-	return regexp.MustCompile(`^https?://`)
+	return regexp.MustCompile(`^https?://[^/](.*[^/])?$`)
 }
