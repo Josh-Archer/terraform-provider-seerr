@@ -291,7 +291,7 @@ func (r *MainSettingsResource) applyDecodedSettings(data *MainSettingsModel, dec
 	}
 }
 
-func (r *MainSettingsResource) refreshState(ctx context.Context, data *MainSettingsModel, operation string) error {
+func (r *MainSettingsResource) refreshState(ctx context.Context, data *MainSettingsModel) error {
 	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/main", "", nil)
 	if err != nil {
 		return err
@@ -343,7 +343,7 @@ func (r *MainSettingsResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 	r.applyDecodedSettings(&data, decoded)
-	if err := r.refreshState(ctx, &data, "Create"); err != nil {
+	if err := r.refreshState(ctx, &data); err != nil {
 		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
 	}
@@ -357,7 +357,7 @@ func (r *MainSettingsResource) Read(ctx context.Context, req resource.ReadReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if err := r.refreshState(ctx, &data, "Read"); err != nil {
+	if err := r.refreshState(ctx, &data); err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
@@ -400,7 +400,7 @@ func (r *MainSettingsResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 	r.applyDecodedSettings(&data, decoded)
-	if err := r.refreshState(ctx, &data, "Update"); err != nil {
+	if err := r.refreshState(ctx, &data); err != nil {
 		resp.Diagnostics.AddError("Update Failed", err.Error())
 		return
 	}

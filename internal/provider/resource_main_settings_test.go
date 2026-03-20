@@ -87,7 +87,7 @@ func TestMainSettingsRefreshStateReadsCanonicalValues(t *testing.T) {
 		PartialRequests: types.BoolValue(false),
 	}
 
-	if err := r.refreshState(context.Background(), &data, "Read"); err != nil {
+	if err := r.refreshState(context.Background(), &data); err != nil {
 		t.Fatal(err)
 	}
 
