@@ -237,6 +237,7 @@ func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewDiscoverSliderResource,
 		NewTautulliSettingsResource,
 		NewUserSettingsPermissionsResource,
+		NewBackupSettingsResource,
 	}
 }
 
@@ -275,6 +276,7 @@ func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewRequestsDataSource,
 		NewCurrentUserDataSource,
 		NewDiscoverSliderDataSource,
+		NewBackupSettingsDataSource,
 	}
 }
 
