@@ -274,6 +274,7 @@ func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewIssuesDataSource,
 		NewRequestsDataSource,
 		NewCurrentUserDataSource,
+		NewDiscoverSliderDataSource,
 	}
 }
 
