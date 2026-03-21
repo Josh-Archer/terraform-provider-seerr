@@ -2,16 +2,9 @@
 #
 # import {
 #   to = seerr_user.example
-#   id = "1
-
-# Additionally, you can import by username or email:
-# terraform import seerr_user.example jdoe
-# terraform import seerr_user.example jdoe@example.com"
+#   id = "1"
 # }
-#
+
+# You can also import by username or email, e.g., `jdoe` or `jdoe@example.com`.
 # Otherwise, use the terraform import command:
 terraform import seerr_user.example 1
-
-# Additionally, you can import by username or email:
-# terraform import seerr_user.example jdoe
-# terraform import seerr_user.example jdoe@example.com

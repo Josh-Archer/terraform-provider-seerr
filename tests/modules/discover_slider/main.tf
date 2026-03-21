@@ -1,11 +1,11 @@
 terraform {
   required_providers {
     seerr = {
-      source = "josh-archer/seerr"
+      source  = "josh-archer/seerr"
+      version = "99.99.99"
     }
   }
 }
-
 resource "seerr_discover_slider" "all" {
   sliders {
     type    = 1 # Recently Added TV

@@ -1,11 +1,76 @@
 package provider
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("seerr_user", &resource.Sweeper{
+		Name: "seerr_user",
+		F:    sweepUser,
+	})
+}
+
+func sweepUser(region string) error {
+	client, err := testAccClient()
+	if err != nil {
+		return fmt.Errorf("error getting client: %s", err)
+	}
+
+	ctx := context.Background()
+	res, err := client.Request(ctx, "GET", "/api/v1/user?take=1000", "", nil)
+	if err != nil {
+		return fmt.Errorf("error fetching users: %s", err)
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("error fetching users: status %d", res.StatusCode)
+	}
+
+	var parsedResponse struct {
+		Results []map[string]any `json:"results"`
+	}
+	if err := json.Unmarshal(res.Body, &parsedResponse); err != nil {
+		return fmt.Errorf("error parsing users response: %s", err)
+	}
+
+	for _, user := range parsedResponse.Results {
+		idRaw, ok := user["id"]
+		if !ok {
+			continue
+		}
+
+		var id string
+		switch v := idRaw.(type) {
+		case float64:
+			id = fmt.Sprintf("%.0f", v)
+		case string:
+			id = v
+		}
+
+		if id == "1" {
+			log.Printf("[INFO][SWEEPER] Skipping user with ID 1 (default admin)")
+			continue
+		}
+
+		log.Printf("[INFO][SWEEPER] Deleting user %s", id)
+		delRes, err := client.Request(ctx, "DELETE", "/api/v1/user/"+id, "", nil)
+		if err != nil {
+			log.Printf("[ERROR][SWEEPER] Error deleting user %s: %s", id, err)
+			continue
+		}
+		if !StatusIsOK(delRes.StatusCode) {
+			log.Printf("[ERROR][SWEEPER] Error deleting user %s: status %d", id, delRes.StatusCode)
+		}
+	}
+
+	return nil
+}
 
 func TestAccUserResource(t *testing.T) {
 	username := "terraform_test_user"

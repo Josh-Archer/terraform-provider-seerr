@@ -1,11 +1,11 @@
 terraform {
   required_providers {
     seerr = {
-      source = "josh-archer/seerr"
+      source  = "josh-archer/seerr"
+      version = "99.99.99"
     }
   }
 }
-
 variable "path" { type = string }
 variable "request_body" { type = string }
 variable "create_method" {

@@ -1,11 +1,11 @@
 terraform {
   required_providers {
     seerr = {
-      source = "josh-archer/seerr"
+      source  = "josh-archer/seerr"
+      version = "99.99.99"
     }
   }
 }
-
 data "seerr_user" "test" {
   count = var.user_id == null ? 1 : 0
   email = var.email

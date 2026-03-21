@@ -52,7 +52,7 @@ The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/c
 #   to = seerr_plex_settings.example
 #   id = "plex"
 # }
-#
+
 # Otherwise, use the terraform import command:
 terraform import seerr_plex_settings.example plex
 ```

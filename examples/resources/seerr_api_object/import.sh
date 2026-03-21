@@ -4,6 +4,6 @@
 #   to = seerr_api_object.example
 #   id = "GET:/api/v1/status"
 # }
-#
+
 # Otherwise, use the terraform import command:
 terraform import seerr_api_object.example GET:/api/v1/status

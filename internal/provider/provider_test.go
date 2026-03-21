@@ -2,6 +2,9 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"net/url"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -20,6 +23,22 @@ provider "seerr" {
 
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
 	"seerr": providerserver.NewProtocol6WithError(New("test")()),
+}
+
+func testAccClient() (*APIClient, error) {
+	baseURL := os.Getenv("SEERR_URL")
+	apiKey := os.Getenv("SEERR_API_KEY")
+
+	if baseURL == "" || apiKey == "" {
+		return nil, fmt.Errorf("SEERR_URL and SEERR_API_KEY must be set for sweepers")
+	}
+
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewClient(parsed, apiKey, "terraform-provider-seerr-sweeper", false, 0), nil
 }
 
 func TestProviderMetadata(t *testing.T) {

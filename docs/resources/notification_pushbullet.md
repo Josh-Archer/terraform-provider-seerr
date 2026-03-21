@@ -36,3 +36,21 @@ Required:
 Optional:
 
 - `channel_tag` (String)
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_notification_pushbullet. For example:
+#
+# import {
+#   to = seerr_notification_pushbullet.example
+#   id = "pushbullet"
+# }
+
+# Otherwise, use the terraform import command:
+terraform import seerr_notification_pushbullet.example pushbullet
+```

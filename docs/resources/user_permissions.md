@@ -39,7 +39,8 @@ The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/c
 #   to = seerr_user_permissions.example
 #   id = "1"
 # }
-#
+
+# The ID of the user.
 # Otherwise, use the terraform import command:
 terraform import seerr_user_permissions.example 1
 ```
