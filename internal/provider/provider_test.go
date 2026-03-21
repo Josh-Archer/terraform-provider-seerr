@@ -25,15 +25,6 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 	"seerr": providerserver.NewProtocol6WithError(New("test")()),
 }
 
-func testAccPreCheck(t *testing.T) {
-	if v := os.Getenv("SEERR_URL"); v == "" {
-		t.Fatal("SEERR_URL must be set for acceptance tests")
-	}
-	if v := os.Getenv("SEERR_API_KEY"); v == "" {
-		t.Fatal("SEERR_API_KEY must be set for acceptance tests")
-	}
-}
-
 func testAccClient() (*APIClient, error) {
 	baseURL := os.Getenv("SEERR_URL")
 	apiKey := os.Getenv("SEERR_API_KEY")
