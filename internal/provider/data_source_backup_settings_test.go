@@ -39,7 +39,7 @@ func TestBackupSettingsDataSourceRead(t *testing.T) {
 	}
 
 	data := BackupSettingsDataSourceModel{}
-	
+
 	// Test the logic that would be inside Read
 	res, err := d.client.Request(context.Background(), "GET", "/api/v1/settings/backups", "", nil)
 	if err != nil {
