@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -75,6 +76,52 @@ func TestFilterManagedSlidersReturnsOnlyTrackedEntries(t *testing.T) {
 	}
 }
 
+func TestDiscoverSliderReadNormalizesBlankOptionalFields(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", r.Method)
+		}
+		if r.URL.Path != "/api/v1/settings/discover" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`[{
+			"id":1,
+			"type":1,
+			"enabled":true,
+			"isBuiltIn":true,
+			"title":"",
+			"data":""
+		}]`))
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := &DiscoverSliderResource{
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+	}
+	data := DiscoverSliderModel{}
+
+	diags := r.readManagedSliders(context.Background(), []DiscoverSliderItemModel{{Type: types.Int64Value(1)}}, &data)
+	if diags.HasError() {
+		t.Fatalf("unexpected diagnostics: %v", diags)
+	}
+	if len(data.Sliders) != 1 {
+		t.Fatalf("expected 1 slider, got %d", len(data.Sliders))
+	}
+	if !data.Sliders[0].Title.IsNull() {
+		t.Fatalf("expected blank title to normalize to null, got %#v", data.Sliders[0].Title)
+	}
+	if !data.Sliders[0].Data.IsNull() {
+		t.Fatalf("expected blank data to normalize to null, got %#v", data.Sliders[0].Data)
+	}
+}
+
 func TestNotificationAgentMissingReturnsTrueFor404(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -95,7 +142,7 @@ func TestNotificationAgentMissingReturnsTrueFor404(t *testing.T) {
 		client: NewClient(base, "abc123", "test-agent", false, 5*time.Second),
 	}
 
-	if !resource.notificationAgentMissing(t.Context()) {
+	if !resource.notificationAgentMissing(context.Background()) {
 		t.Fatal("expected notificationAgentMissing to return true for missing agent")
 	}
 }
