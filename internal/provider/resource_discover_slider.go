@@ -137,7 +137,6 @@ func (r *DiscoverSliderResource) readManagedSliders(ctx context.Context, managed
 		diags.AddError("Read Failed", err.Error())
 		return diags
 	}
-
 	data.Sliders = filterManagedSliders(allSliders, managed)
 	return diags
 }
@@ -281,16 +280,8 @@ func (r *DiscoverSliderResource) fetchSliders(ctx context.Context) ([]DiscoverSl
 		if v, ok := s["isBuiltIn"].(bool); ok {
 			item.IsBuiltIn = types.BoolValue(v)
 		}
-		if v, ok := s["title"].(string); ok {
-			item.Title = types.StringValue(v)
-		} else {
-			item.Title = types.StringNull()
-		}
-		if v, ok := s["data"].(string); ok {
-			item.Data = types.StringValue(v)
-		} else {
-			item.Data = types.StringNull()
-		}
+		item.Title = discoverOptionalString(s["title"])
+		item.Data = discoverOptionalString(s["data"])
 		sliders = append(sliders, item)
 	}
 
@@ -398,4 +389,12 @@ func (r *DiscoverSliderResource) toBool(v any) types.Bool {
 		return types.BoolValue(b)
 	}
 	return types.BoolNull()
+}
+
+func discoverOptionalString(v any) types.String {
+	str, ok := v.(string)
+	if !ok || str == "" {
+		return types.StringNull()
+	}
+	return types.StringValue(str)
 }
