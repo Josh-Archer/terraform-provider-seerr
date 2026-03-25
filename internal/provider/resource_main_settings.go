@@ -387,8 +387,7 @@ func (r *MainSettingsResource) Read(ctx context.Context, req resource.ReadReques
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
+	if !HandleAPIResponse(ctx, res, &resp.Diagnostics, "Read") {
 		return
 	}
 
