@@ -43,7 +43,7 @@ The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/c
 #   to = seerr_tautulli_settings.example
 #   id = "tautulli"
 # }
-#
+
 # Otherwise, use the terraform import command:
 terraform import seerr_tautulli_settings.example tautulli
 ```

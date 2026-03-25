@@ -3,11 +3,67 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"log"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("seerr_notification_agent", &resource.Sweeper{
+		Name: "seerr_notification_agent",
+		F:    sweepNotificationAgent,
+	})
+}
+
+func sweepNotificationAgent(region string) error {
+	client, err := testAccClient()
+	if err != nil {
+		return fmt.Errorf("error getting client: %s", err)
+	}
+
+	ctx := context.Background()
+	res, err := client.Request(ctx, "GET", "/api/v1/settings/notifications", "", nil)
+	if err != nil {
+		return fmt.Errorf("error fetching notification agents: %s", err)
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("error fetching notification agents: status %d", res.StatusCode)
+	}
+
+	var settings map[string]any
+	if err := json.Unmarshal(res.Body, &settings); err != nil {
+		return fmt.Errorf("error parsing notification agents: %s", err)
+	}
+
+	disablePayload := `{"enabled":false,"types":0,"options":{}}`
+
+	for agentName, agentData := range settings {
+		agentMap, ok := agentData.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		enabled, _ := agentMap["enabled"].(bool)
+		if !enabled {
+			continue
+		}
+
+		log.Printf("[INFO][SWEEPER] Disabling notification agent %s", agentName)
+		delRes, err := client.Request(ctx, "POST", "/api/v1/settings/notifications/"+agentName, disablePayload, nil)
+		if err != nil {
+			log.Printf("[ERROR][SWEEPER] Error disabling agent %s: %s", agentName, err)
+			continue
+		}
+		if !StatusIsOK(delRes.StatusCode) {
+			log.Printf("[ERROR][SWEEPER] Error disabling agent %s: status %d", agentName, delRes.StatusCode)
+		}
+	}
+	return nil
+}
 
 func TestAccNotificationAgentResource(t *testing.T) {
 	// Skip acceptance test in this environment as it requires a Seerr instance

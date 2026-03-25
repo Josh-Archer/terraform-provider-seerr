@@ -139,6 +139,20 @@ func TestReadRadarrStateFromJSON_UserSuppliedFieldsUntouched(t *testing.T) {
 	}
 }
 
+// TestReadRadarrStateFromJSON_PopulatesAPIKeyWhenUnset verifies that the helper
+// can populate api_key for the data source path when the field is not already
+// present in state.
+func TestReadRadarrStateFromJSON_PopulatesAPIKeyWhenUnset(t *testing.T) {
+	raw := `{"id": 1, "name": "Radarr", "apiKey": "server-key"}`
+	data := &RadarrServerModel{}
+	if err := readRadarrStateFromJSON(context.Background(), []byte(raw), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if data.APIKey.ValueString() != "server-key" {
+		t.Errorf("APIKey: got %q, want %q", data.APIKey.ValueString(), "server-key")
+	}
+}
+
 // TestParseURLIntoModel_HTTPS verifies that an https URL is decomposed into
 // hostname, port, use_ssl, and base_url correctly.
 func TestParseURLIntoModel_HTTPS(t *testing.T) {

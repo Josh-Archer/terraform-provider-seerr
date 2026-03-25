@@ -1,11 +1,11 @@
 terraform {
   required_providers {
     seerr = {
-      source = "josh-archer/seerr"
+      source  = "josh-archer/seerr"
+      version = "99.99.99"
     }
   }
 }
-
 variable "username" { type = string }
 variable "email" { type = string }
 variable "permissions" { type = number }

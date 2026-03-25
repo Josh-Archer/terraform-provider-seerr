@@ -796,8 +796,7 @@ func (r *NotificationClientResource) Delete(ctx context.Context, req resource.De
 	disablePayload := `{"enabled":false,"types":0,"options":{}}`
 	res, err := r.client.Request(ctx, "POST", notificationPath(r.agent), disablePayload, nil)
 	if err != nil {
-		if r.notificationAgentMissing(ctx) {
-			resp.State.RemoveResource(ctx)
+		if r.notificationDeleteConverged(ctx) {
 			return
 		}
 		resp.Diagnostics.AddError("Delete Failed", err.Error())
@@ -815,8 +814,27 @@ func (r *NotificationClientResource) notificationAgentMissing(ctx context.Contex
 	if err != nil {
 		return false
 	}
-
 	return res.StatusCode == 404 || strings.Contains(string(res.Body), "Unknown notification agent")
+}
+
+func (r *NotificationClientResource) notificationDeleteConverged(ctx context.Context) bool {
+	res, err := r.client.Request(ctx, "GET", notificationPath(r.agent), "", nil)
+	if err != nil {
+		return false
+	}
+	if res.StatusCode == 404 || strings.Contains(string(res.Body), "Unknown notification agent") {
+		return true
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return false
+	}
+
+	var payload notificationAgentPayload
+	if err := json.Unmarshal(res.Body, &payload); err != nil {
+		return false
+	}
+
+	return !payload.Enabled && payload.Types == 0
 }
 
 func (r *NotificationClientResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

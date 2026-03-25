@@ -4,6 +4,7 @@
 #   to = seerr_radarr_server.example
 #   id = "0"
 # }
-#
+
+# The ID of the server. For the first server, the ID is `0`.
 # Otherwise, use the terraform import command:
 terraform import seerr_radarr_server.example 0

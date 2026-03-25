@@ -1,11 +1,11 @@
 terraform {
   required_providers {
     seerr = {
-      source = "josh-archer/seerr"
+      source  = "josh-archer/seerr"
+      version = "99.99.99"
     }
   }
 }
-
 variable "user_id" { type = number }
 variable "watchlist_sync_movies" { type = bool }
 variable "watchlist_sync_tv" { type = bool }
