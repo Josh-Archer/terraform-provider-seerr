@@ -164,7 +164,6 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 	return nil, lastErr
 }
 
-
 func (c *APIClient) resolvePath(path string) (*url.URL, error) {
 	if strings.TrimSpace(path) == "" {
 		return nil, fmt.Errorf("path cannot be empty")

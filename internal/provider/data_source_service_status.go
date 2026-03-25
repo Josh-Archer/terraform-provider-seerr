@@ -17,12 +17,12 @@ type ServiceStatusDataSource struct {
 }
 
 type ServiceStatusDataSourceModel struct {
-	ID                 types.String `tfsdk:"id"`
-	Version            types.String `tfsdk:"version"`
-	CommitTag          types.String `tfsdk:"commit_tag"`
-	UpdateAvailable    types.Bool   `tfsdk:"update_available"`
-	CommitsBehind      types.Int64  `tfsdk:"commits_behind"`
-	RestartRequired    types.Bool   `tfsdk:"restart_required"`
+	ID              types.String `tfsdk:"id"`
+	Version         types.String `tfsdk:"version"`
+	CommitTag       types.String `tfsdk:"commit_tag"`
+	UpdateAvailable types.Bool   `tfsdk:"update_available"`
+	CommitsBehind   types.Int64  `tfsdk:"commits_behind"`
+	RestartRequired types.Bool   `tfsdk:"restart_required"`
 }
 
 func NewServiceStatusDataSource() datasource.DataSource {

@@ -172,9 +172,9 @@ func (r *IssueResource) readIssue(ctx context.Context, issueID string, data *Iss
 		data.Status = types.Int64Value(int64(status))
 	}
 
-	// Message is in an array of comments or similar in Overseerr issues, 
+	// Message is in an array of comments or similar in Overseerr issues,
 	// but here we just simplify or keep as provided if we can't easily fetch the original message.
-	
+
 	return diags
 }
 

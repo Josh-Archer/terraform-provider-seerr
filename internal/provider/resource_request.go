@@ -25,16 +25,16 @@ type RequestResource struct {
 }
 
 type RequestModel struct {
-	ID        types.String `tfsdk:"id"`
-	MediaType types.String `tfsdk:"media_type"`
-	MediaID   types.Int64  `tfsdk:"media_id"`
-	Seasons   types.List   `tfsdk:"seasons"`
-	Is4K      types.Bool   `tfsdk:"is_4k"`
-	ServerID  types.Int64  `tfsdk:"server_id"`
-	ProfileID types.Int64  `tfsdk:"profile_id"`
+	ID         types.String `tfsdk:"id"`
+	MediaType  types.String `tfsdk:"media_type"`
+	MediaID    types.Int64  `tfsdk:"media_id"`
+	Seasons    types.List   `tfsdk:"seasons"`
+	Is4K       types.Bool   `tfsdk:"is_4k"`
+	ServerID   types.Int64  `tfsdk:"server_id"`
+	ProfileID  types.Int64  `tfsdk:"profile_id"`
 	RootFolder types.String `tfsdk:"root_folder"`
-	UserID    types.Int64  `tfsdk:"user_id"`
-	Status    types.Int64  `tfsdk:"status"`
+	UserID     types.Int64  `tfsdk:"user_id"`
+	Status     types.Int64  `tfsdk:"status"`
 }
 
 func NewRequestResource() resource.Resource {
@@ -165,7 +165,7 @@ func (r *RequestResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	data.ID = types.StringValue(extractedID)
-	
+
 	diags := r.readRequest(ctx, extractedID, &data)
 	resp.Diagnostics.Append(diags...)
 

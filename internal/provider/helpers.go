@@ -309,4 +309,3 @@ func ValidateArrConnectivity(ctx context.Context, rawURL, hostname string, port 
 
 	return nil
 }
-
