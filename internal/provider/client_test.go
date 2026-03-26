@@ -133,6 +133,32 @@ func TestClientRequestRetriesConnectionRefusedAndEventuallySucceeds(t *testing.T
 	}
 }
 
+func TestClientRequestDoesNotRetryUnsafeMethods(t *testing.T) {
+	attempts := 0
+	client := &APIClient{
+		baseURL: mustParseURL(t, "http://example.com"),
+		client: &http.Client{
+			Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+				attempts++
+				return nil, &url.Error{
+					Op:  req.Method,
+					URL: req.URL.String(),
+					Err: syscall.ECONNREFUSED,
+				}
+			}),
+			Timeout: 2 * time.Second,
+		},
+	}
+
+	_, err := client.Request(context.Background(), "POST", "/api/v1/request", `{"x":1}`, nil)
+	if err == nil {
+		t.Fatal("expected error for failed POST request")
+	}
+	if attempts != 1 {
+		t.Fatalf("expected 1 attempt for POST, got %d", attempts)
+	}
+}
+
 func TestClientRequestDoesNotRetryContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

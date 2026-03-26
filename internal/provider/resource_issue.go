@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -50,14 +51,23 @@ func (r *IssueResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"issue_type": schema.Int64Attribute{
 				MarkdownDescription: "The type of the issue (1: Video, 2: Audio, 3: Subtitle, 4: Other).",
 				Required:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"message": schema.StringAttribute{
 				MarkdownDescription: "A message describing the issue.",
 				Optional:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"media_id": schema.Int64Attribute{
 				MarkdownDescription: "The ID of the media associated with the issue.",
 				Required:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"status": schema.Int64Attribute{
 				MarkdownDescription: "The status of the issue (1: Open, 2: Resolved).",
@@ -140,6 +150,10 @@ func (r *IssueResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	if data.ID.IsNull() || data.ID.IsUnknown() || data.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -153,6 +167,7 @@ func (r *IssueResource) readIssue(ctx context.Context, issueID string, data *Iss
 		return diags
 	}
 	if res.StatusCode == 404 {
+		data.ID = types.StringNull()
 		return diags
 	}
 	if !HandleAPIResponse(ctx, res, &diags, "Read") {
@@ -171,9 +186,11 @@ func (r *IssueResource) readIssue(ctx context.Context, issueID string, data *Iss
 	if status, ok := m["status"].(float64); ok {
 		data.Status = types.Int64Value(int64(status))
 	}
-
-	// Message is in an array of comments or similar in Overseerr issues,
-	// but here we just simplify or keep as provided if we can't easily fetch the original message.
+	if media, ok := m["media"].(map[string]any); ok {
+		if mediaID, ok := media["id"].(float64); ok {
+			data.MediaID = types.Int64Value(int64(mediaID))
+		}
+	}
 
 	return diags
 }
@@ -202,6 +219,12 @@ func (r *IssueResource) Update(ctx context.Context, req resource.UpdateRequest, 
 			resp.Diagnostics.AddError("Update Status Failed", err.Error())
 			return
 		}
+	}
+
+	diags := r.readIssue(ctx, data.ID.ValueString(), &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -65,6 +66,9 @@ func (r *RequestResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"media_id": schema.Int64Attribute{
 				MarkdownDescription: "The TMDB ID of the media.",
 				Required:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"seasons": schema.ListAttribute{
 				MarkdownDescription: "List of season numbers to request (TV only).",
@@ -80,18 +84,30 @@ func (r *RequestResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"server_id": schema.Int64Attribute{
 				MarkdownDescription: "Override the server ID for the request.",
 				Optional:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"profile_id": schema.Int64Attribute{
 				MarkdownDescription: "Override the quality profile ID for the request.",
 				Optional:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"root_folder": schema.StringAttribute{
 				MarkdownDescription: "Override the root folder for the request.",
 				Optional:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"user_id": schema.Int64Attribute{
 				MarkdownDescription: "The ID of the user making the request (defaults to current user).",
 				Optional:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"status": schema.Int64Attribute{
 				MarkdownDescription: "The status of the request (1: Pending, 2: Approved, 3: Declined).",
@@ -184,6 +200,10 @@ func (r *RequestResource) Read(ctx context.Context, req resource.ReadRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	if data.ID.IsNull() || data.ID.IsUnknown() || data.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -197,6 +217,7 @@ func (r *RequestResource) readRequest(ctx context.Context, requestID string, dat
 		return diags
 	}
 	if res.StatusCode == 404 {
+		data.ID = types.StringNull()
 		return diags
 	}
 	if !HandleAPIResponse(ctx, res, &diags, "Read") {
@@ -263,6 +284,12 @@ func (r *RequestResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 	if !HandleAPIResponse(ctx, res, &resp.Diagnostics, "Update") {
+		return
+	}
+
+	diags := r.readRequest(ctx, data.ID.ValueString(), &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

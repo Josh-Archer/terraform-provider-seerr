@@ -109,6 +109,7 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 	}
 
 	method = strings.ToUpper(strings.TrimSpace(method))
+	retryableMethod := shouldRetryMethod(method)
 	bodyBytes := []byte(body)
 	var lastErr error
 
@@ -142,7 +143,7 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 		res, err := c.client.Do(req)
 		if err != nil {
 			lastErr = err
-			if attempt < maxRequestAttempts && isRetryableRequestError(ctx, err) {
+			if retryableMethod && attempt < maxRequestAttempts && isRetryableRequestError(ctx, err) {
 				continue
 			}
 			return nil, err
@@ -162,6 +163,15 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 	}
 
 	return nil, lastErr
+}
+
+func shouldRetryMethod(method string) bool {
+	switch method {
+	case http.MethodGet, http.MethodHead:
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *APIClient) resolvePath(path string) (*url.URL, error) {
