@@ -6,13 +6,24 @@ terraform {
     }
   }
 }
+
+resource "seerr_user" "fixture" {
+  count = var.user_id == null && var.username != null && var.email != null ? 1 : 0
+
+  username    = var.username
+  email       = var.email
+  permissions = 0
+}
+
 data "seerr_user" "test" {
-  count = var.user_id == null ? 1 : 0
+  count = var.user_id == null && var.username == null ? 1 : 0
   email = var.email
 }
 
 locals {
-  resolved_user_id = var.user_id != null ? var.user_id : tonumber(data.seerr_user.test[0].id)
+  resolved_user_id = var.user_id != null ? var.user_id : (
+    var.username != null ? tonumber(seerr_user.fixture[0].id) : tonumber(data.seerr_user.test[0].id)
+  )
 }
 
 resource "seerr_user_settings_permissions" "test" {
