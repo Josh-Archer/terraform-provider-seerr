@@ -137,6 +137,7 @@ func (r *DiscoverSliderResource) readManagedSliders(ctx context.Context, managed
 		diags.AddError("Read Failed", err.Error())
 		return diags
 	}
+
 	data.Sliders = filterManagedSliders(allSliders, managed)
 	return diags
 }

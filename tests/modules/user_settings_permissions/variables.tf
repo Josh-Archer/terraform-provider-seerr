@@ -8,6 +8,11 @@ variable "email" {
   default = null
 }
 
+variable "username" {
+  type    = string
+  default = null
+}
+
 variable "auto_approve_movies" {
   type    = bool
   default = false

@@ -94,8 +94,7 @@ func (d *UsersDataSource) Read(ctx context.Context, _ datasource.ReadRequest, re
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
+	if !HandleAPIResponse(ctx, res, &resp.Diagnostics, "Read") {
 		return
 	}
 

@@ -243,3 +243,69 @@ func findArrProfile(ctx context.Context, rawURL, hostname string, port int64, us
 		return nil, fmt.Errorf("profile selector is required")
 	}
 }
+
+// HandleAPIResponse checks the API response status and adds errors to diagnostics if not OK.
+func HandleAPIResponse(ctx context.Context, resp *APIResponse, diags *diag.Diagnostics, action string) bool {
+	if resp == nil {
+		diags.AddError(action+" Failed", "The API returned no response.")
+		return false
+	}
+
+	if StatusIsOK(resp.StatusCode) {
+		return true
+	}
+
+	// Try to extract a more descriptive error from the body
+	var errBody struct {
+		Message string `json:"message"`
+		Error   string `json:"error"`
+	}
+
+	errorMsg := string(resp.Body)
+	if err := json.Unmarshal(resp.Body, &errBody); err == nil {
+		if errBody.Message != "" {
+			errorMsg = errBody.Message
+		} else if errBody.Error != "" {
+			errorMsg = errBody.Error
+		}
+	}
+
+	diags.AddError(
+		action+" Failed",
+		fmt.Sprintf("Status %d: %s", resp.StatusCode, errorMsg),
+	)
+
+	return false
+}
+
+// ValidateArrConnectivity checks if the Arr server is reachable and the API key is valid.
+func ValidateArrConnectivity(ctx context.Context, rawURL, hostname string, port int64, useSSL bool, baseURL, apiKey string, timeout time.Duration) error {
+	base, err := buildArrBaseURL(rawURL, hostname, port, useSSL, baseURL)
+	if err != nil {
+		return err
+	}
+	statusURL := strings.TrimRight(base, "/") + "/api/v3/system/status"
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, statusURL, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-Api-Key", apiKey)
+
+	client := &http.Client{Timeout: normalizeRequestTimeout(timeout)}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to connect to %s: %w", statusURL, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 401 {
+		return fmt.Errorf("invalid API key for %s", statusURL)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("status %d from %s", resp.StatusCode, statusURL)
+	}
+
+	return nil
+}

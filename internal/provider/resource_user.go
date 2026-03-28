@@ -258,8 +258,7 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 			resp.Diagnostics.AddError("Create Failed", err.Error())
 			return
 		}
-		if !StatusIsOK(res.StatusCode) {
-			resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("Status %d: %s", res.StatusCode, string(res.Body)))
+		if !HandleAPIResponse(ctx, res, &resp.Diagnostics, "Create") {
 			return
 		}
 

@@ -329,20 +329,11 @@ func (r *MainSettingsResource) Create(ctx context.Context, req resource.CreateRe
 		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
 	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
+	if !HandleAPIResponse(ctx, res, &resp.Diagnostics, "Create") {
 		return
 	}
 
 	data.ID = types.StringValue("main")
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
-	}
-	r.applyDecodedSettings(&data, decoded)
 	if err := r.refreshState(ctx, &data); err != nil {
 		resp.Diagnostics.AddError("Create Failed", err.Error())
 		return
@@ -385,21 +376,11 @@ func (r *MainSettingsResource) Update(ctx context.Context, req resource.UpdateRe
 		resp.Diagnostics.AddError("Update Failed", err.Error())
 		return
 	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
+	if !HandleAPIResponse(ctx, res, &resp.Diagnostics, "Update") {
 		return
 	}
 
 	data.ID = types.StringValue("main")
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
-	data.ResponseJSON = types.StringValue(string(res.Body))
-
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
-	}
-	r.applyDecodedSettings(&data, decoded)
 	if err := r.refreshState(ctx, &data); err != nil {
 		resp.Diagnostics.AddError("Update Failed", err.Error())
 		return

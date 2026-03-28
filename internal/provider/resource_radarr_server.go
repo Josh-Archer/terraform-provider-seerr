@@ -242,6 +242,20 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 	}
 	data.QualityProfileName = types.StringValue(profileName)
 
+	// Validate connectivity to Radarr
+	if err := ValidateArrConnectivity(
+		ctx,
+		data.URL.ValueString(),
+		data.Hostname.ValueString(),
+		data.Port.ValueInt64(),
+		data.UseSSL.ValueBool(),
+		data.BaseURL.ValueString(),
+		data.APIKey.ValueString(),
+		r.client.Timeout(),
+	); err != nil {
+		return data, "", fmt.Errorf("validate connectivity: %w", err)
+	}
+
 	base := map[string]any{
 		"name":                data.Name.ValueString(),
 		"hostname":            data.Hostname.ValueString(),
