@@ -32,4 +32,5 @@ Manage Seerr media requests.
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+- `seerr_media_id` (Number) The Seerr-internal media ID created or associated with the request.
 - `status` (Number) The status of the request (1: Pending, 2: Approved, 3: Declined).
