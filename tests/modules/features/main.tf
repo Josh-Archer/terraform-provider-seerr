@@ -14,7 +14,7 @@ resource "seerr_request" "test" {
 resource "seerr_issue" "test" {
   issue_type = 4 # Other
   message    = "Test issue from tofu"
-  media_id   = 550
+  media_id   = seerr_request.test.seerr_media_id
 }
 
 output "request_id" {

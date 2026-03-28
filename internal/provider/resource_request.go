@@ -26,16 +26,17 @@ type RequestResource struct {
 }
 
 type RequestModel struct {
-	ID         types.String `tfsdk:"id"`
-	MediaType  types.String `tfsdk:"media_type"`
-	MediaID    types.Int64  `tfsdk:"media_id"`
-	Seasons    types.List   `tfsdk:"seasons"`
-	Is4K       types.Bool   `tfsdk:"is_4k"`
-	ServerID   types.Int64  `tfsdk:"server_id"`
-	ProfileID  types.Int64  `tfsdk:"profile_id"`
-	RootFolder types.String `tfsdk:"root_folder"`
-	UserID     types.Int64  `tfsdk:"user_id"`
-	Status     types.Int64  `tfsdk:"status"`
+	ID           types.String `tfsdk:"id"`
+	MediaType    types.String `tfsdk:"media_type"`
+	MediaID      types.Int64  `tfsdk:"media_id"`
+	SeerrMediaID types.Int64  `tfsdk:"seerr_media_id"`
+	Seasons      types.List   `tfsdk:"seasons"`
+	Is4K         types.Bool   `tfsdk:"is_4k"`
+	ServerID     types.Int64  `tfsdk:"server_id"`
+	ProfileID    types.Int64  `tfsdk:"profile_id"`
+	RootFolder   types.String `tfsdk:"root_folder"`
+	UserID       types.Int64  `tfsdk:"user_id"`
+	Status       types.Int64  `tfsdk:"status"`
 }
 
 func NewRequestResource() resource.Resource {
@@ -69,6 +70,10 @@ func (r *RequestResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
+			},
+			"seerr_media_id": schema.Int64Attribute{
+				MarkdownDescription: "The Seerr-internal media ID created or associated with the request.",
+				Computed:            true,
 			},
 			"seasons": schema.ListAttribute{
 				MarkdownDescription: "List of season numbers to request (TV only).",
@@ -105,6 +110,7 @@ func (r *RequestResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"user_id": schema.Int64Attribute{
 				MarkdownDescription: "The ID of the user making the request (defaults to current user).",
 				Optional:            true,
+				Computed:            true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
@@ -235,6 +241,9 @@ func (r *RequestResource) readRequest(ctx context.Context, requestID string, dat
 	}
 
 	if media, ok := m["media"].(map[string]any); ok {
+		if mediaID, ok := media["id"].(float64); ok {
+			data.SeerrMediaID = types.Int64Value(int64(mediaID))
+		}
 		if mediaType, ok := media["mediaType"].(string); ok {
 			data.MediaType = types.StringValue(mediaType)
 		}
