@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   seerr:
-    image: ghcr.io/seerr-team/seerr:latest
+    image: ${SEERR_TEST_IMAGE:-seerr/seerr:v3.1.1}
     container_name: seerr-test
     environment:
       - LOG_LEVEL=debug
@@ -12,6 +10,67 @@ services:
     volumes:
       - seerr_config:/app/config
     restart: always
+  plex-mock:
+    image: python:3.12-alpine
+    environment:
+      - SERVICE_KIND=plex
+      - PORT=32400
+    command: ["python", "/fixtures/mock_media_service.py"]
+    volumes:
+      - ./fixtures:/fixtures:ro
+
+  jellyfin-mock:
+    image: python:3.12-alpine
+    environment:
+      - SERVICE_KIND=jellyfin
+      - PORT=8096
+      - EXPECTED_API_KEY=abc123mockkey
+    command: ["python", "/fixtures/mock_media_service.py"]
+    volumes:
+      - ./fixtures:/fixtures:ro
+
+  tautulli-mock:
+    image: python:3.12-alpine
+    environment:
+      - SERVICE_KIND=tautulli
+      - PORT=8181
+      - EXPECTED_API_KEY=tautulli_mock_key
+    command: ["python", "/fixtures/mock_media_service.py"]
+    volumes:
+      - ./fixtures:/fixtures:ro
+
+  radarr-mock:
+    image: python:3.12-alpine
+    environment:
+      - SERVICE_KIND=radarr
+      - PORT=7878
+      - EXPECTED_API_KEY=radarr_api_key
+    command: ["python", "/fixtures/mock_media_service.py"]
+    volumes:
+      - ./fixtures:/fixtures:ro
+    ports:
+      - "7878:7878"
+
+  sonarr-mock:
+    image: python:3.12-alpine
+    environment:
+      - SERVICE_KIND=sonarr
+      - PORT=8989
+      - EXPECTED_API_KEY=sonarr_api_key
+    command: ["python", "/fixtures/mock_media_service.py"]
+    volumes:
+      - ./fixtures:/fixtures:ro
+    ports:
+      - "8989:8989"
+
+  notify-mock:
+    image: python:3.12-alpine
+    environment:
+      - SERVICE_KIND=generic
+      - PORT=8080
+    command: ["python", "/fixtures/mock_media_service.py"]
+    volumes:
+      - ./fixtures:/fixtures:ro
 
 volumes:
   seerr_config:

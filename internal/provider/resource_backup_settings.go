@@ -100,6 +100,10 @@ func (r *BackupSettingsResource) buildPayload(data *BackupSettingsModel) map[str
 }
 
 func (r *BackupSettingsResource) applyDecodedSettings(data *BackupSettingsModel, decoded map[string]any) {
+	data.Schedule = types.StringNull()
+	data.Retention = types.Int64Null()
+	data.StoragePath = types.StringNull()
+
 	if v, ok := decoded["schedule"].(string); ok {
 		data.Schedule = types.StringValue(v)
 	}

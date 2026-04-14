@@ -10,4 +10,3 @@ run "current_user_data_source" {
     error_message = "Current user id is empty"
   }
 }
-

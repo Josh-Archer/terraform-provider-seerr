@@ -107,6 +107,16 @@ if ! kubectl exec -n "${namespace}" deploy/seerr -- node -e "fetch('http://127.0
   exit 1
 fi
 
+backup_settings_status="$(kubectl exec -n "${namespace}" deploy/seerr -- node -e "fetch('http://127.0.0.1:${port}/api/v1/settings/backup', { headers: { 'X-Api-Key': '${api_key}' } }).then((r) => { console.log(r.status); process.exit(0) }).catch(() => process.exit(1))" | tr -d '\r')"
+notification_agents_status="$(kubectl exec -n "${namespace}" deploy/seerr -- node -e "fetch('http://127.0.0.1:${port}/api/v1/settings/notifications/agents', { headers: { 'X-Api-Key': '${api_key}' } }).then((r) => { console.log(r.status); process.exit(0) }).catch(() => process.exit(1))" | tr -d '\r')"
+jobs_json="$(kubectl exec -n "${namespace}" deploy/seerr -- node -e "fetch('http://127.0.0.1:${port}/api/v1/settings/jobs', { headers: { 'X-Api-Key': '${api_key}' } }).then(async (r) => { process.stdout.write(await r.text()); process.exit(r.ok ? 0 : 1) }).catch(() => process.exit(1))")"
+fixture_job_id=""
+if grep -q '"id":"availability-sync"' <<<"${jobs_json}"; then
+  fixture_job_id="availability-sync"
+else
+  fixture_job_id="$(sed -n 's/.*"id":"\([^"]*\)".*/\1/p' <<<"${jobs_json}" | head -n 1)"
+fi
+
 output_url="${service_url}"
 if [[ "${use_port_forward}" == "true" ]]; then
   log_file="${TMPDIR:-/tmp}/seerr-port-forward-${namespace}.log"
@@ -132,6 +142,9 @@ api_key="${api_key//$'\n'/}"
 
 printf 'SEERR_URL=%s\n' "${output_url}"
 printf 'SEERR_API_KEY=%s\n' "${api_key}"
+printf 'TF_VAR_backup_settings_supported=%s\n' "$([[ "${backup_settings_status}" == "200" ]] && printf 'true' || printf 'false')"
+printf 'TF_VAR_notification_agents_supported=%s\n' "$([[ "${notification_agents_status}" == "200" ]] && printf 'true' || printf 'false')"
+printf 'TF_VAR_fixture_job_id=%s\n' "${fixture_job_id}"
 if [[ -n "${port_forward_pid:-}" ]]; then
   printf 'SEERR_PORT_FORWARD_PID=%s\n' "${port_forward_pid}"
 fi

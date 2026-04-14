@@ -10,15 +10,29 @@ The provider supports two usage styles:
 
 - `seerr_main_settings`
 - `seerr_plex_settings`
-- `seerr_notification_agent`
+- `seerr_notification_discord`, `seerr_notification_email`, `seerr_notification_gotify`, `seerr_notification_lunasea`, `seerr_notification_ntfy`, `seerr_notification_pushbullet`, `seerr_notification_pushover`, `seerr_notification_slack`, `seerr_notification_telegram`, `seerr_notification_webhook`, `seerr_notification_webpush`
 - `seerr_radarr_server`
 - `seerr_sonarr_server`
+- `seerr_jellyfin_settings`
+- `seerr_emby_settings`
+- `seerr_tautulli_settings`
+- `seerr_network_settings`
+- `seerr_backup_settings`
+- `seerr_job_schedule`
+- `seerr_request`
+- `seerr_issue`
+- `seerr_blocklist`
+- `seerr_override_rule`
+- `seerr_user`
+- `seerr_user_invitation`
+- `seerr_user_permissions`
+- `seerr_user_settings_permissions`
+- `seerr_user_watchlist_settings`
 
 ## Reusable modules
 
 - `modules/main_settings`
 - `modules/plex_settings`
-- `modules/notification_agent`
 - `modules/radarr_server`
 - `modules/sonarr_server`
 
@@ -27,26 +41,57 @@ The provider supports two usage styles:
 Resources:
 - `seerr_api_key`: regenerate and read the current Seerr API key.
 - `seerr_api_object`: manage arbitrary Seerr endpoints with explicit HTTP methods.
+- `seerr_backup_settings`: manage Seerr backup scheduling and retention settings.
+- `seerr_blocklist`: manage manual Seerr blocklist entries.
+- `seerr_discover_slider`: manage Seerr discover slider configuration.
+- `seerr_emby_settings`: manage Emby integration settings.
+- `seerr_issue`: manage Seerr issue records.
+- `seerr_jellyfin_settings`: manage Jellyfin integration settings.
+- `seerr_job_schedule`: manage Seerr background job schedules.
 - `seerr_main_settings`: manage core Seerr application settings.
-- `seerr_notification_agent`: manage a named notification agent payload.
+- `seerr_network_settings`: manage Seerr network settings.
+- `seerr_notification_discord`, `seerr_notification_email`, `seerr_notification_gotify`, `seerr_notification_lunasea`, `seerr_notification_ntfy`, `seerr_notification_pushbullet`, `seerr_notification_pushover`, `seerr_notification_slack`, `seerr_notification_telegram`, `seerr_notification_webhook`, `seerr_notification_webpush`: manage typed notification integrations.
+- `seerr_override_rule`: manage request override rules.
 - `seerr_plex_settings`: manage Plex integration settings.
 - `seerr_radarr_server`: manage a Radarr server integration in Seerr.
+- `seerr_request`: manage Seerr media requests.
 - `seerr_sonarr_server`: manage a Sonarr server integration in Seerr.
+- `seerr_tautulli_settings`: manage Tautulli integration settings.
+- `seerr_user`: manage Seerr users plus user-scoped settings and notification preferences.
+- `seerr_user_invitation`: manage pending user invitations.
 - `seerr_user_permissions`: manage a user's Seerr permissions bitmask.
+- `seerr_user_settings_permissions`: manage the per-user settings permissions endpoint.
 - `seerr_user_watchlist_settings`: manage a user's Plex watchlist sync flags.
 
 Data sources:
 - `seerr_api_key`: read the current Seerr API key.
 - `seerr_api_request`: issue an arbitrary read request to the Seerr API.
+- `seerr_backup_settings`: read current backup settings.
+- `seerr_blocklist`: read a blocklist entry by TMDB ID and media type.
 - `seerr_main_settings`: read current main settings.
-- `seerr_notification_agent`: read a named notification agent payload.
+- `seerr_current_user`: read the current authenticated Seerr user.
+- `seerr_discover_slider`: read current discover slider settings.
+- `seerr_emby_settings`: read current Emby settings.
+- `seerr_issues`: read issue lists.
+- `seerr_jellyfin_settings`: read current Jellyfin settings.
+- `seerr_jobs`: read background job status and schedules.
+- `seerr_network_settings`: read current network settings.
+- `seerr_notification_agents`: read the configured notification integrations summary.
+- `seerr_notification_discord`, `seerr_notification_email`, `seerr_notification_gotify`, `seerr_notification_lunasea`, `seerr_notification_ntfy`, `seerr_notification_pushbullet`, `seerr_notification_pushover`, `seerr_notification_slack`, `seerr_notification_telegram`, `seerr_notification_webhook`, `seerr_notification_webpush`: read typed notification integrations.
+- `seerr_override_rule`: read an override rule by ID.
 - `seerr_plex_settings`: read current Plex settings.
 - `seerr_public_settings`: read current public settings.
 - `seerr_radarr_quality_profile`: resolve a Radarr quality profile name to its numeric ID.
 - `seerr_radarr_server`: read a configured Radarr server by Seerr server ID.
+- `seerr_requests`: read request lists.
+- `seerr_service_status`: read Seerr service status.
 - `seerr_sonarr_quality_profile`: resolve a Sonarr quality profile name to its numeric ID.
 - `seerr_sonarr_server`: read a configured Sonarr server by Seerr server ID.
+- `seerr_tautulli_settings`: read current Tautulli settings.
+- `seerr_user`: read a user by ID, username, or email.
+- `seerr_user_invitations`: read pending user invitations.
 - `seerr_user_permissions`: read a user's permissions bitmask.
+- `seerr_users`: read paged user lists.
 - `seerr_user_watchlist_settings`: read a user's watchlist sync settings.
 
 Each resource and data source has a dedicated page under [`docs/resources`](./docs/resources)
@@ -55,7 +100,7 @@ or [`docs/data-sources`](./docs/data-sources) with at least one example usage bl
 ## Requirements
 
 - Go `1.25+`
-- OpenTofu `1.8+`
+- OpenTofu `1.8.x+`
 
 ## Provider configuration
 
@@ -130,30 +175,28 @@ Operational note:
 ## Example: notification settings
 
 ```hcl
-resource "seerr_notification_agent" "ntfy" {
-  agent        = "ntfy"
+resource "seerr_notification_ntfy" "ntfy" {
   enabled      = true
   embed_poster = true
-  types        = 1023
 
-  ntfy = {
-    url               = "https://ntfy.example.com"
-    topic             = "media"
-    auth_method_token = true
-    token             = var.ntfy_access_token
-    priority          = 3
+  notification_types = ["MEDIA_PENDING", "MEDIA_APPROVED"]
+
+  ntfy {
+    url    = "https://ntfy.example.com"
+    topic  = "media"
+    token  = var.ntfy_access_token
+    priority = 3
   }
 }
 
-resource "seerr_notification_agent" "pushover" {
-  agent        = "pushover"
+resource "seerr_notification_pushover" "pushover" {
   enabled      = true
   embed_poster = true
-  types        = 1023
+  notification_types = ["MEDIA_AVAILABLE", "ISSUE_CREATED"]
 
-  pushover = {
+  pushover {
     access_token = var.pushover_access_token
-    user_token   = var.pushover_user_token
+    user_token   = var.pushover_user_key
     sound        = "pushover"
   }
 }
@@ -184,19 +227,34 @@ output "seerr_initialized" {
 ## Build
 
 ```bash
-go mod tidy
-go test ./...
-go build .
+bash ./scripts/test-all-locally.sh
 ```
 
 ## Contributor workflow
 
-Before pushing changes, keep generated docs and Go formatting current:
+The repo-level validation entry points are:
 
 ```bash
-go generate ./...
-gofmt -w .
+bash ./scripts/test-all-locally.sh
+SEERR_RUN_INTEGRATION=true bash ./scripts/test-all-locally.sh
+SEERR_TEST_SUITE=stable bash ./scripts/test-integration.sh
+SEERR_TEST_SUITE=all bash ./scripts/test-integration.sh
 ```
+
+- `scripts/test-all-locally.sh`: generated-file check, `go build`, `go test`, and optional lint/integration.
+- `scripts/test-integration.sh`: builds a provider mirror, boots a local Seerr target when `SEERR_URL` is not already set, and runs `tofu test`.
+- The default integration suite is `stable` and mirrors the CI merge gate.
+- Set `SEERR_TEST_SUITE=all` to run the broader compatibility/dependency-sensitive suite as well.
+
+## CI model
+
+- Pull requests run the fast gate (`scripts/test-all-locally.sh` without integration) plus the `stable` OpenTofu integration suite.
+- Pushes to `main` run the same gate and stable integration coverage before auto-tagging.
+- Scheduled runs execute the broader `full` compatibility suite only. This keeps the merge gate deterministic while still exercising dependency-sensitive coverage regularly.
+- Manual runs support three modes through the GitHub Actions `integration_mode` input: `stable`, `full`, or `both`.
+- Stable-suite artifacts upload on failure. Full-suite artifacts upload on every run so scheduled/manual compatibility failures keep their diagnostics.
+
+Use the stable suite for merge confidence and the full suite for broader compatibility triage. If a change only fails in the full suite, treat it as an environment or unsupported-endpoint investigation unless the stable suite also regresses.
 
 This repo includes a tracked `pre-push` hook at `.githooks/pre-push`. Enable it once per clone:
 

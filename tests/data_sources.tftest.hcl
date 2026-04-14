@@ -8,5 +8,14 @@ run "test_users_data_source" {
   }
 }
 
-# Skipping non-existent data sources for Jobs and Notification Agents
-# as they are not currently implemented in the provider.
+run "test_jobs_data_source" {
+  command = plan
+  module {
+    source = "./modules/jobs_data"
+  }
+
+  assert {
+    condition     = length(data.seerr_jobs.test.jobs) > 0
+    error_message = "Expected jobs data source to return at least one job"
+  }
+}

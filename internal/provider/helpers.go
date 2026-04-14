@@ -74,6 +74,88 @@ func mergeJSON(base map[string]any, overrideJSON string) (map[string]any, error)
 	return out, nil
 }
 
+func copyMap(base map[string]any) map[string]any {
+	out := make(map[string]any, len(base))
+	for k, v := range base {
+		out[k] = v
+	}
+	return out
+}
+
+func setOptionalString(payload map[string]any, key string, value types.String) {
+	if value.IsNull() || value.IsUnknown() {
+		return
+	}
+	payload[key] = value.ValueString()
+}
+
+func setOptionalInt64(payload map[string]any, key string, value types.Int64) {
+	if value.IsNull() || value.IsUnknown() {
+		return
+	}
+	payload[key] = value.ValueInt64()
+}
+
+func setOptionalBool(payload map[string]any, key string, value types.Bool) {
+	if value.IsNull() || value.IsUnknown() {
+		return
+	}
+	payload[key] = value.ValueBool()
+}
+
+func int64ValueFromAny(v any) (int64, bool) {
+	switch val := v.(type) {
+	case float64:
+		return int64(val), true
+	case float32:
+		return int64(val), true
+	case int:
+		return int64(val), true
+	case int64:
+		return val, true
+	case int32:
+		return int64(val), true
+	case string:
+		if strings.TrimSpace(val) == "" {
+			return 0, false
+		}
+		parsed, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			return 0, false
+		}
+		return parsed, true
+	default:
+		return 0, false
+	}
+}
+
+func stringValueFromAny(v any) (string, bool) {
+	switch val := v.(type) {
+	case string:
+		return val, true
+	default:
+		return "", false
+	}
+}
+
+func boolValueFromAny(v any) (bool, bool) {
+	switch val := v.(type) {
+	case bool:
+		return val, true
+	case string:
+		if strings.TrimSpace(val) == "" {
+			return false, false
+		}
+		parsed, err := strconv.ParseBool(val)
+		if err != nil {
+			return false, false
+		}
+		return parsed, true
+	default:
+		return false, false
+	}
+}
+
 func findByIDInJSONArray(body []byte, id int64) ([]byte, bool, error) {
 	var arr []map[string]any
 	if err := json.Unmarshal(body, &arr); err != nil {

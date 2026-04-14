@@ -17,7 +17,10 @@ website/node_modules
 ./*.tfstate
 .terraform/
 terraform.d/
+provider-mirror/
+test-artifacts/
 dev.tfrc
+.gocache/
 build_errors*.txt
 run-logs.txt
 run_log*.txt
@@ -26,8 +29,10 @@ issue*.json
 issues.txt
 out.json
 tests/.terraform.lock.hcl
+tests/modules/*/.terraform.lock.hcl
 tests/test-results*.txt
 tests/test_output*.txt
+tests/test-output*.txt
 *.log
 *.bak
 *~

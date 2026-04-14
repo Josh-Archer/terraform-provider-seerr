@@ -263,6 +263,21 @@ func (r *EmbySettingsResource) readEmbySettings(ctx context.Context, data *EmbyS
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
 
+	r.applyDecodedEmbySettings(data, decoded)
+	data.ID = types.StringValue("emby")
+	return nil
+}
+
+func (r *EmbySettingsResource) applyDecodedEmbySettings(data *EmbySettingsModel, decoded map[string]any) {
+	previousAPIKey := data.APIKey
+
+	data.Name = types.StringNull()
+	data.UseSSL = types.BoolNull()
+	data.URLBase = types.StringNull()
+	data.ExternalHostname = types.StringNull()
+	data.EmbyForgotPasswordURL = types.StringNull()
+	data.ServerID = types.StringNull()
+
 	if v, ok := decoded["name"].(string); ok {
 		data.Name = types.StringValue(v)
 	}
@@ -290,7 +305,7 @@ func (r *EmbySettingsResource) readEmbySettings(ctx context.Context, data *EmbyS
 	if v, ok := decoded["serverId"].(string); ok {
 		data.ServerID = types.StringValue(v)
 	}
-
-	data.ID = types.StringValue("emby")
-	return nil
+	if data.APIKey.IsNull() && !previousAPIKey.IsNull() && !previousAPIKey.IsUnknown() {
+		data.APIKey = previousAPIKey
+	}
 }

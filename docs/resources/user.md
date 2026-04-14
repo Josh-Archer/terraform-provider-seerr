@@ -41,16 +41,24 @@ resource "seerr_user" "example" {
 
 - `discover_region` (String) User's preferred discovery region.
 - `locale` (String) User's preferred locale.
+- `movie_quota_days` (Number) Quota period in days for movie requests.
+- `movie_quota_limit` (Number) Maximum number of movie requests allowed for this user.
 - `notification_settings` (Block, Optional) User-specific notification settings. (see [below for nested schema](#nestedblock--notification_settings))
 - `original_language` (String) User's preferred original language.
 - `permissions` (Number) Permissions bitmask.
 - `plex_id` (String) Optional Plex ID to import a user directly from Plex.
 - `streaming_region` (String) User's preferred streaming region.
+- `tv_quota_days` (Number) Quota period in days for TV requests.
+- `tv_quota_limit` (Number) Maximum number of TV requests allowed for this user.
 - `watchlist_sync_movies` (Boolean) Enable watchlist sync for movies.
 - `watchlist_sync_tv` (Boolean) Enable watchlist sync for TV shows.
 
 ### Read-Only
 
+- `global_movie_quota_days` (Number) Current global movie quota period in days reported by Seerr.
+- `global_movie_quota_limit` (Number) Current global movie quota limit reported by Seerr.
+- `global_tv_quota_days` (Number) Current global TV quota period in days reported by Seerr.
+- `global_tv_quota_limit` (Number) Current global TV quota limit reported by Seerr.
 - `id` (String) The ID of this resource.
 
 <a id="nestedblock--notification_settings"></a>

@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func TestMainSettingsApplyDecodedSettingsPreservesExistingValues(t *testing.T) {
+func TestMainSettingsApplyDecodedSettingsClearsMissingValues(t *testing.T) {
 	r := &MainSettingsResource{}
 	data := MainSettingsModel{
 		AppTitle:              types.StringValue("Jellyseerr"),
@@ -24,17 +24,17 @@ func TestMainSettingsApplyDecodedSettingsPreservesExistingValues(t *testing.T) {
 		"applicationUrl": "https://jellyseerr.example",
 	})
 
-	if got := data.AppTitle.ValueString(); got != "Jellyseerr" {
-		t.Fatalf("expected app title to remain Jellyseerr, got %q", got)
+	if !data.AppTitle.IsNull() {
+		t.Fatalf("expected app title to become null when omitted from response")
 	}
-	if got := data.PartialRequests.ValueBool(); !got {
-		t.Fatalf("expected partial requests to remain true")
+	if !data.PartialRequests.IsNull() {
+		t.Fatalf("expected partial requests to become null when omitted from response")
 	}
-	if got := data.MovieRequestsEnabled.ValueBool(); !got {
-		t.Fatalf("expected movie requests to remain true")
+	if !data.MovieRequestsEnabled.IsNull() {
+		t.Fatalf("expected movie requests to become null when omitted from response")
 	}
-	if got := data.SeriesRequestsEnabled.ValueBool(); !got {
-		t.Fatalf("expected series requests to remain true")
+	if !data.SeriesRequestsEnabled.IsNull() {
+		t.Fatalf("expected series requests to become null when omitted from response")
 	}
 	if got := data.ApplicationURL.ValueString(); got != "https://jellyseerr.example" {
 		t.Fatalf("expected application url to be updated, got %q", got)

@@ -26,6 +26,15 @@ type SeerrProvider struct {
 	version string
 }
 
+type providerConfigValues struct {
+	BaseURL        string
+	APIKey         string
+	PlexToken      string
+	UserAgent      string
+	Insecure       bool
+	RequestTimeout time.Duration
+}
+
 type SeerrProviderModel struct {
 	URL                types.String `tfsdk:"url"`
 	APIKey             types.String `tfsdk:"api_key"`
@@ -87,122 +96,43 @@ func (p *SeerrProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		return
 	}
 
-	baseURL := strings.TrimSpace(data.URL.ValueString())
-	if baseURL == "" {
-		baseURL = strings.TrimSpace(os.Getenv("SEERR_URL"))
+	config, err := resolveProviderConfigValues(data, p.version, os.Getenv)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid Request Timeout", err.Error())
+		return
 	}
 
-	apiKey := strings.TrimSpace(data.APIKey.ValueString())
-	if apiKey == "" {
-		apiKey = strings.TrimSpace(os.Getenv("SEERR_API_KEY"))
-	}
-
-	plexToken := strings.TrimSpace(data.PlexToken.ValueString())
-
-	if baseURL == "" {
+	if config.BaseURL == "" {
 		resp.Diagnostics.AddError("Missing Base URL", "Provider requires a 'url' to be set.")
 		return
 	}
-	if apiKey == "" && plexToken == "" {
+	if config.APIKey == "" && config.PlexToken == "" {
 		resp.Diagnostics.AddError("Missing Authentication", "Provider requires either an 'api_key' or a 'plex_token' to be set.")
 		return
 	}
 
-	if !urlRegex().MatchString(baseURL) {
+	if !urlRegex().MatchString(config.BaseURL) {
 		resp.Diagnostics.AddError("Invalid Base URL", "Provider url must start with http:// or https:// and must not have a trailing slash.")
 		return
 	}
 
-	parsed, err := url.Parse(baseURL)
+	parsed, err := url.Parse(config.BaseURL)
 	if err != nil {
-		resp.Diagnostics.AddError("Invalid URL", fmt.Sprintf("Cannot parse provider url %q: %s", baseURL, err))
+		resp.Diagnostics.AddError("Invalid URL", fmt.Sprintf("Cannot parse provider url %q: %s", config.BaseURL, err))
 		return
 	}
 
-	userAgent := "terraform-provider-seerr/" + p.version
-	if !data.UserAgent.IsNull() && !data.UserAgent.IsUnknown() && strings.TrimSpace(data.UserAgent.ValueString()) != "" {
-		userAgent = strings.TrimSpace(data.UserAgent.ValueString())
-	}
-
-	insecure := false
-	if !data.InsecureSkipVerify.IsNull() && !data.InsecureSkipVerify.IsUnknown() {
-		insecure = data.InsecureSkipVerify.ValueBool()
-	}
-
-	requestTimeout := defaultRequestTimeout
-	if !data.RequestTimeout.IsNull() && !data.RequestTimeout.IsUnknown() {
-		requestTimeout = normalizeRequestTimeout(time.Duration(data.RequestTimeout.ValueInt64()) * time.Second)
-	} else if rawTimeout := strings.TrimSpace(os.Getenv("SEERR_REQUEST_TIMEOUT_SECONDS")); rawTimeout != "" {
-		timeoutSeconds, convErr := strconv.ParseInt(rawTimeout, 10, 64)
-		if convErr != nil {
-			resp.Diagnostics.AddError("Invalid Request Timeout", fmt.Sprintf("Cannot parse SEERR_REQUEST_TIMEOUT_SECONDS %q: %s", rawTimeout, convErr))
-			return
-		}
-		requestTimeout = normalizeRequestTimeout(time.Duration(timeoutSeconds) * time.Second)
-	}
-
-	client := NewClient(parsed, apiKey, userAgent, insecure, requestTimeout)
+	client := NewClient(parsed, config.APIKey, config.UserAgent, config.Insecure, config.RequestTimeout)
 
 	// Authentication flow logic
-	if apiKey == "" && plexToken != "" {
-		// 1. Authenticate with Plex token
-		authPayload := map[string]string{"authToken": plexToken}
-		authBody, _ := json.Marshal(authPayload)
-
-		authRes, err := client.Request(ctx, "POST", "/api/v1/auth/plex", string(authBody), nil)
+	if config.APIKey == "" && config.PlexToken != "" {
+		fetchedKey, err := bootstrapAPIKeyFromPlexToken(ctx, client, config.PlexToken)
 		if err != nil {
 			resp.Diagnostics.AddError("Plex Auth Failed", err.Error())
 			return
 		}
-		if !StatusIsOK(authRes.StatusCode) {
-			resp.Diagnostics.AddError("Plex Auth Failed", fmt.Sprintf("status %d: %s", authRes.StatusCode, string(authRes.Body)))
-			return
-		}
-
-		// 2. Extract session cookie (connect.sid)
-		cookies := authRes.Headers.Values("Set-Cookie")
-		var sessionCookie string
-		for _, c := range cookies {
-			if strings.HasPrefix(c, "connect.sid=") {
-				// We just need the actual key=value part before the first semicolon
-				sessionCookie = strings.SplitN(c, ";", 2)[0]
-				break
-			}
-		}
-
-		if sessionCookie == "" {
-			resp.Diagnostics.AddError("Plex Auth Failed", "Did not receive a session cookie from Seerr.")
-			return
-		}
-
-		client.SetSessionCookie(sessionCookie)
-
-		// 3. Fetch settings to get API key
-		settingsRes, err := client.Request(ctx, "GET", "/api/v1/settings/main", "", nil)
-		if err != nil {
-			resp.Diagnostics.AddError("API Key Fetch Failed", err.Error())
-			return
-		}
-		if !StatusIsOK(settingsRes.StatusCode) {
-			resp.Diagnostics.AddError("API Key Fetch Failed", fmt.Sprintf("status %d: %s", settingsRes.StatusCode, string(settingsRes.Body)))
-			return
-		}
-
-		var settings map[string]any
-		if err := json.Unmarshal(settingsRes.Body, &settings); err != nil {
-			resp.Diagnostics.AddError("API Key Fetch Failed", fmt.Sprintf("failed to parse settings: %s", err))
-			return
-		}
-
-		fetchedKey, ok := settings["apiKey"].(string)
-		if !ok || fetchedKey == "" {
-			resp.Diagnostics.AddError("API Key Fetch Failed", "apiKey not found in settings response. Ensure the Plex user is an admin.")
-			return
-		}
-
-		// 4. Update the client with the new API key, discarding the session cookie
 		client.SetAPIKey(fetchedKey)
-		client.SetSessionCookie("") // We only need the API key going forward
+		client.SetSessionCookie("")
 	}
 
 	resp.DataSourceData = client
@@ -241,6 +171,9 @@ func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewIssueResource,
 		NewBackupSettingsResource,
 		NewUserInvitationResource,
+		NewNetworkSettingsResource,
+		NewOverrideRuleResource,
+		NewBlocklistResource,
 	}
 }
 
@@ -282,6 +215,9 @@ func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewDiscoverSliderDataSource,
 		NewBackupSettingsDataSource,
 		NewUserInvitationsDataSource,
+		NewNetworkSettingsDataSource,
+		NewOverrideRuleDataSource,
+		NewBlocklistDataSource,
 	}
 }
 
@@ -295,4 +231,87 @@ func New(version string) func() provider.Provider {
 
 func urlRegex() *regexp.Regexp {
 	return regexp.MustCompile(`^https?://[^/](.*[^/])?$`)
+}
+
+func resolveProviderConfigValues(data SeerrProviderModel, version string, getenv func(string) string) (providerConfigValues, error) {
+	config := providerConfigValues{
+		BaseURL:        strings.TrimSpace(data.URL.ValueString()),
+		APIKey:         strings.TrimSpace(data.APIKey.ValueString()),
+		PlexToken:      strings.TrimSpace(data.PlexToken.ValueString()),
+		UserAgent:      "terraform-provider-seerr/" + version,
+		RequestTimeout: defaultRequestTimeout,
+	}
+
+	if config.BaseURL == "" {
+		config.BaseURL = strings.TrimSpace(getenv("SEERR_URL"))
+	}
+	if config.APIKey == "" {
+		config.APIKey = strings.TrimSpace(getenv("SEERR_API_KEY"))
+	}
+	if !data.UserAgent.IsNull() && !data.UserAgent.IsUnknown() && strings.TrimSpace(data.UserAgent.ValueString()) != "" {
+		config.UserAgent = strings.TrimSpace(data.UserAgent.ValueString())
+	}
+	if !data.InsecureSkipVerify.IsNull() && !data.InsecureSkipVerify.IsUnknown() {
+		config.Insecure = data.InsecureSkipVerify.ValueBool()
+	}
+	if !data.RequestTimeout.IsNull() && !data.RequestTimeout.IsUnknown() {
+		config.RequestTimeout = normalizeRequestTimeout(time.Duration(data.RequestTimeout.ValueInt64()) * time.Second)
+		return config, nil
+	}
+
+	if rawTimeout := strings.TrimSpace(getenv("SEERR_REQUEST_TIMEOUT_SECONDS")); rawTimeout != "" {
+		timeoutSeconds, err := strconv.ParseInt(rawTimeout, 10, 64)
+		if err != nil {
+			return providerConfigValues{}, fmt.Errorf("cannot parse SEERR_REQUEST_TIMEOUT_SECONDS %q: %s", rawTimeout, err)
+		}
+		config.RequestTimeout = normalizeRequestTimeout(time.Duration(timeoutSeconds) * time.Second)
+	}
+
+	return config, nil
+}
+
+func bootstrapAPIKeyFromPlexToken(ctx context.Context, client *APIClient, plexToken string) (string, error) {
+	authPayload := map[string]string{"authToken": plexToken}
+	authBody, _ := json.Marshal(authPayload)
+
+	authRes, err := client.Request(ctx, "POST", "/api/v1/auth/plex", string(authBody), nil)
+	if err != nil {
+		return "", err
+	}
+	if !StatusIsOK(authRes.StatusCode) {
+		return "", fmt.Errorf("status %d: %s", authRes.StatusCode, string(authRes.Body))
+	}
+
+	cookies := authRes.Headers.Values("Set-Cookie")
+	var sessionCookie string
+	for _, c := range cookies {
+		if strings.HasPrefix(c, "connect.sid=") {
+			sessionCookie = strings.SplitN(c, ";", 2)[0]
+			break
+		}
+	}
+	if sessionCookie == "" {
+		return "", fmt.Errorf("did not receive a session cookie from Seerr")
+	}
+
+	client.SetSessionCookie(sessionCookie)
+	settingsRes, err := client.Request(ctx, "GET", "/api/v1/settings/main", "", nil)
+	if err != nil {
+		return "", err
+	}
+	if !StatusIsOK(settingsRes.StatusCode) {
+		return "", fmt.Errorf("status %d: %s", settingsRes.StatusCode, string(settingsRes.Body))
+	}
+
+	var settings map[string]any
+	if err := json.Unmarshal(settingsRes.Body, &settings); err != nil {
+		return "", fmt.Errorf("failed to parse settings: %s", err)
+	}
+
+	fetchedKey, ok := settings["apiKey"].(string)
+	if !ok || fetchedKey == "" {
+		return "", fmt.Errorf("apiKey not found in settings response; ensure the Plex user is an admin")
+	}
+
+	return fetchedKey, nil
 }

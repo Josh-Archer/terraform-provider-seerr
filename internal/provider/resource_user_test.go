@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -174,4 +178,132 @@ resource "seerr_user" "test" {
   permissions = %[3]d
 }
 `, username, email, permissions)
+}
+
+func TestBuildLocalUserPayloadOmitsPermissionsWhenUnset(t *testing.T) {
+	payload := buildLocalUserPayload(&UserModel{
+		Email:       types.StringValue("user@example.com"),
+		Username:    types.StringValue("example"),
+		Permissions: types.Int64Null(),
+	})
+
+	if _, ok := payload["permissions"]; ok {
+		t.Fatal("permissions should be omitted when unset")
+	}
+}
+
+func TestBuildNotificationSettingsPayloadPreservesExistingRemoteValues(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/user/12/settings/notifications" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		if r.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", r.Method)
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+			"pgpKey":"existing-pgp",
+			"telegramChatId":"chat-1",
+			"webPushEnabled":true,
+			"notificationTypes":{"discord":2,"webpush":256}
+		}`))
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resource := &UserResource{
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+	}
+	payload, err := resource.buildNotificationSettingsPayload(context.Background(), "12", &UserNotificationSettingsModel{
+		DiscordID: types.StringValue("discord-user"),
+		NotificationTypes: &UserNotificationTypesModel{
+			Discord: types.Int64Value(4),
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got := payload["pgpKey"]; got != "existing-pgp" {
+		t.Fatalf("expected existing pgp key to be preserved, got %#v", got)
+	}
+	if got := payload["telegramChatId"]; got != "chat-1" {
+		t.Fatalf("expected existing telegramChatId to be preserved, got %#v", got)
+	}
+	if got := payload["discordId"]; got != "discord-user" {
+		t.Fatalf("expected discordId override, got %#v", got)
+	}
+	notificationTypes, ok := payload["notificationTypes"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected notificationTypes map, got %#v", payload["notificationTypes"])
+	}
+	if got := notificationTypes["discord"]; got != int64(4) {
+		t.Fatalf("expected discord notification type override, got %#v", got)
+	}
+	if got := notificationTypes["webpush"]; got != float64(256) {
+		t.Fatalf("expected existing webpush notification type to be preserved, got %#v", got)
+	}
+}
+
+func TestUserReadMapsQuotaFieldsAndWebpushEnabled(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/user/7":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"id":7,"email":"User@Example.com","username":"Display","permissions":32}`))
+		case "/api/v1/user/7/settings/main":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+				"locale":"en",
+				"movieQuotaLimit":10,
+				"movieQuotaDays":30,
+				"tvQuotaLimit":5,
+				"tvQuotaDays":14,
+				"globalMovieQuotaLimit":20,
+				"globalMovieQuotaDays":60,
+				"globalTvQuotaLimit":8,
+				"globalTvQuotaDays":21
+			}`))
+		case "/api/v1/user/7/settings/notifications":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+				"webPushEnabled":true,
+				"notificationTypes":{"webpush":256}
+			}`))
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resource := &UserResource{
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+	}
+	data := UserModel{
+		ID:                   types.StringValue("7"),
+		NotificationSettings: &UserNotificationSettingsModel{},
+	}
+
+	diags := resource.readUser(context.Background(), "7", &data)
+	if diags.HasError() {
+		t.Fatalf("expected no diagnostics, got %v", diags)
+	}
+	if got := data.MovieQuotaLimit.ValueInt64(); got != 10 {
+		t.Fatalf("expected movie quota limit 10, got %d", got)
+	}
+	if got := data.GlobalTvQuotaDays.ValueInt64(); got != 21 {
+		t.Fatalf("expected global tv quota days 21, got %d", got)
+	}
+	if data.NotificationSettings == nil || !data.NotificationSettings.WebpushEnabled.ValueBool() {
+		t.Fatal("expected webpush_enabled to be mapped from API response")
+	}
 }
