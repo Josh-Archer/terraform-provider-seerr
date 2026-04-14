@@ -262,7 +262,7 @@ func resolveProviderConfigValues(data SeerrProviderModel, version string, getenv
 	if rawTimeout := strings.TrimSpace(getenv("SEERR_REQUEST_TIMEOUT_SECONDS")); rawTimeout != "" {
 		timeoutSeconds, err := strconv.ParseInt(rawTimeout, 10, 64)
 		if err != nil {
-			return providerConfigValues{}, fmt.Errorf("Cannot parse SEERR_REQUEST_TIMEOUT_SECONDS %q: %s", rawTimeout, err)
+			return providerConfigValues{}, fmt.Errorf("cannot parse SEERR_REQUEST_TIMEOUT_SECONDS %q: %s", rawTimeout, err)
 		}
 		config.RequestTimeout = normalizeRequestTimeout(time.Duration(timeoutSeconds) * time.Second)
 	}
@@ -291,7 +291,7 @@ func bootstrapAPIKeyFromPlexToken(ctx context.Context, client *APIClient, plexTo
 		}
 	}
 	if sessionCookie == "" {
-		return "", fmt.Errorf("Did not receive a session cookie from Seerr.")
+		return "", fmt.Errorf("did not receive a session cookie from Seerr")
 	}
 
 	client.SetSessionCookie(sessionCookie)
@@ -310,7 +310,7 @@ func bootstrapAPIKeyFromPlexToken(ctx context.Context, client *APIClient, plexTo
 
 	fetchedKey, ok := settings["apiKey"].(string)
 	if !ok || fetchedKey == "" {
-		return "", fmt.Errorf("apiKey not found in settings response. Ensure the Plex user is an admin.")
+		return "", fmt.Errorf("apiKey not found in settings response; ensure the Plex user is an admin")
 	}
 
 	return fetchedKey, nil
