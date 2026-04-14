@@ -56,18 +56,26 @@ type UserNotificationSettingsModel struct {
 }
 
 type UserModel struct {
-	ID                   types.String                   `tfsdk:"id"`
-	Email                types.String                   `tfsdk:"email"`
-	Username             types.String                   `tfsdk:"username"`
-	PlexID               types.String                   `tfsdk:"plex_id"`
-	Permissions          types.Int64                    `tfsdk:"permissions"`
-	Locale               types.String                   `tfsdk:"locale"`
-	DiscoverRegion       types.String                   `tfsdk:"discover_region"`
-	StreamingRegion      types.String                   `tfsdk:"streaming_region"`
-	OriginalLanguage     types.String                   `tfsdk:"original_language"`
-	WatchlistSyncMovies  types.Bool                     `tfsdk:"watchlist_sync_movies"`
-	WatchlistSyncTv      types.Bool                     `tfsdk:"watchlist_sync_tv"`
-	NotificationSettings *UserNotificationSettingsModel `tfsdk:"notification_settings"`
+	ID                    types.String                   `tfsdk:"id"`
+	Email                 types.String                   `tfsdk:"email"`
+	Username              types.String                   `tfsdk:"username"`
+	PlexID                types.String                   `tfsdk:"plex_id"`
+	Permissions           types.Int64                    `tfsdk:"permissions"`
+	Locale                types.String                   `tfsdk:"locale"`
+	DiscoverRegion        types.String                   `tfsdk:"discover_region"`
+	StreamingRegion       types.String                   `tfsdk:"streaming_region"`
+	OriginalLanguage      types.String                   `tfsdk:"original_language"`
+	MovieQuotaLimit       types.Int64                    `tfsdk:"movie_quota_limit"`
+	MovieQuotaDays        types.Int64                    `tfsdk:"movie_quota_days"`
+	TvQuotaLimit          types.Int64                    `tfsdk:"tv_quota_limit"`
+	TvQuotaDays           types.Int64                    `tfsdk:"tv_quota_days"`
+	GlobalMovieQuotaDays  types.Int64                    `tfsdk:"global_movie_quota_days"`
+	GlobalMovieQuotaLimit types.Int64                    `tfsdk:"global_movie_quota_limit"`
+	GlobalTvQuotaLimit    types.Int64                    `tfsdk:"global_tv_quota_limit"`
+	GlobalTvQuotaDays     types.Int64                    `tfsdk:"global_tv_quota_days"`
+	WatchlistSyncMovies   types.Bool                     `tfsdk:"watchlist_sync_movies"`
+	WatchlistSyncTv       types.Bool                     `tfsdk:"watchlist_sync_tv"`
+	NotificationSettings  *UserNotificationSettingsModel `tfsdk:"notification_settings"`
 }
 
 func NewUserResource() resource.Resource {
@@ -132,6 +140,42 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 			"original_language": schema.StringAttribute{
 				MarkdownDescription: "User's preferred original language.",
 				Optional:            true,
+				Computed:            true,
+			},
+			"movie_quota_limit": schema.Int64Attribute{
+				MarkdownDescription: "Maximum number of movie requests allowed for this user.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"movie_quota_days": schema.Int64Attribute{
+				MarkdownDescription: "Quota period in days for movie requests.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"tv_quota_limit": schema.Int64Attribute{
+				MarkdownDescription: "Maximum number of TV requests allowed for this user.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"tv_quota_days": schema.Int64Attribute{
+				MarkdownDescription: "Quota period in days for TV requests.",
+				Optional:            true,
+				Computed:            true,
+			},
+			"global_movie_quota_days": schema.Int64Attribute{
+				MarkdownDescription: "Current global movie quota period in days reported by Seerr.",
+				Computed:            true,
+			},
+			"global_movie_quota_limit": schema.Int64Attribute{
+				MarkdownDescription: "Current global movie quota limit reported by Seerr.",
+				Computed:            true,
+			},
+			"global_tv_quota_limit": schema.Int64Attribute{
+				MarkdownDescription: "Current global TV quota limit reported by Seerr.",
+				Computed:            true,
+			},
+			"global_tv_quota_days": schema.Int64Attribute{
+				MarkdownDescription: "Current global TV quota period in days reported by Seerr.",
 				Computed:            true,
 			},
 			"watchlist_sync_movies": schema.BoolAttribute{
@@ -247,11 +291,7 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	} else {
 		// Create Local User
-		createBody, _ := json.Marshal(map[string]any{
-			"email":       data.Email.ValueString(),
-			"username":    data.Username.ValueString(),
-			"permissions": data.Permissions.ValueInt64(),
-		})
+		createBody, _ := json.Marshal(buildLocalUserPayload(&data))
 
 		res, err := r.client.Request(ctx, "POST", "/api/v1/user", string(createBody), nil)
 		if err != nil {
@@ -313,6 +353,10 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	if data.ID.IsNull() || data.ID.IsUnknown() || data.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -326,9 +370,7 @@ func (r *UserResource) readUser(ctx context.Context, userID string, data *UserMo
 		return diags
 	}
 	if res.StatusCode == 404 {
-		// This is handled in Read by checking diags, but here we can just return
-		// Actually, Read needs to remove the resource.
-		// Let's return a specific error or handle it.
+		data.ID = types.StringNull()
 		return diags
 	}
 	if !StatusIsOK(res.StatusCode) {
@@ -347,15 +389,23 @@ func (r *UserResource) readUser(ctx context.Context, userID string, data *UserMo
 	data.DiscoverRegion = types.StringNull()
 	data.StreamingRegion = types.StringNull()
 	data.OriginalLanguage = types.StringNull()
+	data.MovieQuotaLimit = types.Int64Null()
+	data.MovieQuotaDays = types.Int64Null()
+	data.TvQuotaLimit = types.Int64Null()
+	data.TvQuotaDays = types.Int64Null()
+	data.GlobalMovieQuotaDays = types.Int64Null()
+	data.GlobalMovieQuotaLimit = types.Int64Null()
+	data.GlobalTvQuotaLimit = types.Int64Null()
+	data.GlobalTvQuotaDays = types.Int64Null()
 	data.WatchlistSyncMovies = types.BoolNull()
 	data.WatchlistSyncTv = types.BoolNull()
 	data.Permissions = types.Int64Null()
 
 	if email, ok := userMap["email"].(string); ok {
-		data.Email = types.StringValue(strings.ToLower(email))
+		data.Email = types.StringValue(email)
 	}
 	if username, ok := userMap["username"].(string); ok {
-		data.Username = types.StringValue(strings.ToLower(username))
+		data.Username = types.StringValue(username)
 	}
 	if p, ok := userMap["permissions"].(float64); ok {
 		data.Permissions = types.Int64Value(int64(p))
@@ -377,6 +427,30 @@ func (r *UserResource) readUser(ctx context.Context, userID string, data *UserMo
 			}
 			if v, ok := mainMap["originalLanguage"].(string); ok {
 				data.OriginalLanguage = types.StringValue(v)
+			}
+			if v, ok := int64ValueFromAny(mainMap["movieQuotaLimit"]); ok {
+				data.MovieQuotaLimit = types.Int64Value(v)
+			}
+			if v, ok := int64ValueFromAny(mainMap["movieQuotaDays"]); ok {
+				data.MovieQuotaDays = types.Int64Value(v)
+			}
+			if v, ok := int64ValueFromAny(mainMap["tvQuotaLimit"]); ok {
+				data.TvQuotaLimit = types.Int64Value(v)
+			}
+			if v, ok := int64ValueFromAny(mainMap["tvQuotaDays"]); ok {
+				data.TvQuotaDays = types.Int64Value(v)
+			}
+			if v, ok := int64ValueFromAny(mainMap["globalMovieQuotaDays"]); ok {
+				data.GlobalMovieQuotaDays = types.Int64Value(v)
+			}
+			if v, ok := int64ValueFromAny(mainMap["globalMovieQuotaLimit"]); ok {
+				data.GlobalMovieQuotaLimit = types.Int64Value(v)
+			}
+			if v, ok := int64ValueFromAny(mainMap["globalTvQuotaLimit"]); ok {
+				data.GlobalTvQuotaLimit = types.Int64Value(v)
+			}
+			if v, ok := int64ValueFromAny(mainMap["globalTvQuotaDays"]); ok {
+				data.GlobalTvQuotaDays = types.Int64Value(v)
 			}
 			if v, ok := mainMap["watchlistSyncMovies"].(bool); ok {
 				data.WatchlistSyncMovies = types.BoolValue(v)
@@ -411,10 +485,7 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	userID := data.ID.ValueString()
 
 	// Update Base Info
-	updateBody, _ := json.Marshal(map[string]any{
-		"username":    data.Username.ValueString(),
-		"permissions": data.Permissions.ValueInt64(),
-	})
+	updateBody, _ := json.Marshal(buildBaseUserUpdatePayload(&data))
 
 	res, err := r.client.Request(ctx, "PUT", "/api/v1/user/"+userID, string(updateBody), nil)
 	if err != nil {
@@ -519,30 +590,10 @@ func (r *UserResource) ImportState(ctx context.Context, req resource.ImportState
 }
 
 func (r *UserResource) updateMainSettings(ctx context.Context, userID string, data *UserModel) error {
-	payload := map[string]any{
-		"username": data.Username.ValueString(),
-		"email":    data.Email.ValueString(),
+	payload, err := r.buildMainSettingsPayload(ctx, userID, data)
+	if err != nil {
+		return err
 	}
-
-	if !data.Locale.IsNull() && !data.Locale.IsUnknown() {
-		payload["locale"] = data.Locale.ValueString()
-	}
-	if !data.DiscoverRegion.IsNull() && !data.DiscoverRegion.IsUnknown() {
-		payload["discoverRegion"] = data.DiscoverRegion.ValueString()
-	}
-	if !data.StreamingRegion.IsNull() && !data.StreamingRegion.IsUnknown() {
-		payload["streamingRegion"] = data.StreamingRegion.ValueString()
-	}
-	if !data.OriginalLanguage.IsNull() && !data.OriginalLanguage.IsUnknown() {
-		payload["originalLanguage"] = data.OriginalLanguage.ValueString()
-	}
-	if !data.WatchlistSyncMovies.IsNull() && !data.WatchlistSyncMovies.IsUnknown() {
-		payload["watchlistSyncMovies"] = data.WatchlistSyncMovies.ValueBool()
-	}
-	if !data.WatchlistSyncTv.IsNull() && !data.WatchlistSyncTv.IsUnknown() {
-		payload["watchlistSyncTv"] = data.WatchlistSyncTv.ValueBool()
-	}
-
 	body, _ := json.Marshal(payload)
 	path := fmt.Sprintf("/api/v1/user/%s/settings/main", userID)
 	res, err := r.client.Request(ctx, "POST", path, string(body), nil)
@@ -574,37 +625,10 @@ func (r *UserResource) updateUserPermissions(ctx context.Context, userID string,
 }
 
 func (r *UserResource) updateNotificationSettings(ctx context.Context, userID string, settings *UserNotificationSettingsModel) error {
-	payload := map[string]any{
-		"emailEnabled":             settings.EmailEnabled.ValueBool(),
-		"pgpKey":                   settings.PGPKey.ValueString(),
-		"discordEnabled":           settings.DiscordEnabled.ValueBool(),
-		"discordId":                settings.DiscordID.ValueString(),
-		"pushbulletAccessToken":    settings.PushbulletAccessToken.ValueString(),
-		"pushoverApplicationToken": settings.PushoverApplicationToken.ValueString(),
-		"pushoverUserKey":          settings.PushoverUserKey.ValueString(),
-		"pushoverSound":            settings.PushoverSound.ValueString(),
-		"telegramEnabled":          settings.TelegramEnabled.ValueBool(),
-		"telegramBotUsername":      settings.TelegramBotUsername.ValueString(),
-		"telegramChatId":           settings.TelegramChatID.ValueString(),
-		"telegramMessageThreadId":  settings.TelegramMessageThreadID.ValueString(),
-		"telegramSendSilently":     settings.TelegramSendSilently.ValueBool(),
+	payload, err := r.buildNotificationSettingsPayload(ctx, userID, settings)
+	if err != nil {
+		return err
 	}
-
-	if settings.NotificationTypes != nil {
-		payload["notificationTypes"] = map[string]any{
-			"discord":    settings.NotificationTypes.Discord.ValueInt64(),
-			"email":      settings.NotificationTypes.Email.ValueInt64(),
-			"pushbullet": settings.NotificationTypes.Pushbullet.ValueInt64(),
-			"pushover":   settings.NotificationTypes.Pushover.ValueInt64(),
-			"slack":      settings.NotificationTypes.Slack.ValueInt64(),
-			"telegram":   settings.NotificationTypes.Telegram.ValueInt64(),
-			"webhook":    settings.NotificationTypes.Webhook.ValueInt64(),
-			"webpush":    settings.NotificationTypes.Webpush.ValueInt64(),
-			"gotify":     settings.NotificationTypes.Gotify.ValueInt64(),
-			"ntfy":       settings.NotificationTypes.Ntfy.ValueInt64(),
-		}
-	}
-
 	body, _ := json.Marshal(payload)
 	path := fmt.Sprintf("/api/v1/user/%s/settings/notifications", userID)
 	res, err := r.client.Request(ctx, "POST", path, string(body), nil)
@@ -659,6 +683,11 @@ func (r *UserResource) mapNotificationSettings(notifMap map[string]any) *UserNot
 	if v, ok := notifMap["telegramMessageThreadId"].(string); ok {
 		settings.TelegramMessageThreadID = types.StringValue(v)
 	}
+	if v, ok := notifMap["webPushEnabled"].(bool); ok {
+		settings.WebpushEnabled = types.BoolValue(v)
+	} else if v, ok := notifMap["webpushEnabled"].(bool); ok {
+		settings.WebpushEnabled = types.BoolValue(v)
+	}
 
 	if typesMap, ok := notifMap["notificationTypes"].(map[string]any); ok {
 		settings.NotificationTypes = &UserNotificationTypesModel{
@@ -678,6 +707,91 @@ func (r *UserResource) mapNotificationSettings(notifMap map[string]any) *UserNot
 	return settings
 }
 
+func (r *UserResource) buildMainSettingsPayload(ctx context.Context, userID string, data *UserModel) (map[string]any, error) {
+	current, err := r.fetchUserSettings(ctx, fmt.Sprintf("/api/v1/user/%s/settings/main", userID))
+	if err != nil {
+		return nil, err
+	}
+
+	payload := copyMap(current)
+	payload["username"] = data.Username.ValueString()
+	payload["email"] = data.Email.ValueString()
+
+	setOptionalString(payload, "locale", data.Locale)
+	setOptionalString(payload, "discoverRegion", data.DiscoverRegion)
+	setOptionalString(payload, "streamingRegion", data.StreamingRegion)
+	setOptionalString(payload, "originalLanguage", data.OriginalLanguage)
+	setOptionalInt64(payload, "movieQuotaLimit", data.MovieQuotaLimit)
+	setOptionalInt64(payload, "movieQuotaDays", data.MovieQuotaDays)
+	setOptionalInt64(payload, "tvQuotaLimit", data.TvQuotaLimit)
+	setOptionalInt64(payload, "tvQuotaDays", data.TvQuotaDays)
+	setOptionalBool(payload, "watchlistSyncMovies", data.WatchlistSyncMovies)
+	setOptionalBool(payload, "watchlistSyncTv", data.WatchlistSyncTv)
+
+	return payload, nil
+}
+
+func (r *UserResource) buildNotificationSettingsPayload(ctx context.Context, userID string, settings *UserNotificationSettingsModel) (map[string]any, error) {
+	current, err := r.fetchUserSettings(ctx, fmt.Sprintf("/api/v1/user/%s/settings/notifications", userID))
+	if err != nil {
+		return nil, err
+	}
+
+	payload := copyMap(current)
+	setOptionalBool(payload, "emailEnabled", settings.EmailEnabled)
+	setOptionalString(payload, "pgpKey", settings.PGPKey)
+	setOptionalBool(payload, "discordEnabled", settings.DiscordEnabled)
+	setOptionalString(payload, "discordId", settings.DiscordID)
+	setOptionalString(payload, "pushbulletAccessToken", settings.PushbulletAccessToken)
+	setOptionalString(payload, "pushoverApplicationToken", settings.PushoverApplicationToken)
+	setOptionalString(payload, "pushoverUserKey", settings.PushoverUserKey)
+	setOptionalString(payload, "pushoverSound", settings.PushoverSound)
+	setOptionalBool(payload, "telegramEnabled", settings.TelegramEnabled)
+	setOptionalString(payload, "telegramBotUsername", settings.TelegramBotUsername)
+	setOptionalString(payload, "telegramChatId", settings.TelegramChatID)
+	setOptionalString(payload, "telegramMessageThreadId", settings.TelegramMessageThreadID)
+	setOptionalBool(payload, "telegramSendSilently", settings.TelegramSendSilently)
+
+	if settings.NotificationTypes != nil {
+		existingTypes := map[string]any{}
+		if rawExisting, ok := payload["notificationTypes"].(map[string]any); ok {
+			existingTypes = copyMap(rawExisting)
+		}
+
+		setOptionalInt64(existingTypes, "discord", settings.NotificationTypes.Discord)
+		setOptionalInt64(existingTypes, "email", settings.NotificationTypes.Email)
+		setOptionalInt64(existingTypes, "pushbullet", settings.NotificationTypes.Pushbullet)
+		setOptionalInt64(existingTypes, "pushover", settings.NotificationTypes.Pushover)
+		setOptionalInt64(existingTypes, "slack", settings.NotificationTypes.Slack)
+		setOptionalInt64(existingTypes, "telegram", settings.NotificationTypes.Telegram)
+		setOptionalInt64(existingTypes, "webhook", settings.NotificationTypes.Webhook)
+		setOptionalInt64(existingTypes, "webpush", settings.NotificationTypes.Webpush)
+		setOptionalInt64(existingTypes, "gotify", settings.NotificationTypes.Gotify)
+		setOptionalInt64(existingTypes, "ntfy", settings.NotificationTypes.Ntfy)
+
+		payload["notificationTypes"] = existingTypes
+	}
+
+	return payload, nil
+}
+
+func (r *UserResource) fetchUserSettings(ctx context.Context, endpoint string) (map[string]any, error) {
+	res, err := r.client.Request(ctx, "GET", endpoint, "", nil)
+	if err != nil {
+		return nil, err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return nil, fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		return nil, err
+	}
+
+	return decoded, nil
+}
+
 func (r *UserResource) toInt64(v any) types.Int64 {
 	switch val := v.(type) {
 	case float64:
@@ -689,4 +803,21 @@ func (r *UserResource) toInt64(v any) types.Int64 {
 		return types.Int64Value(i)
 	}
 	return types.Int64Null()
+}
+
+func buildLocalUserPayload(data *UserModel) map[string]any {
+	payload := map[string]any{
+		"email":    data.Email.ValueString(),
+		"username": data.Username.ValueString(),
+	}
+	setOptionalInt64(payload, "permissions", data.Permissions)
+	return payload
+}
+
+func buildBaseUserUpdatePayload(data *UserModel) map[string]any {
+	payload := map[string]any{
+		"username": data.Username.ValueString(),
+	}
+	setOptionalInt64(payload, "permissions", data.Permissions)
+	return payload
 }

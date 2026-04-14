@@ -266,6 +266,21 @@ func (r *JellyfinSettingsResource) readJellyfinSettings(ctx context.Context, dat
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
 
+	r.applyDecodedJellyfinSettings(data, decoded)
+	data.ID = types.StringValue("jellyfin")
+	return nil
+}
+
+func (r *JellyfinSettingsResource) applyDecodedJellyfinSettings(data *JellyfinSettingsModel, decoded map[string]any) {
+	previousAPIKey := data.APIKey
+
+	data.Name = types.StringNull()
+	data.UseSSL = types.BoolNull()
+	data.URLBase = types.StringNull()
+	data.ExternalHostname = types.StringNull()
+	data.JellyfinForgotPasswordURL = types.StringNull()
+	data.ServerID = types.StringNull()
+
 	if v, ok := decoded["name"].(string); ok {
 		data.Name = types.StringValue(v)
 	}
@@ -293,7 +308,7 @@ func (r *JellyfinSettingsResource) readJellyfinSettings(ctx context.Context, dat
 	if v, ok := decoded["serverId"].(string); ok {
 		data.ServerID = types.StringValue(v)
 	}
-
-	data.ID = types.StringValue("jellyfin")
-	return nil
+	if data.APIKey.IsNull() && !previousAPIKey.IsNull() && !previousAPIKey.IsUnknown() {
+		data.APIKey = previousAPIKey
+	}
 }

@@ -246,6 +246,20 @@ func (r *TautulliSettingsResource) readTautulliSettings(ctx context.Context, dat
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
 
+	r.applyDecodedTautulliSettings(data, decoded)
+	data.ID = types.StringValue("tautulli")
+	return nil
+}
+
+func (r *TautulliSettingsResource) applyDecodedTautulliSettings(data *TautulliSettingsModel, decoded map[string]any) {
+	previousAPIKey := data.APIKey
+
+	data.Hostname = types.StringNull()
+	data.Port = types.Int64Null()
+	data.UseSSL = types.BoolNull()
+	data.URLBase = types.StringNull()
+	data.ExternalURL = types.StringNull()
+
 	if v, ok := decoded["hostname"].(string); ok {
 		data.Hostname = types.StringValue(v)
 	}
@@ -264,7 +278,7 @@ func (r *TautulliSettingsResource) readTautulliSettings(ctx context.Context, dat
 	if v, ok := decoded["externalUrl"].(string); ok {
 		data.ExternalURL = types.StringValue(v)
 	}
-
-	data.ID = types.StringValue("tautulli")
-	return nil
+	if data.APIKey.IsNull() && !previousAPIKey.IsNull() && !previousAPIKey.IsUnknown() {
+		data.APIKey = previousAPIKey
+	}
 }

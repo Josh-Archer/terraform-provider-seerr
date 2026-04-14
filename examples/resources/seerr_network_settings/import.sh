@@ -1,0 +1,1 @@
+terraform import seerr_network_settings.example network

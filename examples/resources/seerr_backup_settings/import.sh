@@ -1,0 +1,1 @@
+terraform import seerr_backup_settings.example backups

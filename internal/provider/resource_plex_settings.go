@@ -206,6 +206,15 @@ func (r *PlexSettingsResource) readPlexSettings(ctx context.Context, data *PlexS
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
 
+	r.applyDecodedPlexSettings(data, decoded)
+	data.ID = types.StringValue("plex")
+	return nil
+}
+
+func (r *PlexSettingsResource) applyDecodedPlexSettings(data *PlexSettingsModel, decoded map[string]any) {
+	data.Name = types.StringNull()
+	data.UseSSL = types.BoolNull()
+
 	if v, ok := decoded["name"].(string); ok {
 		data.Name = types.StringValue(v)
 	}
@@ -218,7 +227,4 @@ func (r *PlexSettingsResource) readPlexSettings(ctx context.Context, data *PlexS
 	if v, ok := decoded["useSsl"].(bool); ok {
 		data.UseSSL = types.BoolValue(v)
 	}
-
-	data.ID = types.StringValue("plex")
-	return nil
 }

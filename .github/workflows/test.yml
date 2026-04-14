@@ -5,7 +5,19 @@ on:
     branches:
       - main
   pull_request:
+  schedule:
+    - cron: "0 6 * * *"
   workflow_dispatch:
+    inputs:
+      integration_mode:
+        description: Which integration coverage to run
+        required: true
+        default: stable
+        type: choice
+        options:
+          - stable
+          - full
+          - both
 
 permissions:
   contents: read
@@ -22,81 +34,112 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: go mod download
-      - name: Verify generated docs and formatting are up to date
-        run: bash ./tools/check-generated.sh
-      - run: go build ./...
-      - run: go test ./...
+      - name: Run fast merge gate
+        run: bash ./scripts/test-all-locally.sh
+        env:
+          SEERR_RUN_LINT: "false"
+          SEERR_RUN_INTEGRATION: "false"
       - name: Run linters
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
         with:
           version: v2.5.0
 
-  tofu-test:
-    name: OpenTofu Integration Tests
+  tofu-test-stable:
+    name: OpenTofu Stable Integration (${{ matrix.tofu_version }})
     runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 15
+    if: github.event_name != 'schedule' && (github.event_name != 'workflow_dispatch' || inputs.integration_mode != 'full')
+    strategy:
+      fail-fast: false
+      matrix:
+        tofu_version:
+          - 1.8.0
     env:
       USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED }}
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
-      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE }}
+      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.1.1' }}
+      SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: go.mod
           cache: true
-      - name: Build Provider
-        run: go build -v -o ${{ github.workspace }}/terraform-provider-seerr
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
         with:
-          tofu_version: 1.6.0
-      - name: Setup Provider Mirror
-        run: |
-          MIRROR_PATH="${{ github.workspace }}/provider-mirror/registry.opentofu.org/josh-archer/seerr/99.99.99/linux_amd64"
-          mkdir -p "$MIRROR_PATH"
-          cp terraform-provider-seerr "$MIRROR_PATH/"
-      - name: Setup Seerr Test Target
+          tofu_version: ${{ matrix.tofu_version }}
+      - name: Use legacy external Seerr target when configured
         shell: bash
         run: |
           if [[ -n "${LEGACY_SEERR_URL:-}" ]] && [[ "${USE_SELF_HOSTED:-false}" == "false" ]]; then
             echo "Using Legacy External Seerr Instance"
             echo "SEERR_URL=${LEGACY_SEERR_URL}" >> "$GITHUB_ENV"
             echo "SEERR_API_KEY=${LEGACY_SEERR_API_KEY}" >> "$GITHUB_ENV"
-          else
-            echo "Setting up local Docker Compose Seerr environment..."
-            bash ./scripts/ci-docker-up.sh >> "$GITHUB_ENV"
-            echo "TEST_ENV_CREATED=true" >> "$GITHUB_ENV"
           fi
-      - name: Initialize OpenTofu Test Modules
-        working-directory: tests
+      - name: OpenTofu stable suite
+        shell: bash
+        run: bash ./scripts/test-integration.sh
+        env:
+          SEERR_TEST_SUITE: stable
+      - name: Upload integration diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stable-integration-artifacts-${{ matrix.tofu_version }}
+          path: test-artifacts/
+          if-no-files-found: ignore
+
+  tofu-test-full:
+    name: OpenTofu Full Compatibility (${{ matrix.tofu_version }})
+    runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
+    timeout-minutes: 20
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.integration_mode != 'stable')
+    strategy:
+      fail-fast: false
+      matrix:
+        tofu_version:
+          - 1.8.0
+    env:
+      USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED }}
+      LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
+      LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
+      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.1.1' }}
+      SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration-full
+      SEERR_TEST_SUITE: all
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ matrix.tofu_version }}
+      - name: Use legacy external Seerr target when configured
         shell: bash
         run: |
-          rm -f .terraform.lock.hcl
-          tofu init -plugin-dir=${{ github.workspace }}/provider-mirror
-      - name: OpenTofu Test
-        working-directory: tests
-        shell: bash
-        run: |
-          if [[ -z "${SEERR_URL:-}" ]]; then
-            echo "Skipping integration tests: SEERR_URL not set"
-            exit 0
+          if [[ -n "${LEGACY_SEERR_URL:-}" ]] && [[ "${USE_SELF_HOSTED:-false}" == "false" ]]; then
+            echo "Using Legacy External Seerr Instance"
+            echo "SEERR_URL=${LEGACY_SEERR_URL}" >> "$GITHUB_ENV"
+            echo "SEERR_API_KEY=${LEGACY_SEERR_API_KEY}" >> "$GITHUB_ENV"
           fi
-          tofu test -var="url=$SEERR_URL" -var="api_key=$SEERR_API_KEY"
-      - name: Collect Seerr Diagnostics
-        if: failure() && env.TEST_ENV_CREATED == 'true'
+      - name: OpenTofu full suite
         shell: bash
-        run: |
-          cd tests && { docker compose logs || docker-compose logs; }
-      - name: Tear Down Seerr Test Target
-        if: always() && env.TEST_ENV_CREATED == 'true'
-        shell: bash
-        run: bash ./scripts/ci-docker-down.sh
+        run: bash ./scripts/test-integration.sh
+      - name: Upload full-suite diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-integration-artifacts-${{ matrix.tofu_version }}
+          path: test-artifacts/
+          if-no-files-found: ignore
 
   auto-tag:
     name: Auto Tag
-    needs: [build-test, tofu-test]
+    needs: [build-test, tofu-test-stable]
     permissions:
       contents: write
       actions: write
@@ -114,9 +157,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           create_annotated_tag: true
           tag_prefix: v
-
-      - name: Trigger release workflow for new tag
-        if: steps.tag_version.outputs.new_tag
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run release.yml --ref ${{ steps.tag_version.outputs.new_tag }}

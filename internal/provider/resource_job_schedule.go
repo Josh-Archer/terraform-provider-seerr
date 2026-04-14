@@ -21,9 +21,10 @@ type JobScheduleResource struct {
 }
 
 type JobScheduleModel struct {
-	ID       types.String `tfsdk:"id"`
-	JobID    types.String `tfsdk:"job_id"`
-	Schedule types.String `tfsdk:"schedule"`
+	ID               types.String `tfsdk:"id"`
+	JobID            types.String `tfsdk:"job_id"`
+	Schedule         types.String `tfsdk:"schedule"`
+	PreviousSchedule types.String `tfsdk:"previous_schedule"`
 }
 
 func NewJobScheduleResource() resource.Resource { return &JobScheduleResource{} }
@@ -53,6 +54,13 @@ func (r *JobScheduleResource) Schema(_ context.Context, _ resource.SchemaRequest
 				MarkdownDescription: "The cron expression for the job schedule.",
 				Required:            true,
 			},
+			"previous_schedule": schema.StringAttribute{
+				MarkdownDescription: "The schedule observed before Terraform first managed this job. Used to restore the original schedule on delete.",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 		},
 	}
 }
@@ -78,6 +86,11 @@ func (r *JobScheduleResource) Create(ctx context.Context, req resource.CreateReq
 
 	jobID := data.JobID.ValueString()
 	schedule := data.Schedule.ValueString()
+	previousSchedule, err := r.fetchCurrentSchedule(ctx, jobID)
+	if err != nil {
+		resp.Diagnostics.AddError("Create Failed", err.Error())
+		return
+	}
 
 	payload := map[string]string{
 		"schedule": schedule,
@@ -102,9 +115,13 @@ func (r *JobScheduleResource) Create(ctx context.Context, req resource.CreateReq
 
 	// We set ID to JobID
 	data.ID = types.StringValue(jobID)
+	data.PreviousSchedule = types.StringValue(previousSchedule)
 
-	// Since POST is typically fire-and-forget for schedules and returns simple confirmation or the job object itself,
-	// let's do a Read to ensure state matches exactly what Seerr returns.
+	if err := r.refreshJobSchedule(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Create Failed", err.Error())
+		return
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -143,8 +160,11 @@ func (r *JobScheduleResource) Read(ctx context.Context, req resource.ReadRequest
 	for _, job := range jobsList {
 		if jID, ok := job["id"].(string); ok && jID == jobID {
 			foundJob = true
-			if sched, ok := job["schedule"].(string); ok {
+			if sched, ok := jobScheduleFromJob(job); ok {
 				data.Schedule = types.StringValue(sched)
+				if data.PreviousSchedule.IsNull() || data.PreviousSchedule.IsUnknown() || data.PreviousSchedule.ValueString() == "" {
+					data.PreviousSchedule = types.StringValue(sched)
+				}
 			}
 			break
 		}
@@ -159,7 +179,6 @@ func (r *JobScheduleResource) Read(ctx context.Context, req resource.ReadRequest
 }
 
 func (r *JobScheduleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Re-use Create logic for POST /api/v1/settings/jobs/{job_id}/schedule since it just sets the schedule
 	var data JobScheduleModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -190,15 +209,106 @@ func (r *JobScheduleResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
+	if err := r.refreshJobSchedule(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Update Failed", err.Error())
+		return
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (r *JobScheduleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// There is no concept of "deleting" a job schedule in Seerr, it just resets to default if empty or we keep it.
-	// Since we can't easily fetch default cleanly without a fresh instance, we will just leave the job schedule as-is on Seerr's side.
-	// The resource will be removed from Terraform state automatically.
+	var data JobScheduleModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if data.PreviousSchedule.IsNull() || data.PreviousSchedule.IsUnknown() || data.PreviousSchedule.ValueString() == "" {
+		return
+	}
+	if err := r.restorePreviousSchedule(ctx, &data); err != nil {
+		resp.Diagnostics.AddError("Delete Failed", err.Error())
+	}
 }
 
 func (r *JobScheduleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *JobScheduleResource) refreshJobSchedule(ctx context.Context, data *JobScheduleModel) error {
+	jobID := data.JobID.ValueString()
+	if jobID == "" {
+		jobID = data.ID.ValueString()
+		data.JobID = types.StringValue(jobID)
+	}
+
+	schedule, err := r.fetchCurrentSchedule(ctx, jobID)
+	if err != nil {
+		return err
+	}
+
+	data.ID = types.StringValue(jobID)
+	data.Schedule = types.StringValue(schedule)
+	if data.PreviousSchedule.IsNull() || data.PreviousSchedule.IsUnknown() || data.PreviousSchedule.ValueString() == "" {
+		data.PreviousSchedule = types.StringValue(schedule)
+	}
+
+	return nil
+}
+
+func (r *JobScheduleResource) fetchCurrentSchedule(ctx context.Context, jobID string) (string, error) {
+	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/jobs", "", nil)
+	if err != nil {
+		return "", err
+	}
+
+	if !StatusIsOK(res.StatusCode) {
+		return "", fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+
+	var jobsList []map[string]any
+	if err := json.Unmarshal(res.Body, &jobsList); err != nil {
+		return "", fmt.Errorf("failed to decode response as list of jobs: %s", err)
+	}
+
+	for _, job := range jobsList {
+		if jID, ok := job["id"].(string); ok && jID == jobID {
+			if schedule, ok := jobScheduleFromJob(job); ok {
+				return schedule, nil
+			}
+			return "", fmt.Errorf("job %q did not include a schedule", jobID)
+		}
+	}
+
+	return "", fmt.Errorf("job %q not found", jobID)
+}
+
+func jobScheduleFromJob(job map[string]any) (string, bool) {
+	if sched, ok := job["schedule"].(string); ok && sched != "" {
+		return sched, true
+	}
+	if sched, ok := job["cronSchedule"].(string); ok && sched != "" {
+		return sched, true
+	}
+	return "", false
+}
+
+func (r *JobScheduleResource) restorePreviousSchedule(ctx context.Context, data *JobScheduleModel) error {
+	payload := map[string]string{
+		"schedule": data.PreviousSchedule.ValueString(),
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %s", err)
+	}
+
+	endpoint := fmt.Sprintf("/api/v1/settings/jobs/%s/schedule", data.JobID.ValueString())
+	res, err := r.client.Request(ctx, "POST", endpoint, string(body), nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+	return nil
 }

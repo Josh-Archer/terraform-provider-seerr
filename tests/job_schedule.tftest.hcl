@@ -1,9 +1,14 @@
+variables {
+  fixture_job_id = ""
+}
+
 run "job_schedule_lifecycle" {
-  command = plan
+  command = apply
 
   variables {
-    job_id   = "plex-sync"
-    schedule = "0 0 * * *"
+    fixture_job_id = var.fixture_job_id
+    job_id         = "plex-sync"
+    schedule       = "0 0 * * *"
   }
 
   module {
@@ -11,8 +16,8 @@ run "job_schedule_lifecycle" {
   }
 
   assert {
-    condition     = seerr_job_schedule.test.job_id == var.job_id
-    error_message = "job_id did not match expected value"
+    condition     = output.effective_job_id != ""
+    error_message = "job schedule test did not select an available job id"
   }
 
   assert {
@@ -22,11 +27,12 @@ run "job_schedule_lifecycle" {
 }
 
 run "job_schedule_update" {
-  command = plan
+  command = apply
 
   variables {
-    job_id   = "plex-sync"
-    schedule = "0 1 * * *"
+    fixture_job_id = var.fixture_job_id
+    job_id         = "plex-sync"
+    schedule       = "0 1 * * *"
   }
 
   module {
@@ -34,8 +40,8 @@ run "job_schedule_update" {
   }
 
   assert {
-    condition     = seerr_job_schedule.test.job_id == var.job_id
-    error_message = "job_id did not match expected value"
+    condition     = output.effective_job_id != ""
+    error_message = "job schedule update did not select an available job id"
   }
 
   assert {

@@ -35,6 +35,29 @@ func TestBackupSettingsApplyDecodedSettings(t *testing.T) {
 	}
 }
 
+func TestBackupSettingsApplyDecodedSettingsClearsMissingValues(t *testing.T) {
+	r := &BackupSettingsResource{}
+	data := BackupSettingsModel{
+		Schedule:    types.StringValue("0 0 * * *"),
+		Retention:   types.Int64Value(10),
+		StoragePath: types.StringValue("/backups"),
+	}
+
+	r.applyDecodedSettings(&data, map[string]any{
+		"schedule": "0 1 * * *",
+	})
+
+	if got := data.Schedule.ValueString(); got != "0 1 * * *" {
+		t.Fatalf("expected schedule 0 1 * * *, got %q", got)
+	}
+	if !data.Retention.IsNull() {
+		t.Fatalf("expected retention to become null when omitted from response")
+	}
+	if !data.StoragePath.IsNull() {
+		t.Fatalf("expected storage_path to become null when omitted from response")
+	}
+}
+
 func TestBackupSettingsRefreshState(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

@@ -235,6 +235,25 @@ func (r *MainSettingsResource) buildPayload(data *MainSettingsModel) map[string]
 }
 
 func (r *MainSettingsResource) applyDecodedSettings(data *MainSettingsModel, decoded map[string]any) {
+	data.AppTitle = types.StringNull()
+	data.ApplicationURL = types.StringNull()
+	data.TrustProxy = types.BoolNull()
+	data.CSRFProtection = types.BoolNull()
+	data.ImageProxy = types.BoolNull()
+	data.Locale = types.StringNull()
+	data.Region = types.StringNull()
+	data.OriginalLanguage = types.StringNull()
+	data.HideAvailable = types.BoolNull()
+	data.PartialRequests = types.BoolNull()
+	data.LocalLogin = types.BoolNull()
+	data.NewPlexLogin = types.BoolNull()
+	data.PlexLogin = types.BoolNull()
+	data.MovieRequestsEnabled = types.BoolNull()
+	data.SeriesRequestsEnabled = types.BoolNull()
+	data.EnableReportAnIssue = types.BoolNull()
+	data.MovieRequestLimit = types.Int64Null()
+	data.SeriesRequestLimit = types.Int64Null()
+
 	if v, ok := decoded["appTitle"].(string); ok {
 		data.AppTitle = types.StringValue(v)
 	}
