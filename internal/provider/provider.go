@@ -168,10 +168,12 @@ func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewTautulliSettingsResource,
 		NewUserSettingsPermissionsResource,
 		NewRequestResource,
+		NewRequestRetryResource,
 		NewIssueResource,
 		NewBackupSettingsResource,
 		NewUserInvitationResource,
 		NewNetworkSettingsResource,
+		NewMetadataSettingsResource,
 		NewOverrideRuleResource,
 		NewBlocklistResource,
 	}
@@ -216,8 +218,11 @@ func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewBackupSettingsDataSource,
 		NewUserInvitationsDataSource,
 		NewNetworkSettingsDataSource,
+		NewMetadataSettingsDataSource,
 		NewOverrideRuleDataSource,
 		NewBlocklistDataSource,
+		NewMediaDataSource,
+		NewDiscoverDataSource,
 	}
 }
 

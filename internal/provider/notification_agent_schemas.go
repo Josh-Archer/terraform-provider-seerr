@@ -1,8 +1,10 @@
 package provider
 
 import (
+	setvalidator "github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	dschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -209,9 +211,12 @@ func notificationAgentDataSourceOptionAttributes() map[string]dschema.Attribute 
 func notificationAgentResourceEventAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"notification_types": schema.SetAttribute{
-			Optional:            true,
-			Computed:            true,
-			ElementType:         types.StringType,
+			Optional:    true,
+			Computed:    true,
+			ElementType: types.StringType,
+			Validators: []validator.Set{
+				setvalidator.ValueStringsAre(notificationEventTypeValidator()),
+			},
 			MarkdownDescription: "Set of notification event types. Valid values include `MEDIA_PENDING`, `MEDIA_APPROVED`, `MEDIA_AVAILABLE`, `MEDIA_FAILED`, `MEDIA_DECLINED`, `MEDIA_AUTO_APPROVED`, `ISSUE_CREATED`, `ISSUE_COMMENT`, `ISSUE_RESOLVED`, `ISSUE_REOPENED`, `MEDIA_AUTO_REQUESTED`.",
 		},
 	}

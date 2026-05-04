@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -116,8 +117,12 @@ func (r *RequestResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				},
 			},
 			"status": schema.Int64Attribute{
-				MarkdownDescription: "The status of the request (1: Pending, 2: Approved, 3: Declined).",
+				MarkdownDescription: "The desired status of the request (1: Pending, 2: Approved, 3: Declined).",
+				Optional:            true,
 				Computed:            true,
+				Validators: []validator.Int64{
+					int64validator.OneOf(1, 2, 3),
+				},
 			},
 		},
 	}
@@ -141,6 +146,7 @@ func (r *RequestResource) Create(ctx context.Context, req resource.CreateRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	desiredStatus := data.Status
 
 	payload := map[string]any{
 		"mediaType": data.MediaType.ValueString(),
@@ -189,6 +195,16 @@ func (r *RequestResource) Create(ctx context.Context, req resource.CreateRequest
 	data.ID = types.StringValue(extractedID)
 
 	diags := r.readRequest(ctx, extractedID, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if err := r.applyRequestStatus(ctx, extractedID, desiredStatus); err != nil {
+		resp.Diagnostics.AddError("Update Status Failed", err.Error())
+		return
+	}
+	diags = r.readRequest(ctx, extractedID, &data)
 	resp.Diagnostics.Append(diags...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -296,6 +312,11 @@ func (r *RequestResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	if err := r.applyRequestStatus(ctx, data.ID.ValueString(), data.Status); err != nil {
+		resp.Diagnostics.AddError("Update Status Failed", err.Error())
+		return
+	}
+
 	diags := r.readRequest(ctx, data.ID.ValueString(), &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -324,4 +345,35 @@ func (r *RequestResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 func (r *RequestResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *RequestResource) applyRequestStatus(ctx context.Context, requestID string, status types.Int64) error {
+	if status.IsNull() || status.IsUnknown() {
+		return nil
+	}
+	statusPath, ok := requestStatusPath(status.ValueInt64())
+	if !ok {
+		return fmt.Errorf("unsupported request status %d; valid values are 1 (pending), 2 (approved), and 3 (declined)", status.ValueInt64())
+	}
+	res, err := r.client.Request(ctx, "POST", fmt.Sprintf("/api/v1/request/%s/%s", requestID, statusPath), "", nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+	return nil
+}
+
+func requestStatusPath(status int64) (string, bool) {
+	switch status {
+	case 1:
+		return "pending", true
+	case 2:
+		return "approve", true
+	case 3:
+		return "decline", true
+	default:
+		return "", false
+	}
 }

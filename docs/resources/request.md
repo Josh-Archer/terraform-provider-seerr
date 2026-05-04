@@ -34,13 +34,13 @@ resource "seerr_request" "example" {
 - `root_folder` (String) Override the root folder for the request.
 - `seasons` (List of Number) List of season numbers to request (TV only).
 - `server_id` (Number) Override the server ID for the request.
+- `status` (Number) The desired status of the request (1: Pending, 2: Approved, 3: Declined).
 - `user_id` (Number) The ID of the user making the request (defaults to current user).
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
 - `seerr_media_id` (Number) The Seerr-internal media ID created or associated with the request.
-- `status` (Number) The status of the request (1: Pending, 2: Approved, 3: Declined).
 
 ## Import
 

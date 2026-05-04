@@ -38,7 +38,7 @@ func (d *APIRequestDataSource) Schema(_ context.Context, _ datasource.SchemaRequ
 		MarkdownDescription: "Execute arbitrary Seerr API requests and return the response.",
 		Attributes: map[string]schema.Attribute{
 			"path": schema.StringAttribute{
-				MarkdownDescription: "Endpoint path or absolute URL.",
+				MarkdownDescription: "Endpoint path or same-origin absolute URL.",
 				Required:            true,
 			},
 			"method": schema.StringAttribute{

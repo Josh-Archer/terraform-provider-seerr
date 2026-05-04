@@ -33,7 +33,7 @@ resource "seerr_api_object" "main_settings" {
 
 ### Required
 
-- `path` (String) Endpoint path or absolute URL, for example `/api/v1/settings/main`.
+- `path` (String) Endpoint path or same-origin absolute URL, for example `/api/v1/settings/main`.
 
 ### Optional
 

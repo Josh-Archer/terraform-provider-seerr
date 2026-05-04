@@ -59,7 +59,7 @@ func (r *APIObjectResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				},
 			},
 			"path": schema.StringAttribute{
-				MarkdownDescription: "Endpoint path or absolute URL, for example `/api/v1/settings/main`.",
+				MarkdownDescription: "Endpoint path or same-origin absolute URL, for example `/api/v1/settings/main`.",
 				Required:            true,
 			},
 			"headers": schema.MapAttribute{

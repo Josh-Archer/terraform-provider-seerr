@@ -42,6 +42,41 @@ func TestClientRequest(t *testing.T) {
 	}
 }
 
+func TestClientRequestAllowsSameOriginAbsoluteURL(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/settings/main" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	base, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second)
+	if _, err := client.Request(context.Background(), "GET", srv.URL+"/api/v1/settings/main", "", nil); err != nil {
+		t.Fatalf("expected same-origin absolute URL to succeed: %v", err)
+	}
+}
+
+func TestClientRequestRejectsCrossOriginAbsoluteURL(t *testing.T) {
+	base, err := url.Parse("https://seerr.example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second)
+	_, err = client.Request(context.Background(), "GET", "https://example.invalid/api/v1/settings/main", "", nil)
+	if err == nil {
+		t.Fatal("expected cross-origin absolute URL to be rejected")
+	}
+	if !strings.Contains(err.Error(), "absolute URLs must target") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestClientSessionCookieRequest(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Cookie") != "connect.sid=session-xyz" {

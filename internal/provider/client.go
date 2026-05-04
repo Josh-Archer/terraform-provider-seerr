@@ -179,7 +179,14 @@ func (c *APIClient) resolvePath(path string) (*url.URL, error) {
 		return nil, fmt.Errorf("path cannot be empty")
 	}
 	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
-		return url.Parse(path)
+		parsed, err := url.Parse(path)
+		if err != nil {
+			return nil, err
+		}
+		if !sameOriginURL(c.baseURL, parsed) {
+			return nil, fmt.Errorf("absolute URLs must target the configured Seerr origin %s://%s", c.baseURL.Scheme, c.baseURL.Host)
+		}
+		return parsed, nil
 	}
 
 	normalized := path
@@ -187,6 +194,13 @@ func (c *APIClient) resolvePath(path string) (*url.URL, error) {
 		normalized = "/" + normalized
 	}
 	return c.baseURL.Parse(normalized)
+}
+
+func sameOriginURL(baseURL, candidate *url.URL) bool {
+	if baseURL == nil || candidate == nil {
+		return false
+	}
+	return strings.EqualFold(baseURL.Scheme, candidate.Scheme) && strings.EqualFold(baseURL.Host, candidate.Host)
 }
 
 func StatusIsOK(code int) bool {

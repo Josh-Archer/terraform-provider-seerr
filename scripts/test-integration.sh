@@ -15,6 +15,7 @@ provider_namespace="${SEERR_PROVIDER_NAMESPACE:-registry.opentofu.org/josh-arche
 test_suite="${SEERR_TEST_SUITE:-stable}"
 tofu_test_log="${artifact_dir}/tofu-test.log"
 compose_log="${artifact_dir}/docker-compose.log"
+tofu_cli_config="${artifact_dir}/tofurc"
 local_env_created=false
 generated_provider_files=()
 
@@ -65,6 +66,12 @@ provider_target_dir="${mirror_root}/${provider_namespace}/${goos}_${goarch}"
 provider_binary="${provider_target_dir}/terraform-provider-seerr${goexe}"
 
 mkdir -p "${artifact_dir}" "${provider_target_dir}"
+cat >"${tofu_cli_config}" <<EOF
+provider_installation {
+  direct {}
+}
+EOF
+export TF_CLI_CONFIG_FILE="${tofu_cli_config}"
 
 capture_diagnostics() {
   if [[ "${local_env_created}" != "true" ]]; then
