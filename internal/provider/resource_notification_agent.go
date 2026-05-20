@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -13,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -472,6 +474,26 @@ func notificationTypesMask(ctx context.Context, data *NotificationAgentModel) in
 	}
 
 	return mask
+}
+
+func notificationEventTypeNames() []string {
+	return []string{
+		"MEDIA_PENDING",
+		"MEDIA_APPROVED",
+		"MEDIA_AVAILABLE",
+		"MEDIA_FAILED",
+		"MEDIA_DECLINED",
+		"MEDIA_AUTO_APPROVED",
+		"ISSUE_CREATED",
+		"ISSUE_COMMENT",
+		"ISSUE_RESOLVED",
+		"ISSUE_REOPENED",
+		"MEDIA_AUTO_REQUESTED",
+	}
+}
+
+func notificationEventTypeValidator() validator.String {
+	return stringvalidator.OneOf(notificationEventTypeNames()...)
 }
 
 func parsePayload(ctx context.Context, data *NotificationAgentModel, body []byte) error {

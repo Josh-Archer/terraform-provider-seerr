@@ -1,4 +1,4 @@
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate -provider-name seerr
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate -provider-name seerr --tf-version 1.6.6
 package main
 
 import (

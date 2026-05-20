@@ -42,43 +42,33 @@ module "sonarr_server" {
   active_directory   = var.sonarr_root
 }
 
-module "ntfy_notification" {
-  source = "../../../modules/notification_agent"
+resource "seerr_notification_ntfy" "ntfy" {
+  enabled = true
 
-  agent = "ntfy"
-  payload = {
-    enabled = true
-    types = {
-      MEDIA_APPROVED  = true
-      MEDIA_AVAILABLE = true
-      MEDIA_FAILED    = true
-    }
-    options = {
-      serverUrl   = var.ntfy_server_url
-      topic       = var.ntfy_topic
-      accessToken = var.ntfy_access_token
-      priority    = 3
-    }
+  ntfy = {
+    url               = var.ntfy_server_url
+    topic             = var.ntfy_topic
+    auth_method_token = true
+    token             = var.ntfy_access_token
+    priority          = 3
   }
+
+  notification_types = ["MEDIA_APPROVED", "MEDIA_AVAILABLE", "MEDIA_FAILED"]
 }
 
 module "main_settings" {
   source = "../../../modules/main_settings"
 
-  payload = {
-    applicationTitle = "Seerr"
-    locale           = "en"
-  }
+  app_title = "Seerr"
+  locale    = "en"
 }
 
 module "plex_settings" {
   source = "../../../modules/plex_settings"
 
-  payload = {
-    hostname = "plex.media.svc.cluster.local"
-    port     = 32400
-    useSsl   = false
-  }
+  ip      = "plex.media.svc.cluster.local"
+  port    = 32400
+  use_ssl = false
 }
 
 variable "seerr_url" {

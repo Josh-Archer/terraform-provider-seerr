@@ -3,7 +3,8 @@
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
-tmp_root="$repo_root/.git/tmp"
+git_common_dir="$(git -C "$repo_root" rev-parse --path-format=absolute --git-common-dir)"
+tmp_root="$git_common_dir/tmp"
 mkdir -p "$tmp_root"
 tmp_dir="$(mktemp -d "$tmp_root/seerr-generate-check.XXXXXX")"
 

@@ -83,3 +83,47 @@ func TestRequestReadPopulatesComputedIDs(t *testing.T) {
 		t.Fatalf("expected user_id 1, got %d", got)
 	}
 }
+
+func TestRequestApplyStatusPostsWorkflowEndpoint(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected method %s", r.Method)
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":2}`))
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resource := &RequestResource{
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+	}
+	if err := resource.applyRequestStatus(context.Background(), "42", types.Int64Value(2)); err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/api/v1/request/42/approve" {
+		t.Fatalf("expected approve endpoint, got %s", gotPath)
+	}
+}
+
+func TestRequestStatusPath(t *testing.T) {
+	tests := map[int64]string{
+		1: "pending",
+		2: "approve",
+		3: "decline",
+	}
+	for status, want := range tests {
+		got, ok := requestStatusPath(status)
+		if !ok || got != want {
+			t.Fatalf("requestStatusPath(%d) = %q, %v; want %q, true", status, got, ok, want)
+		}
+	}
+	if _, ok := requestStatusPath(99); ok {
+		t.Fatal("expected unknown status to be rejected")
+	}
+}

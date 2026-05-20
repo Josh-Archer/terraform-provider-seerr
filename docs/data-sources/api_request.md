@@ -28,7 +28,7 @@ output "status_body" {
 
 ### Required
 
-- `path` (String) Endpoint path or absolute URL.
+- `path` (String) Endpoint path or same-origin absolute URL.
 
 ### Optional
 

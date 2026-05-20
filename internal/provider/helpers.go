@@ -182,6 +182,18 @@ func findByIDInJSONArray(body []byte, id int64) ([]byte, bool, error) {
 	return nil, false, nil
 }
 
+func jsonFieldString(body []byte, field string) (string, bool) {
+	var decoded map[string]json.RawMessage
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		return "", false
+	}
+	raw, ok := decoded[field]
+	if !ok {
+		return "", false
+	}
+	return string(raw), true
+}
+
 func requireInt64ID(raw string) (int64, error) {
 	var v int64
 	if _, err := fmt.Sscanf(raw, "%d", &v); err != nil {

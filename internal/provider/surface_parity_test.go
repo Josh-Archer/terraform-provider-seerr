@@ -36,6 +36,8 @@ func TestProviderSurfaceParity(t *testing.T) {
 	assertExampleDirectoriesRegistered(t, filepath.Join(repoRoot, "examples", "resources"), resourceNames)
 	assertExampleDirectoriesRegistered(t, filepath.Join(repoRoot, "examples", "data-sources"), dataSourceNames)
 	assertModulesReferenceRegisteredResources(t, filepath.Join(repoRoot, "modules"), resourceNames)
+	assertModulesUseRegisteredResourceAttributes(t, filepath.Join(repoRoot, "modules"), provider.Resources(context.Background()))
+	assertLocalModuleSourcesExist(t, filepath.Join(repoRoot, "examples", "modules"))
 }
 
 func repoRootFromTest(t *testing.T) string {
@@ -113,6 +115,96 @@ func assertModulesReferenceRegisteredResources(t *testing.T, modulesDir string, 
 			resourceName := strings.TrimSpace(match[1])
 			if _, ok := registered[resourceName]; !ok {
 				t.Fatalf("module %s references unregistered resource %s", entry.Name(), resourceName)
+			}
+		}
+	}
+}
+
+func assertModulesUseRegisteredResourceAttributes(t *testing.T, modulesDir string, factories []func() resource.Resource) {
+	t.Helper()
+	attributes := registeredResourceAttributes(t, factories)
+	entries, err := os.ReadDir(modulesDir)
+	if err != nil {
+		t.Fatalf("read dir %s: %v", modulesDir, err)
+	}
+
+	resourceBlockPattern := regexp.MustCompile(`(?s)resource\s+"([^"]+)"\s+"[^"]+"\s+\{(.*?)\n\}`)
+	attributePattern := regexp.MustCompile(`(?m)^\s*([A-Za-z0-9_]+)\s*=`)
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		mainPath := filepath.Join(modulesDir, entry.Name(), "main.tf")
+		body, err := os.ReadFile(mainPath)
+		if err != nil {
+			continue
+		}
+		for _, block := range resourceBlockPattern.FindAllStringSubmatch(string(body), -1) {
+			if len(block) < 3 {
+				continue
+			}
+			resourceName := block[1]
+			allowed, ok := attributes[resourceName]
+			if !ok {
+				continue
+			}
+			for _, match := range attributePattern.FindAllStringSubmatch(block[2], -1) {
+				if len(match) < 2 {
+					continue
+				}
+				attrName := strings.TrimSpace(match[1])
+				if _, ok := allowed[attrName]; !ok {
+					t.Fatalf("module %s references unsupported attribute %s.%s", entry.Name(), resourceName, attrName)
+				}
+			}
+		}
+	}
+}
+
+func registeredResourceAttributes(t *testing.T, factories []func() resource.Resource) map[string]map[string]struct{} {
+	t.Helper()
+	out := map[string]map[string]struct{}{}
+	for _, factory := range factories {
+		res := factory()
+		var metadata resource.MetadataResponse
+		res.Metadata(context.Background(), resource.MetadataRequest{ProviderTypeName: "seerr"}, &metadata)
+		var schemaResp resource.SchemaResponse
+		res.Schema(context.Background(), resource.SchemaRequest{}, &schemaResp)
+		attrs := map[string]struct{}{}
+		for name := range schemaResp.Schema.Attributes {
+			attrs[name] = struct{}{}
+		}
+		for name := range schemaResp.Schema.Blocks {
+			attrs[name] = struct{}{}
+		}
+		out[metadata.TypeName] = attrs
+	}
+	return out
+}
+
+func assertLocalModuleSourcesExist(t *testing.T, modulesDir string) {
+	t.Helper()
+	entries, err := os.ReadDir(modulesDir)
+	if err != nil {
+		t.Fatalf("read dir %s: %v", modulesDir, err)
+	}
+	sourcePattern := regexp.MustCompile(`source\s*=\s*"(\.\.?/[^"]+)"`)
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		mainPath := filepath.Join(modulesDir, entry.Name(), "main.tf")
+		body, err := os.ReadFile(mainPath)
+		if err != nil {
+			continue
+		}
+		for _, match := range sourcePattern.FindAllStringSubmatch(string(body), -1) {
+			if len(match) < 2 {
+				continue
+			}
+			target := filepath.Clean(filepath.Join(filepath.Dir(mainPath), match[1]))
+			if _, err := os.Stat(target); err != nil {
+				t.Fatalf("example module %s references missing local source %s", entry.Name(), match[1])
 			}
 		}
 	}

@@ -7,7 +7,9 @@ terraform {
 }
 
 resource "seerr_plex_settings" "this" {
-  payload_json = jsonencode(var.payload)
+  ip      = var.ip
+  port    = var.port
+  use_ssl = var.use_ssl
 }
 
 output "resource_id" {
