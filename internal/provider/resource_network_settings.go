@@ -55,7 +55,8 @@ func (r *NetworkSettingsResource) Metadata(_ context.Context, req resource.Metad
 
 func networkSettingsResourceSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Manage Seerr network settings via `/api/v1/settings/network`.",
+		MarkdownDescription: "Manage Seerr network settings via `/api/v1/settings/network`.\n\n" +
+			"`proxy` and `dns_cache` are opt-in managed blocks. Seerr may return default values for these nested settings even when they are not configured, but the provider leaves them absent from resource state unless the block is declared in configuration.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
@@ -212,8 +213,14 @@ func (r *NetworkSettingsResource) refreshNetworkSettings(ctx context.Context, da
 
 	previous := *data
 	r.applyNetworkSettingsMap(data, decoded)
+	if previous.Proxy == nil {
+		data.Proxy = nil
+	}
 	if data.Proxy != nil && previous.Proxy != nil && data.Proxy.Password.IsNull() && !previous.Proxy.Password.IsNull() && !previous.Proxy.Password.IsUnknown() {
 		data.Proxy.Password = previous.Proxy.Password
+	}
+	if previous.DNSCache == nil {
+		data.DNSCache = nil
 	}
 	data.ID = types.StringValue("network")
 	return nil
