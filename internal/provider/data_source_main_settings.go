@@ -22,12 +22,16 @@ type MainSettingsDataSourceModel struct {
 	TrustProxy            types.Bool   `tfsdk:"trust_proxy"`
 	CSRFProtection        types.Bool   `tfsdk:"csrf_protection"`
 	ImageProxy            types.Bool   `tfsdk:"image_proxy"`
+	CacheImages           types.Bool   `tfsdk:"cache_images"`
 	Locale                types.String `tfsdk:"locale"`
+	DiscoverRegion        types.String `tfsdk:"discover_region"`
+	StreamingRegion       types.String `tfsdk:"streaming_region"`
 	Region                types.String `tfsdk:"region"`
 	OriginalLanguage      types.String `tfsdk:"original_language"`
 	HideAvailable         types.Bool   `tfsdk:"hide_available"`
 	PartialRequests       types.Bool   `tfsdk:"partial_requests"`
 	LocalLogin            types.Bool   `tfsdk:"local_login"`
+	MediaServerLogin      types.Bool   `tfsdk:"media_server_login"`
 	NewPlexLogin          types.Bool   `tfsdk:"new_plex_login"`
 	PlexLogin             types.Bool   `tfsdk:"plex_login"`
 	MovieRequestsEnabled  types.Bool   `tfsdk:"movie_requests_enabled"`
@@ -60,22 +64,38 @@ func (d *MainSettingsDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 			"trust_proxy": schema.BoolAttribute{
 				MarkdownDescription: "Whether to trust the proxy.",
 				Computed:            true,
+				DeprecationMessage:  "`trust_proxy` moved to `seerr_network_settings` in Seerr v3.",
 			},
 			"csrf_protection": schema.BoolAttribute{
 				MarkdownDescription: "Whether CSRF protection is enabled.",
 				Computed:            true,
+				DeprecationMessage:  "`csrf_protection` moved to `seerr_network_settings` in Seerr v3.",
 			},
 			"image_proxy": schema.BoolAttribute{
 				MarkdownDescription: "Whether the image proxy is enabled.",
+				Computed:            true,
+				DeprecationMessage:  "Use `cache_images`; Seerr v3 exposes this setting as `cacheImages`.",
+			},
+			"cache_images": schema.BoolAttribute{
+				MarkdownDescription: "Whether Seerr caches proxied images.",
 				Computed:            true,
 			},
 			"locale": schema.StringAttribute{
 				MarkdownDescription: "The application locale.",
 				Computed:            true,
 			},
+			"discover_region": schema.StringAttribute{
+				MarkdownDescription: "The Discover region used by Seerr.",
+				Computed:            true,
+			},
+			"streaming_region": schema.StringAttribute{
+				MarkdownDescription: "The streaming region used by Seerr.",
+				Computed:            true,
+			},
 			"region": schema.StringAttribute{
 				MarkdownDescription: "The application region.",
 				Computed:            true,
+				DeprecationMessage:  "Use `streaming_region` and `discover_region`; Seerr v3 split the legacy region field.",
 			},
 			"original_language": schema.StringAttribute{
 				MarkdownDescription: "The original language.",
@@ -93,6 +113,10 @@ func (d *MainSettingsDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 				MarkdownDescription: "Whether local login is enabled.",
 				Computed:            true,
 			},
+			"media_server_login": schema.BoolAttribute{
+				MarkdownDescription: "Whether media-server login is enabled.",
+				Computed:            true,
+			},
 			"new_plex_login": schema.BoolAttribute{
 				MarkdownDescription: "Whether the new Plex login is enabled.",
 				Computed:            true,
@@ -100,26 +124,32 @@ func (d *MainSettingsDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 			"plex_login": schema.BoolAttribute{
 				MarkdownDescription: "Whether Plex login is enabled.",
 				Computed:            true,
+				DeprecationMessage:  "Use `media_server_login`; Seerr v3 generalized Plex login to media-server login.",
 			},
 			"movie_requests_enabled": schema.BoolAttribute{
 				MarkdownDescription: "Whether movie requests are enabled.",
 				Computed:            true,
+				DeprecationMessage:  "Seerr v3 removed this main setting; use `partial_requests` and user quota settings instead.",
 			},
 			"series_requests_enabled": schema.BoolAttribute{
 				MarkdownDescription: "Whether series requests are enabled.",
 				Computed:            true,
+				DeprecationMessage:  "Seerr v3 removed this main setting; use `partial_requests` and user quota settings instead.",
 			},
 			"enable_report_an_issue": schema.BoolAttribute{
 				MarkdownDescription: "Whether the 'Report an Issue' feature is enabled.",
 				Computed:            true,
+				DeprecationMessage:  "Seerr v3 no longer exposes this value from `/api/v1/settings/main`.",
 			},
 			"movie_request_limit": schema.Int64Attribute{
 				MarkdownDescription: "The movie request limit.",
 				Computed:            true,
+				DeprecationMessage:  "Seerr v3 moved request limits into user quota settings.",
 			},
 			"series_request_limit": schema.Int64Attribute{
 				MarkdownDescription: "The series request limit.",
 				Computed:            true,
+				DeprecationMessage:  "Seerr v3 moved request limits into user quota settings.",
 			},
 			"response_json": schema.StringAttribute{
 				MarkdownDescription: "Raw JSON response body.",
@@ -171,60 +201,29 @@ func (d *MainSettingsDataSource) Read(ctx context.Context, req datasource.ReadRe
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 	data.ResponseJSON = types.StringValue(string(res.Body))
 
-	if v, ok := decoded["appTitle"].(string); ok {
-		data.AppTitle = types.StringValue(v)
-	}
-	if v, ok := decoded["applicationUrl"].(string); ok {
-		data.ApplicationURL = types.StringValue(v)
-	}
-	if v, ok := decoded["trustProxy"].(bool); ok {
-		data.TrustProxy = types.BoolValue(v)
-	}
-	if v, ok := decoded["csrfProtection"].(bool); ok {
-		data.CSRFProtection = types.BoolValue(v)
-	}
-	if v, ok := decoded["imageProxy"].(bool); ok {
-		data.ImageProxy = types.BoolValue(v)
-	}
-	if v, ok := decoded["locale"].(string); ok {
-		data.Locale = types.StringValue(v)
-	}
-	if v, ok := decoded["region"].(string); ok {
-		data.Region = types.StringValue(v)
-	}
-	if v, ok := decoded["originalLanguage"].(string); ok {
-		data.OriginalLanguage = types.StringValue(v)
-	}
-	if v, ok := decoded["hideAvailable"].(bool); ok {
-		data.HideAvailable = types.BoolValue(v)
-	}
-	if v, ok := decoded["partialRequests"].(bool); ok {
-		data.PartialRequests = types.BoolValue(v)
-	}
-	if v, ok := decoded["localLogin"].(bool); ok {
-		data.LocalLogin = types.BoolValue(v)
-	}
-	if v, ok := decoded["newPlexLogin"].(bool); ok {
-		data.NewPlexLogin = types.BoolValue(v)
-	}
-	if v, ok := decoded["plexLogin"].(bool); ok {
-		data.PlexLogin = types.BoolValue(v)
-	}
-	if v, ok := decoded["movieRequestsEnabled"].(bool); ok {
-		data.MovieRequestsEnabled = types.BoolValue(v)
-	}
-	if v, ok := decoded["seriesRequestsEnabled"].(bool); ok {
-		data.SeriesRequestsEnabled = types.BoolValue(v)
-	}
-	if v, ok := decoded["enableReportAnIssue"].(bool); ok {
-		data.EnableReportAnIssue = types.BoolValue(v)
-	}
-	if v, ok := decoded["movieRequestLimit"].(float64); ok {
-		data.MovieRequestLimit = types.Int64Value(int64(v))
-	}
-	if v, ok := decoded["seriesRequestLimit"].(float64); ok {
-		data.SeriesRequestLimit = types.Int64Value(int64(v))
-	}
+	values := decodeMainSettings(decoded)
+	data.AppTitle = values.AppTitle
+	data.ApplicationURL = values.ApplicationURL
+	data.TrustProxy = values.TrustProxy
+	data.CSRFProtection = values.CSRFProtection
+	data.ImageProxy = values.ImageProxy
+	data.CacheImages = values.CacheImages
+	data.Locale = values.Locale
+	data.DiscoverRegion = values.DiscoverRegion
+	data.StreamingRegion = values.StreamingRegion
+	data.Region = values.Region
+	data.OriginalLanguage = values.OriginalLanguage
+	data.HideAvailable = values.HideAvailable
+	data.PartialRequests = values.PartialRequests
+	data.LocalLogin = values.LocalLogin
+	data.MediaServerLogin = values.MediaServerLogin
+	data.NewPlexLogin = values.NewPlexLogin
+	data.PlexLogin = values.PlexLogin
+	data.MovieRequestsEnabled = values.MovieRequestsEnabled
+	data.SeriesRequestsEnabled = values.SeriesRequestsEnabled
+	data.EnableReportAnIssue = values.EnableReportAnIssue
+	data.MovieRequestLimit = values.MovieRequestLimit
+	data.SeriesRequestLimit = values.SeriesRequestLimit
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

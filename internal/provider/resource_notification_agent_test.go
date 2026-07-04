@@ -26,25 +26,23 @@ func sweepNotificationAgent(region string) error {
 	}
 
 	ctx := context.Background()
-	res, err := client.Request(ctx, "GET", "/api/v1/settings/notifications", "", nil)
-	if err != nil {
-		return fmt.Errorf("error fetching notification agents: %s", err)
-	}
-	if !StatusIsOK(res.StatusCode) {
-		return fmt.Errorf("error fetching notification agents: status %d", res.StatusCode)
-	}
-
-	var settings map[string]any
-	if err := json.Unmarshal(res.Body, &settings); err != nil {
-		return fmt.Errorf("error parsing notification agents: %s", err)
-	}
-
 	disablePayload := `{"enabled":false,"types":0,"options":{}}`
 
-	for agentName, agentData := range settings {
-		agentMap, ok := agentData.(map[string]any)
-		if !ok {
+	for _, agentName := range notificationAggregateAgents() {
+		res, err := client.Request(ctx, "GET", notificationPath(agentName), "", nil)
+		if err != nil {
+			return fmt.Errorf("error fetching notification agent %s: %s", agentName, err)
+		}
+		if res.StatusCode == 404 {
 			continue
+		}
+		if !StatusIsOK(res.StatusCode) {
+			return fmt.Errorf("error fetching notification agent %s: status %d", agentName, res.StatusCode)
+		}
+
+		var agentMap map[string]any
+		if err := json.Unmarshal(res.Body, &agentMap); err != nil {
+			return fmt.Errorf("error parsing notification agent %s: %s", agentName, err)
 		}
 
 		enabled, _ := agentMap["enabled"].(bool)
