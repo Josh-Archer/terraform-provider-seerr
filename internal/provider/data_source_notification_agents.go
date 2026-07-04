@@ -82,42 +82,67 @@ func (d *NotificationAgentsDataSource) Configure(_ context.Context, req datasour
 func (d *NotificationAgentsDataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data NotificationAgentsDataSourceModel
 
-	// Fetch notification settings
-	res, err := d.client.Request(ctx, "GET", "/api/v1/settings/notifications", "", nil)
+	agents, err := d.readNotificationAgentSummaries(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
-		return
-	}
 
-	var settings map[string]any
-	if err := json.Unmarshal(res.Body, &settings); err != nil {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
-	}
-
-	// The API returns a map where keys are agent names
-	for agentName, agentData := range settings {
-		if agentMap, ok := agentData.(map[string]any); ok {
-			agent := NotificationAgentSummaryModel{
-				Agent: types.StringValue(agentName),
-			}
-
-			if enabled, ok := agentMap["enabled"].(bool); ok {
-				agent.Enabled = types.BoolValue(enabled)
-			}
-			if embed, ok := agentMap["embedPoster"].(bool); ok {
-				agent.EmbedPoster = types.BoolValue(embed)
-			}
-
-			data.Agents = append(data.Agents, agent)
-		}
-	}
-
+	data.Agents = agents
 	data.ID = types.StringValue("all_notification_agents")
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func notificationAggregateAgents() []string {
+	return []string{
+		"discord",
+		"slack",
+		"email",
+		"lunasea",
+		"telegram",
+		"pushbullet",
+		"pushover",
+		"ntfy",
+		"webhook",
+		"gotify",
+		"webpush",
+	}
+}
+
+func (d *NotificationAgentsDataSource) readNotificationAgentSummaries(ctx context.Context) ([]NotificationAgentSummaryModel, error) {
+	agents := []NotificationAgentSummaryModel{}
+	for _, agentName := range notificationAggregateAgents() {
+		res, err := d.client.Request(ctx, "GET", notificationPath(agentName), "", nil)
+		if err != nil {
+			return nil, err
+		}
+		if res.StatusCode == 404 {
+			continue
+		}
+		if !StatusIsOK(res.StatusCode) {
+			return nil, fmt.Errorf("%s: status %d: %s", agentName, res.StatusCode, string(res.Body))
+		}
+
+		var agentMap map[string]any
+		if err := json.Unmarshal(res.Body, &agentMap); err != nil {
+			return nil, fmt.Errorf("%s: failed to decode response: %s", agentName, err)
+		}
+
+		agent := NotificationAgentSummaryModel{
+			Agent:       types.StringValue(agentName),
+			Enabled:     types.BoolNull(),
+			EmbedPoster: types.BoolNull(),
+		}
+		if enabled, ok := boolValueFromAny(agentMap["enabled"]); ok {
+			agent.Enabled = types.BoolValue(enabled)
+		}
+		if embed, ok := boolValueFromAny(agentMap["embedPoster"]); ok {
+			agent.EmbedPoster = types.BoolValue(embed)
+		}
+
+		agents = append(agents, agent)
+	}
+
+	return agents, nil
 }

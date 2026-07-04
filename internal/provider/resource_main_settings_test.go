@@ -41,6 +41,100 @@ func TestMainSettingsApplyDecodedSettingsClearsMissingValues(t *testing.T) {
 	}
 }
 
+func TestMainSettingsApplyDecodedSettingsReadsSeerrV3Keys(t *testing.T) {
+	r := &MainSettingsResource{}
+	var data MainSettingsModel
+
+	r.applyDecodedSettings(&data, map[string]any{
+		"applicationTitle":       "Seerr",
+		"applicationUrl":         "https://seerr.example",
+		"cacheImages":            true,
+		"locale":                 "fr",
+		"discoverRegion":         "",
+		"streamingRegion":        "FR",
+		"originalLanguage":       "",
+		"hideAvailable":          false,
+		"partialRequestsEnabled": true,
+		"localLogin":             true,
+		"mediaServerLogin":       true,
+		"newPlexLogin":           true,
+	})
+
+	if got := data.AppTitle.ValueString(); got != "Seerr" {
+		t.Fatalf("expected app title Seerr, got %q", got)
+	}
+	if got := data.CacheImages.ValueBool(); !got {
+		t.Fatalf("expected cache_images true, got %v", got)
+	}
+	if got := data.ImageProxy.ValueBool(); !got {
+		t.Fatalf("expected deprecated image_proxy alias true, got %v", got)
+	}
+	if got := data.StreamingRegion.ValueString(); got != "FR" {
+		t.Fatalf("expected streaming region FR, got %q", got)
+	}
+	if got := data.Region.ValueString(); got != "FR" {
+		t.Fatalf("expected deprecated region alias FR, got %q", got)
+	}
+	if got := data.PartialRequests.ValueBool(); !got {
+		t.Fatalf("expected partial requests true, got %v", got)
+	}
+	if got := data.MediaServerLogin.ValueBool(); !got {
+		t.Fatalf("expected media_server_login true, got %v", got)
+	}
+	if got := data.PlexLogin.ValueBool(); !got {
+		t.Fatalf("expected deprecated plex_login alias true, got %v", got)
+	}
+	if !data.TrustProxy.IsNull() {
+		t.Fatalf("expected moved trust_proxy to remain null from v3 main settings")
+	}
+}
+
+func TestMainSettingsBuildPayloadUsesSeerrV3Keys(t *testing.T) {
+	r := &MainSettingsResource{}
+	payload := r.buildPayload(&MainSettingsModel{
+		AppTitle:              types.StringValue("Seerr"),
+		ApplicationURL:        types.StringValue("https://seerr.example"),
+		ImageProxy:            types.BoolValue(true),
+		Locale:                types.StringValue("fr"),
+		DiscoverRegion:        types.StringValue(""),
+		Region:                types.StringValue("FR"),
+		OriginalLanguage:      types.StringValue(""),
+		HideAvailable:         types.BoolValue(false),
+		PartialRequests:       types.BoolValue(true),
+		LocalLogin:            types.BoolValue(true),
+		PlexLogin:             types.BoolValue(true),
+		NewPlexLogin:          types.BoolValue(true),
+		TrustProxy:            types.BoolValue(true),
+		CSRFProtection:        types.BoolValue(false),
+		MovieRequestsEnabled:  types.BoolValue(true),
+		SeriesRequestsEnabled: types.BoolValue(true),
+	})
+
+	if got := payload["applicationTitle"]; got != "Seerr" {
+		t.Fatalf("expected applicationTitle, got %#v", got)
+	}
+	if _, ok := payload["appTitle"]; ok {
+		t.Fatalf("did not expect legacy appTitle key in payload")
+	}
+	if got := payload["cacheImages"]; got != true {
+		t.Fatalf("expected cacheImages true from image_proxy alias, got %#v", got)
+	}
+	if got := payload["streamingRegion"]; got != "FR" {
+		t.Fatalf("expected streamingRegion FR from region alias, got %#v", got)
+	}
+	if got := payload["partialRequestsEnabled"]; got != true {
+		t.Fatalf("expected partialRequestsEnabled true, got %#v", got)
+	}
+	if got := payload["mediaServerLogin"]; got != true {
+		t.Fatalf("expected mediaServerLogin true from plex_login alias, got %#v", got)
+	}
+	for _, key := range []string{"trustProxy", "csrfProtection", "movieRequestsEnabled", "seriesRequestsEnabled"} {
+		if _, ok := payload[key]; ok {
+			t.Fatalf("did not expect removed or moved key %q in payload", key)
+		}
+	}
+}
+
 func TestMainSettingsRefreshStateReadsCanonicalValues(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

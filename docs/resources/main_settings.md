@@ -29,22 +29,26 @@ resource "seerr_main_settings" "main" {
 
 - `app_title` (String) The application title.
 - `application_url` (String) The application URL.
-- `csrf_protection` (Boolean) Whether CSRF protection is enabled.
-- `enable_report_an_issue` (Boolean) Whether the 'Report an Issue' feature is enabled.
+- `cache_images` (Boolean) Whether Seerr caches proxied images.
+- `csrf_protection` (Boolean, Deprecated) Whether CSRF protection is enabled.
+- `discover_region` (String) The Discover region used by Seerr.
+- `enable_report_an_issue` (Boolean, Deprecated) Whether the 'Report an Issue' feature is enabled.
 - `hide_available` (Boolean) Whether to hide available media.
-- `image_proxy` (Boolean) Whether the image proxy is enabled.
+- `image_proxy` (Boolean, Deprecated) Whether the image proxy is enabled.
 - `local_login` (Boolean) Whether local login is enabled.
 - `locale` (String) The application locale.
-- `movie_request_limit` (Number) The movie request limit.
-- `movie_requests_enabled` (Boolean) Whether movie requests are enabled.
+- `media_server_login` (Boolean) Whether media-server login is enabled.
+- `movie_request_limit` (Number, Deprecated) The movie request limit.
+- `movie_requests_enabled` (Boolean, Deprecated) Whether movie requests are enabled.
 - `new_plex_login` (Boolean) Whether the new Plex login is enabled.
 - `original_language` (String) The original language.
 - `partial_requests` (Boolean) Whether partial requests are allowed.
-- `plex_login` (Boolean) Whether Plex login is enabled.
-- `region` (String) The application region.
-- `series_request_limit` (Number) The series request limit.
-- `series_requests_enabled` (Boolean) Whether series requests are enabled.
-- `trust_proxy` (Boolean) Whether to trust the proxy.
+- `plex_login` (Boolean, Deprecated) Whether Plex login is enabled.
+- `region` (String, Deprecated) The application region.
+- `series_request_limit` (Number, Deprecated) The series request limit.
+- `series_requests_enabled` (Boolean, Deprecated) Whether series requests are enabled.
+- `streaming_region` (String) The streaming region used by Seerr.
+- `trust_proxy` (Boolean, Deprecated) Whether to trust the proxy.
 
 ### Read-Only
 
