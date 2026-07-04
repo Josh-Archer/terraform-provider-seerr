@@ -4,11 +4,14 @@ page_title: "seerr_network_settings Resource - seerr"
 subcategory: ""
 description: |-
   Manage Seerr network settings via /api/v1/settings/network.
+  proxy and dns_cache are opt-in managed blocks. Seerr may return default values for these nested settings even when they are not configured, but the provider leaves them absent from resource state unless the block is declared in configuration.
 ---
 
 # seerr_network_settings (Resource)
 
 Manage Seerr network settings via `/api/v1/settings/network`.
+
+`proxy` and `dns_cache` are opt-in managed blocks. Seerr may return default values for these nested settings even when they are not configured, but the provider leaves them absent from resource state unless the block is declared in configuration.
 
 ## Example Usage
 

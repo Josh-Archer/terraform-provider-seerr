@@ -59,6 +59,130 @@ func TestBuildNetworkPayloadPreservesExistingNestedValues(t *testing.T) {
 	}
 }
 
+func TestRefreshNetworkSettingsLeavesOmittedNestedBlocksUnmanaged(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/settings/network" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+			"csrfProtection":false,
+			"forceIpv4First":false,
+			"trustProxy":true,
+			"apiRequestTimeout":15000,
+			"proxy":{
+				"enabled":false,
+				"hostname":"",
+				"port":8080,
+				"useSsl":false,
+				"user":"",
+				"password":"",
+				"bypassFilter":"",
+				"bypassLocalAddresses":true
+			},
+			"dnsCache":{
+				"enabled":false,
+				"forceMinTtl":0,
+				"forceMaxTtl":-1
+			}
+		}`))
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resource := &NetworkSettingsResource{
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+	}
+	data := &NetworkSettingsModel{
+		TrustProxy:          types.BoolValue(true),
+		APIRequestTimeoutMS: types.Int64Value(15000),
+	}
+
+	if err := resource.refreshNetworkSettings(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if data.Proxy != nil {
+		t.Fatalf("expected omitted proxy block to remain unmanaged, got %#v", data.Proxy)
+	}
+	if data.DNSCache != nil {
+		t.Fatalf("expected omitted dns_cache block to remain unmanaged, got %#v", data.DNSCache)
+	}
+	if got := data.TrustProxy.ValueBool(); !got {
+		t.Fatalf("expected trust_proxy true, got %v", got)
+	}
+	if got := data.APIRequestTimeoutMS.ValueInt64(); got != 15000 {
+		t.Fatalf("expected timeout 15000, got %d", got)
+	}
+}
+
+func TestRefreshNetworkSettingsPreservesManagedNestedBlocksAndProxyPassword(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/settings/network" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+			"proxy":{
+				"enabled":true,
+				"hostname":"proxy.internal",
+				"port":8080,
+				"useSsl":true,
+				"user":"proxy-user",
+				"bypassFilter":"localhost",
+				"bypassLocalAddresses":true
+			},
+			"dnsCache":{
+				"enabled":true,
+				"forceMinTtl":60,
+				"forceMaxTtl":600
+			}
+		}`))
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resource := &NetworkSettingsResource{
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+	}
+	data := &NetworkSettingsModel{
+		Proxy: &NetworkProxyModel{
+			Password: types.StringValue("existing-secret"),
+		},
+		DNSCache: &NetworkDNSCacheModel{},
+	}
+
+	if err := resource.refreshNetworkSettings(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if data.Proxy == nil {
+		t.Fatal("expected managed proxy block to be refreshed")
+	}
+	if got := data.Proxy.Hostname.ValueString(); got != "proxy.internal" {
+		t.Fatalf("expected proxy hostname proxy.internal, got %q", got)
+	}
+	if got := data.Proxy.Password.ValueString(); got != "existing-secret" {
+		t.Fatalf("expected existing proxy password to be preserved, got %q", got)
+	}
+	if data.DNSCache == nil {
+		t.Fatal("expected managed dns_cache block to be refreshed")
+	}
+	if got := data.DNSCache.ForceMaxTTL.ValueInt64(); got != 600 {
+		t.Fatalf("expected force_max_ttl 600, got %d", got)
+	}
+}
+
 func TestApplyOverrideRuleBodyMapsFields(t *testing.T) {
 	var data OverrideRuleModel
 	err := applyOverrideRuleBody(&data, []byte(`{
