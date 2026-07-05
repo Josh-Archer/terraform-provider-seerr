@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -144,7 +145,9 @@ func (r *RadarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 			"enable_scan": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  booldefault.StaticBool(true),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"sync_enabled": schema.BoolAttribute{
 				Optional: true,
@@ -270,11 +273,11 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 		"minimumAvailability": data.MinimumAvailability.ValueString(),
 		"tags":                tags,
 		"isDefault":           data.IsDefault.ValueBool(),
-		"enableScan":          data.EnableScan.ValueBool(),
 		"syncEnabled":         data.SyncEnabled.ValueBool(),
 		"preventSearch":       data.PreventSearch.ValueBool(),
 		"tagRequests":         data.TagRequestsWithUser.ValueBool(),
 	}
+	setOptionalBool(base, "enableScan", data.EnableScan)
 	merged, err := mergeJSON(base, data.ExtraPayloadJSON.ValueString())
 	if err != nil {
 		return data, "", err

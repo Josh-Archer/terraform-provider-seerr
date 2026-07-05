@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 func TestRadarrServerResourceSchemaOmitsRawJSON(t *testing.T) {
@@ -23,6 +24,31 @@ func TestSonarrServerResourceSchemaOmitsRawJSON(t *testing.T) {
 
 	if _, ok := resp.Schema.Attributes["response_json"]; ok {
 		t.Fatal("sonarr server resource should not expose response_json")
+	}
+}
+
+func TestServerResourceEnableScanPreservesUnmanagedNull(t *testing.T) {
+	tests := map[string]func(context.Context, resource.SchemaRequest, *resource.SchemaResponse){
+		"radarr": (&RadarrServerResource{}).Schema,
+		"sonarr": (&SonarrServerResource{}).Schema,
+	}
+
+	for name, buildSchema := range tests {
+		t.Run(name, func(t *testing.T) {
+			var resp resource.SchemaResponse
+			buildSchema(context.Background(), resource.SchemaRequest{}, &resp)
+
+			attr, ok := resp.Schema.Attributes["enable_scan"].(rschema.BoolAttribute)
+			if !ok {
+				t.Fatalf("enable_scan schema attribute has type %T, want BoolAttribute", resp.Schema.Attributes["enable_scan"])
+			}
+			if attr.Default != nil {
+				t.Fatal("enable_scan should not have a static default; imported API null must remain unmanaged")
+			}
+			if len(attr.PlanModifiers) == 0 {
+				t.Fatal("enable_scan should preserve prior state while unknown")
+			}
+		})
 	}
 }
 
