@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -146,7 +147,9 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 			"enable_scan": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  booldefault.StaticBool(true),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"enable_season_folders": schema.BoolAttribute{
 				Optional: true,
@@ -297,12 +300,12 @@ func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerMod
 		"animeTags":            animeTags,
 		"is4k":                 data.Is4K.ValueBool(),
 		"isDefault":            data.IsDefault.ValueBool(),
-		"enableScan":           data.EnableScan.ValueBool(),
 		"enableSeasonFolders":  data.EnableSeasonFolders.ValueBool(),
 		"syncEnabled":          data.SyncEnabled.ValueBool(),
 		"preventSearch":        data.PreventSearch.ValueBool(),
 		"tagRequests":          data.TagRequestsWithUser.ValueBool(),
 	}
+	setOptionalBool(base, "enableScan", data.EnableScan)
 	merged, err := mergeJSON(base, data.ExtraPayloadJSON.ValueString())
 	if err != nil {
 		return data, "", err
