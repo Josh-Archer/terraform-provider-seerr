@@ -189,11 +189,26 @@ func (c *APIClient) resolvePath(path string) (*url.URL, error) {
 		return parsed, nil
 	}
 
-	normalized := path
-	if !strings.HasPrefix(normalized, "/") {
-		normalized = "/" + normalized
+	// Join API paths onto the configured base path so reverse-proxy subpaths
+	// (e.g. https://host/seerr) are preserved. url.URL.Parse treats a leading
+	// "/" as an absolute path and would replace the base path entirely.
+	apiPath := path
+	if !strings.HasPrefix(apiPath, "/") {
+		apiPath = "/" + apiPath
 	}
-	return c.baseURL.Parse(normalized)
+
+	parsedAPI, err := url.Parse(apiPath)
+	if err != nil {
+		return nil, err
+	}
+
+	basePath := strings.TrimSuffix(c.baseURL.Path, "/")
+	joined := *c.baseURL
+	joined.Path = basePath + parsedAPI.Path
+	joined.RawPath = ""
+	joined.RawQuery = parsedAPI.RawQuery
+	joined.Fragment = parsedAPI.Fragment
+	return &joined, nil
 }
 
 func sameOriginURL(baseURL, candidate *url.URL) bool {
