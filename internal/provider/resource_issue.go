@@ -125,8 +125,7 @@ func (r *IssueResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 	// If status was provided as Resolved (2) in plan, update it
 	if !data.Status.IsNull() && !data.Status.IsUnknown() && data.Status.ValueInt64() == 2 {
-		_, err := r.client.Request(ctx, "POST", fmt.Sprintf("/api/v1/issue/%s/resolved", extractedID), "", nil)
-		if err != nil {
+		if err := r.applyIssueStatus(ctx, extractedID, data.Status.ValueInt64()); err != nil {
 			resp.Diagnostics.AddError("Update Status Failed", err.Error())
 			return
 		}
@@ -210,12 +209,7 @@ func (r *IssueResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	// Update status if it changed
 	if !data.Status.IsNull() && !data.Status.IsUnknown() && data.Status.ValueInt64() != state.Status.ValueInt64() {
-		statusPath := "open"
-		if data.Status.ValueInt64() == 2 {
-			statusPath = "resolved"
-		}
-		_, err := r.client.Request(ctx, "POST", fmt.Sprintf("/api/v1/issue/%s/%s", data.ID.ValueString(), statusPath), "", nil)
-		if err != nil {
+		if err := r.applyIssueStatus(ctx, data.ID.ValueString(), data.Status.ValueInt64()); err != nil {
 			resp.Diagnostics.AddError("Update Status Failed", err.Error())
 			return
 		}
@@ -228,6 +222,33 @@ func (r *IssueResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+// applyIssueStatus posts a status transition to Seerr and fails on non-2xx responses.
+func (r *IssueResource) applyIssueStatus(ctx context.Context, issueID string, status int64) error {
+	statusPath, ok := issueStatusPath(status)
+	if !ok {
+		return fmt.Errorf("unsupported issue status %d; valid values are 1 (open) and 2 (resolved)", status)
+	}
+	res, err := r.client.Request(ctx, "POST", fmt.Sprintf("/api/v1/issue/%s/%s", issueID, statusPath), "", nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+	return nil
+}
+
+func issueStatusPath(status int64) (string, bool) {
+	switch status {
+	case 1:
+		return "open", true
+	case 2:
+		return "resolved", true
+	default:
+		return "", false
+	}
 }
 
 func (r *IssueResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
