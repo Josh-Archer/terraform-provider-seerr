@@ -72,9 +72,12 @@ Data sources:
 - `seerr_current_user`: read the current authenticated Seerr user.
 - `seerr_discover_slider`: read current discover slider settings.
 - `seerr_emby_settings`: read current Emby settings.
+- `seerr_issue`: look up a single issue by ID.
 - `seerr_issues`: read issue lists.
 - `seerr_jellyfin_settings`: read current Jellyfin settings.
 - `seerr_jobs`: read background job status and schedules.
+- `seerr_media`: read media lists.
+- `seerr_media_item`: look up a single media record by ID.
 - `seerr_network_settings`: read current network settings.
 - `seerr_notification_agents`: read the configured notification integrations summary.
 - `seerr_notification_discord`, `seerr_notification_email`, `seerr_notification_gotify`, `seerr_notification_lunasea`, `seerr_notification_ntfy`, `seerr_notification_pushbullet`, `seerr_notification_pushover`, `seerr_notification_slack`, `seerr_notification_telegram`, `seerr_notification_webhook`, `seerr_notification_webpush`: read typed notification integrations.
@@ -83,6 +86,7 @@ Data sources:
 - `seerr_public_settings`: read current public settings.
 - `seerr_radarr_quality_profile`: resolve a Radarr quality profile name to its numeric ID.
 - `seerr_radarr_server`: read a configured Radarr server by Seerr server ID.
+- `seerr_request`: look up a single media request by ID.
 - `seerr_requests`: read request lists.
 - `seerr_service_status`: read Seerr service status.
 - `seerr_sonarr_quality_profile`: resolve a Sonarr quality profile name to its numeric ID.
