@@ -430,6 +430,9 @@ func (r *RequestResource) waitForDesiredRequestStatus(ctx context.Context, reque
 // waitForRequestStatus polls GET /api/v1/request/{id} until the observed status
 // matches wantStatus, the timeout elapses, or ctx is cancelled.
 // sleep may be nil to use a context-aware default sleep (injectable for tests).
+//
+// The wait timeout is applied as a context deadline so individual HTTP GETs cannot
+// outlive status_wait_timeout_seconds when the HTTP client timeout is larger.
 func waitForRequestStatus(ctx context.Context, client *APIClient, requestID string, wantStatus int64, timeout, interval time.Duration, sleep func(context.Context, time.Duration) error) error {
 	if sleep == nil {
 		sleep = sleepContext
@@ -437,17 +440,32 @@ func waitForRequestStatus(ctx context.Context, client *APIClient, requestID stri
 	if interval <= 0 {
 		interval = 2 * time.Second
 	}
+	if timeout <= 0 {
+		return nil
+	}
 
 	deadline := time.Now().Add(timeout)
+	waitCtx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
+
 	var lastStatus int64 = -1
 
 	for {
-		if err := ctx.Err(); err != nil {
+		if err := waitCtx.Err(); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return fmt.Errorf("timed out after %s waiting for request %s to reach status %d (last observed %d)", timeout, requestID, wantStatus, lastStatus)
+			}
 			return fmt.Errorf("waiting for request %s status %d: %w", requestID, wantStatus, err)
 		}
 
-		res, err := client.Request(ctx, "GET", "/api/v1/request/"+requestID, "", nil)
+		res, err := client.Request(waitCtx, "GET", "/api/v1/request/"+requestID, "", nil)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) || waitCtx.Err() != nil && errors.Is(waitCtx.Err(), context.DeadlineExceeded) {
+				return fmt.Errorf("timed out after %s waiting for request %s to reach status %d (last observed %d)", timeout, requestID, wantStatus, lastStatus)
+			}
+			if errors.Is(err, context.Canceled) || waitCtx.Err() != nil && errors.Is(waitCtx.Err(), context.Canceled) {
+				return fmt.Errorf("waiting for request %s status %d: %w", requestID, wantStatus, context.Canceled)
+			}
 			return fmt.Errorf("waiting for request %s status: %w", requestID, err)
 		}
 		if !StatusIsOK(res.StatusCode) {
@@ -476,8 +494,11 @@ func waitForRequestStatus(ctx context.Context, client *APIClient, requestID stri
 		if remaining < sleepFor {
 			sleepFor = remaining
 		}
-		if err := sleep(ctx, sleepFor); err != nil {
-			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		if err := sleep(waitCtx, sleepFor); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return fmt.Errorf("timed out after %s waiting for request %s to reach status %d (last observed %d)", timeout, requestID, wantStatus, lastStatus)
+			}
+			if errors.Is(err, context.Canceled) {
 				return fmt.Errorf("waiting for request %s status %d: %w", requestID, wantStatus, err)
 			}
 			return err
