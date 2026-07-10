@@ -175,6 +175,50 @@ func TestFetchAllPaginatedResultsHTTPError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error on non-OK status")
 	}
+	if err.Error() != "status 500: boom" {
+		t.Fatalf("expected extracted message in error, got %v", err)
+	}
+}
+
+func TestParsePaginatedResponsePageInfoNullWithWhitespace(t *testing.T) {
+	results, info, err := parsePaginatedResponse([]byte(`{"results":[{"id":1}],"pageInfo": null
+}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
+	}
+	if info.hasPages || info.hasPage || info.hasTotal {
+		t.Fatalf("expected empty pageInfo for null, got %+v", info)
+	}
+}
+
+func TestShouldStopPaginationShortPageWithMetadataContinues(t *testing.T) {
+	// Server capped page size below requested take, but pageInfo says more pages remain.
+	info := pageInfo{page: 1, pages: 3, hasPage: true, hasPages: true, total: 30, hasTotal: true}
+	if shouldStopPagination(info, 10, 100, 10) {
+		t.Fatal("expected short page not to stop when pageInfo indicates more pages")
+	}
+	if !shouldStopPagination(info, 10, 100, 30) {
+		t.Fatal("expected stop when totalFetched reaches total")
+	}
+	// Without metadata, short page is a stop signal.
+	if !shouldStopPagination(pageInfo{}, 10, 100, 10) {
+		t.Fatal("expected short page to stop when pageInfo is absent")
+	}
+}
+
+func TestFormatAPIErrorBody(t *testing.T) {
+	if got := formatAPIErrorBody([]byte(`{"message":"nope"}`)); got != "nope" {
+		t.Fatalf("message field: got %q", got)
+	}
+	if got := formatAPIErrorBody([]byte(`{"error":"bad"}`)); got != "bad" {
+		t.Fatalf("error field: got %q", got)
+	}
+	if got := formatAPIErrorBody([]byte(`plain`)); got != "plain" {
+		t.Fatalf("plain body: got %q", got)
+	}
 }
 
 // TestUsersDataSourceReadAggregatesMultiplePages is an integration-style unit test that

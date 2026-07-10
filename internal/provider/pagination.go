@@ -49,7 +49,7 @@ func fetchAllPaginatedResults(ctx context.Context, client *APIClient, basePath s
 			return nil, err
 		}
 		if !StatusIsOK(res.StatusCode) {
-			return nil, fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+			return nil, fmt.Errorf("status %d: %s", res.StatusCode, formatAPIErrorBody(res.Body))
 		}
 
 		pageResults, pageInfo, err := parsePaginatedResponse(res.Body)
@@ -97,7 +97,8 @@ func parsePaginatedResponse(body []byte) ([]map[string]any, pageInfo, error) {
 	}
 
 	info := pageInfo{}
-	if len(payload.PageInfo) > 0 && string(payload.PageInfo) != "null" {
+	pageInfoRaw := strings.TrimSpace(string(payload.PageInfo))
+	if len(payload.PageInfo) > 0 && pageInfoRaw != "" && pageInfoRaw != "null" {
 		var raw map[string]any
 		if err := json.Unmarshal(payload.PageInfo, &raw); err != nil {
 			return nil, pageInfo{}, fmt.Errorf("failed to parse pageInfo: %w", err)
@@ -132,17 +133,45 @@ func shouldStopPagination(info pageInfo, pageLen, pageSize, totalFetched int) bo
 	if pageLen == 0 {
 		return true
 	}
-	// Short page means no further results under take/skip semantics.
-	if pageLen < pageSize {
-		return true
-	}
-	if info.hasPage && info.hasPages && info.page > 0 && info.pages > 0 && info.page >= info.pages {
-		return true
+	// Prefer server pagination metadata when present.
+	if info.hasPage && info.hasPages && info.page > 0 && info.pages > 0 {
+		if info.page >= info.pages {
+			return true
+		}
+		// Metadata says more pages exist; do not stop on a short page alone
+		// (servers may cap page size below the requested take).
+		if info.hasTotal && info.total >= 0 && totalFetched >= info.total {
+			return true
+		}
+		return false
 	}
 	if info.hasTotal && info.total >= 0 && totalFetched >= info.total {
 		return true
 	}
+	// Short-page heuristic only when no usable pageInfo metadata is available.
+	if pageLen < pageSize {
+		return true
+	}
 	return false
+}
+
+// formatAPIErrorBody extracts message/error from a JSON API body when present,
+// matching HandleAPIResponse diagnostics style.
+func formatAPIErrorBody(body []byte) string {
+	errorMsg := string(body)
+	var errBody struct {
+		Message string `json:"message"`
+		Error   string `json:"error"`
+	}
+	if err := json.Unmarshal(body, &errBody); err == nil {
+		if errBody.Message != "" {
+			return errBody.Message
+		}
+		if errBody.Error != "" {
+			return errBody.Error
+		}
+	}
+	return errorMsg
 }
 
 func splitPathQuery(basePath string) (string, url.Values, error) {
