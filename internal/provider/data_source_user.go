@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -97,30 +96,17 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		searchUsername = strings.ToLower(data.Username.ValueString())
 	}
 
-	// Fetch users (Seerr API doesn't support server-side filtering, so we fetch and filter client-side)
-	// We'll fetch up to 1000 users. If a server has more, this might need pagination logic, but 1000 is a safe upper bound for a typical homelab.
-	res, err := d.client.Request(ctx, "GET", "/api/v1/user?take=1000", "", nil)
+	// Seerr API doesn't support server-side filtering; fetch all users (paginated) and filter client-side.
+	results, err := fetchAllPaginatedResults(ctx, d.client, "/api/v1/user", defaultPaginationPageSize)
 	if err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
-		return
-	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
-		return
-	}
-
-	var parsedResponse struct {
-		Results []map[string]any `json:"results"`
-	}
-	if err := json.Unmarshal(res.Body, &parsedResponse); err != nil {
-		resp.Diagnostics.AddError("Read Failed", "Failed to parse API response: "+err.Error())
 		return
 	}
 
 	var matchedUser map[string]any
 	matchCount := 0
 
-	for _, u := range parsedResponse.Results {
+	for _, u := range results {
 		if searchEmail != "" {
 			if e, ok := u["email"].(string); ok && strings.ToLower(e) == searchEmail {
 				matchedUser = u
