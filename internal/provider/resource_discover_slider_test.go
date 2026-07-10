@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -119,6 +121,86 @@ func TestDiscoverSliderReadNormalizesBlankOptionalFields(t *testing.T) {
 	}
 	if !data.Sliders[0].Data.IsNull() {
 		t.Fatalf("expected blank data to normalize to null, got %#v", data.Sliders[0].Data)
+	}
+}
+
+func TestDiscoverSliderReadKeepsEmptyManagedList(t *testing.T) {
+	// Empty managed sliders is a valid intentional configuration. Read must keep
+	// the singleton resource in state (id = "settings") even when the API returns
+	// an empty list or only unrelated (unmanaged) sliders.
+	testCases := map[string]string{
+		"empty-api": `[]`,
+		"unrelated-sliders": `[{
+			"id":99,
+			"type":2,
+			"enabled":true,
+			"isBuiltIn":true,
+			"title":"",
+			"data":""
+		}]`,
+	}
+
+	for name, apiBody := range testCases {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodGet {
+					t.Fatalf("expected GET, got %s", r.Method)
+				}
+				if r.URL.Path != "/api/v1/settings/discover" {
+					t.Fatalf("unexpected path %s", r.URL.Path)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(apiBody))
+			}))
+			defer srv.Close()
+
+			baseURL, err := url.Parse(srv.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := &DiscoverSliderResource{
+				client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+			}
+
+			var schemaResp resource.SchemaResponse
+			r.Schema(context.Background(), resource.SchemaRequest{}, &schemaResp)
+
+			state := tfsdk.State{
+				Schema: schemaResp.Schema,
+			}
+			diags := state.Set(context.Background(), &DiscoverSliderModel{
+				ID:      types.StringValue("settings"),
+				Sliders: []DiscoverSliderItemModel{},
+			})
+			if diags.HasError() {
+				t.Fatalf("failed to set initial state: %v", diags)
+			}
+
+			req := resource.ReadRequest{State: state}
+			resp := resource.ReadResponse{State: state}
+
+			r.Read(context.Background(), req, &resp)
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+			}
+			if resp.State.Raw.IsNull() {
+				t.Fatal("expected resource to remain in state when managed sliders list is empty; RemoveResource was called")
+			}
+
+			var data DiscoverSliderModel
+			diags = resp.State.Get(context.Background(), &data)
+			if diags.HasError() {
+				t.Fatalf("failed to get state: %v", diags)
+			}
+			if got := data.ID.ValueString(); got != "settings" {
+				t.Fatalf("expected id %q, got %q", "settings", got)
+			}
+			if len(data.Sliders) != 0 {
+				t.Fatalf("expected empty managed sliders, got %d", len(data.Sliders))
+			}
+		})
 	}
 }
 
