@@ -42,6 +42,100 @@ func TestClientRequest(t *testing.T) {
 	}
 }
 
+func TestClientResolvePathPreservesBaseSubpath(t *testing.T) {
+	tests := []struct {
+		name         string
+		baseURL      string
+		path         string
+		wantPath     string
+		wantRawQuery string
+	}{
+		{
+			name:     "subpath base with absolute API path",
+			baseURL:  "https://example.com/seerr",
+			path:     "/api/v1/settings/main",
+			wantPath: "/seerr/api/v1/settings/main",
+		},
+		{
+			name:     "root base still works",
+			baseURL:  "https://example.com",
+			path:     "/api/v1/settings/main",
+			wantPath: "/api/v1/settings/main",
+		},
+		{
+			name:     "base with trailing slash in path",
+			baseURL:  "https://example.com/seerr/",
+			path:     "/api/v1/settings/main",
+			wantPath: "/seerr/api/v1/settings/main",
+		},
+		{
+			name:     "path without leading slash",
+			baseURL:  "https://example.com/seerr",
+			path:     "api/v1/settings/main",
+			wantPath: "/seerr/api/v1/settings/main",
+		},
+		{
+			name:         "preserves query string on API path",
+			baseURL:      "https://example.com/seerr",
+			path:         "/api/v1/issue?take=1000",
+			wantPath:     "/seerr/api/v1/issue",
+			wantRawQuery: "take=1000",
+		},
+		{
+			name:     "root base with trailing slash",
+			baseURL:  "https://example.com/",
+			path:     "/api/v1/settings/main",
+			wantPath: "/api/v1/settings/main",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := &APIClient{baseURL: mustParseURL(t, tt.baseURL)}
+			got, err := client.resolvePath(tt.path)
+			if err != nil {
+				t.Fatalf("resolvePath(%q) error: %v", tt.path, err)
+			}
+			if got.Path != tt.wantPath {
+				t.Fatalf("resolvePath(%q) path = %q, want %q", tt.path, got.Path, tt.wantPath)
+			}
+			if got.RawQuery != tt.wantRawQuery {
+				t.Fatalf("resolvePath(%q) RawQuery = %q, want %q", tt.path, got.RawQuery, tt.wantRawQuery)
+			}
+			if got.Scheme != client.baseURL.Scheme || got.Host != client.baseURL.Host {
+				t.Fatalf("resolvePath(%q) origin = %s://%s, want %s://%s",
+					tt.path, got.Scheme, got.Host, client.baseURL.Scheme, client.baseURL.Host)
+			}
+		})
+	}
+}
+
+func TestClientRequestPreservesBaseSubpath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/seerr/api/v1/settings/main" {
+			t.Fatalf("unexpected path %s, want /seerr/api/v1/settings/main", r.URL.Path)
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	// Simulate reverse-proxy subpath: base URL includes /seerr.
+	base, err := url.Parse(srv.URL + "/seerr")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second)
+	resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+}
+
 func TestClientRequestAllowsSameOriginAbsoluteURL(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/settings/main" {
