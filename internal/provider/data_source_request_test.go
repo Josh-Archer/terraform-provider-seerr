@@ -14,10 +14,14 @@ import (
 func TestRequestDataSourceReadSuccess(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			t.Fatalf("expected GET, got %s", r.Method)
+			t.Errorf("expected GET, got %s", r.Method)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
 		}
 		if r.URL.Path != "/api/v1/request/42" {
-			t.Fatalf("unexpected path %s", r.URL.Path)
+			t.Errorf("unexpected path %s", r.URL.Path)
+			http.Error(w, "not found", http.StatusNotFound)
+			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -53,11 +57,11 @@ func TestRequestDataSourceReadSuccess(t *testing.T) {
 	if got := data.Status.ValueInt64(); got != 2 {
 		t.Fatalf("expected status 2, got %d", got)
 	}
-	if got := data.MediaID.ValueInt64(); got != 550 {
-		t.Fatalf("expected media_id (tmdb) 550, got %d", got)
+	if got := data.MediaID.ValueInt64(); got != 7 {
+		t.Fatalf("expected media_id (seerr-internal) 7, got %d", got)
 	}
-	if got := data.SeerrMediaID.ValueInt64(); got != 7 {
-		t.Fatalf("expected seerr_media_id 7, got %d", got)
+	if got := data.TMDBID.ValueInt64(); got != 550 {
+		t.Fatalf("expected tmdb_id 550, got %d", got)
 	}
 	if got := data.MediaType.ValueString(); got != "movie" {
 		t.Fatalf("expected media_type movie, got %q", got)
@@ -76,7 +80,9 @@ func TestRequestDataSourceReadSuccess(t *testing.T) {
 func TestRequestDataSourceRead404(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/request/999" {
-			t.Fatalf("unexpected path %s", r.URL.Path)
+			t.Errorf("unexpected path %s", r.URL.Path)
+			http.Error(w, "unexpected path", http.StatusInternalServerError)
+			return
 		}
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"message":"Request does not exist."}`))

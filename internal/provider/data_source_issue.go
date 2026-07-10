@@ -42,7 +42,7 @@ func (d *IssueDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 				Required:            true,
 			},
 			"issue_type": schema.Int64Attribute{
-				MarkdownDescription: "The type of the issue (1: Video, 2: Audio, 3: Subtitle, 4: Other).",
+				MarkdownDescription: "The type of the issue (1: Video, 2: Audio, 3: Subtitle, 4: Other, 5: Unknown).",
 				Computed:            true,
 			},
 			"status": schema.Int64Attribute{

@@ -20,7 +20,7 @@ type RequestDataSourceModel struct {
 	ID           types.String `tfsdk:"id"`
 	Status       types.Int64  `tfsdk:"status"`
 	MediaID      types.Int64  `tfsdk:"media_id"`
-	SeerrMediaID types.Int64  `tfsdk:"seerr_media_id"`
+	TMDBID       types.Int64  `tfsdk:"tmdb_id"`
 	MediaType    types.String `tfsdk:"media_type"`
 	Is4K         types.Bool   `tfsdk:"is_4k"`
 	UserID       types.Int64  `tfsdk:"user_id"`
@@ -48,11 +48,11 @@ func (d *RequestDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 				Computed:            true,
 			},
 			"media_id": schema.Int64Attribute{
-				MarkdownDescription: "The TMDB ID of the media associated with the request.",
+				MarkdownDescription: "The Seerr-internal media ID associated with the request (matches `seerr_requests.media_id`).",
 				Computed:            true,
 			},
-			"seerr_media_id": schema.Int64Attribute{
-				MarkdownDescription: "The Seerr-internal media ID associated with the request.",
+			"tmdb_id": schema.Int64Attribute{
+				MarkdownDescription: "The TMDB ID of the media associated with the request.",
 				Computed:            true,
 			},
 			"media_type": schema.StringAttribute{
@@ -130,14 +130,14 @@ func (d *RequestDataSource) refreshRequest(ctx context.Context, data *RequestDat
 	}
 
 	if media, ok := m["media"].(map[string]any); ok {
-		if seerrMediaID, ok := int64ValueFromAny(media["id"]); ok {
-			data.SeerrMediaID = types.Int64Value(seerrMediaID)
+		if mediaID, ok := int64ValueFromAny(media["id"]); ok {
+			data.MediaID = types.Int64Value(mediaID)
 		}
 		if mediaType, ok := stringValueFromAny(media["mediaType"]); ok {
 			data.MediaType = types.StringValue(mediaType)
 		}
 		if tmdbID, ok := int64ValueFromAny(media["tmdbId"]); ok {
-			data.MediaID = types.Int64Value(tmdbID)
+			data.TMDBID = types.Int64Value(tmdbID)
 		}
 	}
 

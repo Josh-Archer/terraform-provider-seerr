@@ -28,9 +28,9 @@ data "seerr_request" "example" {
 ### Read-Only
 
 - `is_4k` (Boolean) Whether the request is for 4K media.
-- `media_id` (Number) The TMDB ID of the media associated with the request.
+- `media_id` (Number) The Seerr-internal media ID associated with the request (matches `seerr_requests.media_id`).
 - `media_type` (String) The media type (`movie` or `tv`).
 - `response_json` (String) Raw JSON response body from the API.
-- `seerr_media_id` (Number) The Seerr-internal media ID associated with the request.
 - `status` (Number) The status of the request (1: Pending, 2: Approved, 3: Declined).
+- `tmdb_id` (Number) The TMDB ID of the media associated with the request.
 - `user_id` (Number) The ID of the user who made the request.

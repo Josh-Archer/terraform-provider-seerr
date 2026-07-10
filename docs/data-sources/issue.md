@@ -28,7 +28,7 @@ data "seerr_issue" "example" {
 ### Read-Only
 
 - `created_by_id` (Number) The ID of the user who created the issue.
-- `issue_type` (Number) The type of the issue (1: Video, 2: Audio, 3: Subtitle, 4: Other).
+- `issue_type` (Number) The type of the issue (1: Video, 2: Audio, 3: Subtitle, 4: Other, 5: Unknown).
 - `media_id` (Number) The Seerr-internal media ID associated with the issue.
 - `response_json` (String) Raw JSON response body from the API.
 - `status` (Number) The status of the issue (1: Open, 2: Resolved).
