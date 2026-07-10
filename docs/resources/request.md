@@ -35,6 +35,8 @@ resource "seerr_request" "example" {
 - `seasons` (List of Number) List of season numbers to request (TV only).
 - `server_id` (Number) Override the server ID for the request.
 - `status` (Number) The desired status of the request (1: Pending, 2: Approved, 3: Declined).
+- `status_wait_interval_seconds` (Number) Seconds between status polls when status_wait_timeout_seconds is greater than 0. Defaults to 2; minimum 1.
+- `status_wait_timeout_seconds` (Number) Maximum seconds to wait after applying desired status for the observed request status to match. Defaults to 0 (waiting disabled).
 - `user_id` (Number) The ID of the user making the request (defaults to current user).
 
 ### Read-Only
