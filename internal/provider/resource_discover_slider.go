@@ -117,13 +117,12 @@ func (r *DiscoverSliderResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
+	// Discover settings is a singleton list endpoint. An empty managed list is a
+	// valid intentional configuration (sliders = []), so keep the resource in
+	// state with id = "settings" after a successful read.
 	data.ID = types.StringValue("settings")
 	resp.Diagnostics.Append(r.readManagedSliders(ctx, data.Sliders, &data)...)
 	if resp.Diagnostics.HasError() {
-		return
-	}
-	if len(data.Sliders) == 0 {
-		resp.State.RemoveResource(ctx)
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
