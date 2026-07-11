@@ -157,3 +157,13 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           create_annotated_tag: true
           tag_prefix: v
+
+      # Tags created with GITHUB_TOKEN do not fire on.push workflows (GitHub
+      # recursion guard). Explicitly dispatch Release so GoReleaser runs.
+      - name: Trigger Release workflow
+        if: steps.tag_version.outputs.new_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Dispatching Release for ${{ steps.tag_version.outputs.new_tag }}"
+          gh workflow run Release --repo "$GITHUB_REPOSITORY" --ref "${{ steps.tag_version.outputs.new_tag }}"
