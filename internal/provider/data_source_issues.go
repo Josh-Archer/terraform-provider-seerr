@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -92,26 +91,13 @@ func (d *IssuesDataSource) Configure(_ context.Context, req datasource.Configure
 func (d *IssuesDataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data IssuesDataSourceModel
 
-	// Fetch issues
-	res, err := d.client.Request(ctx, "GET", "/api/v1/issue?take=1000", "", nil)
+	results, err := fetchAllPaginatedResults(ctx, d.client, "/api/v1/issue", defaultPaginationPageSize)
 	if err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
-		return
-	}
 
-	var parsedResponse struct {
-		Results []map[string]any `json:"results"`
-	}
-	if err := json.Unmarshal(res.Body, &parsedResponse); err != nil {
-		resp.Diagnostics.AddError("Read Failed", "Failed to parse API response: "+err.Error())
-		return
-	}
-
-	for _, u := range parsedResponse.Results {
+	for _, u := range results {
 		issue := IssueSummaryModel{}
 
 		idRaw := u["id"]

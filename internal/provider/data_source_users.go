@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -88,25 +87,27 @@ func (d *UsersDataSource) Configure(_ context.Context, req datasource.ConfigureR
 func (d *UsersDataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data UsersDataSourceModel
 
-	// Fetch users
-	res, err := d.client.Request(ctx, "GET", "/api/v1/user?take=1000", "", nil)
+	users, err := d.fetchUsers(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
-	if !HandleAPIResponse(ctx, res, &resp.Diagnostics, "Read") {
-		return
+
+	data.Users = users
+	data.ID = types.StringValue("all_users")
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+// fetchUsers retrieves every user page from the Seerr API.
+func (d *UsersDataSource) fetchUsers(ctx context.Context) ([]UserSummaryModel, error) {
+	results, err := fetchAllPaginatedResults(ctx, d.client, "/api/v1/user", defaultPaginationPageSize)
+	if err != nil {
+		return nil, err
 	}
 
-	var parsedResponse struct {
-		Results []map[string]any `json:"results"`
-	}
-	if err := json.Unmarshal(res.Body, &parsedResponse); err != nil {
-		resp.Diagnostics.AddError("Read Failed", "Failed to parse API response: "+err.Error())
-		return
-	}
-
-	for _, u := range parsedResponse.Results {
+	users := make([]UserSummaryModel, 0, len(results))
+	for _, u := range results {
 		user := UserSummaryModel{}
 
 		idRaw := u["id"]
@@ -131,10 +132,7 @@ func (d *UsersDataSource) Read(ctx context.Context, _ datasource.ReadRequest, re
 			}
 		}
 
-		data.Users = append(data.Users, user)
+		users = append(users, user)
 	}
-
-	data.ID = types.StringValue("all_users")
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	return users, nil
 }
