@@ -3,7 +3,9 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -12,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -27,17 +30,19 @@ type RequestResource struct {
 }
 
 type RequestModel struct {
-	ID           types.String `tfsdk:"id"`
-	MediaType    types.String `tfsdk:"media_type"`
-	MediaID      types.Int64  `tfsdk:"media_id"`
-	SeerrMediaID types.Int64  `tfsdk:"seerr_media_id"`
-	Seasons      types.List   `tfsdk:"seasons"`
-	Is4K         types.Bool   `tfsdk:"is_4k"`
-	ServerID     types.Int64  `tfsdk:"server_id"`
-	ProfileID    types.Int64  `tfsdk:"profile_id"`
-	RootFolder   types.String `tfsdk:"root_folder"`
-	UserID       types.Int64  `tfsdk:"user_id"`
-	Status       types.Int64  `tfsdk:"status"`
+	ID                        types.String `tfsdk:"id"`
+	MediaType                 types.String `tfsdk:"media_type"`
+	MediaID                   types.Int64  `tfsdk:"media_id"`
+	SeerrMediaID              types.Int64  `tfsdk:"seerr_media_id"`
+	Seasons                   types.List   `tfsdk:"seasons"`
+	Is4K                      types.Bool   `tfsdk:"is_4k"`
+	ServerID                  types.Int64  `tfsdk:"server_id"`
+	ProfileID                 types.Int64  `tfsdk:"profile_id"`
+	RootFolder                types.String `tfsdk:"root_folder"`
+	UserID                    types.Int64  `tfsdk:"user_id"`
+	Status                    types.Int64  `tfsdk:"status"`
+	StatusWaitTimeoutSeconds  types.Int64  `tfsdk:"status_wait_timeout_seconds"`
+	StatusWaitIntervalSeconds types.Int64  `tfsdk:"status_wait_interval_seconds"`
 }
 
 func NewRequestResource() resource.Resource {
@@ -124,6 +129,24 @@ func (r *RequestResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 					int64validator.OneOf(1, 2, 3),
 				},
 			},
+			"status_wait_timeout_seconds": schema.Int64Attribute{
+				MarkdownDescription: "Maximum seconds to wait after applying desired status for the observed request status to match. Defaults to 0 (waiting disabled).",
+				Optional:            true,
+				Computed:            true,
+				Default:             int64default.StaticInt64(0),
+				Validators: []validator.Int64{
+					int64validator.AtLeast(0),
+				},
+			},
+			"status_wait_interval_seconds": schema.Int64Attribute{
+				MarkdownDescription: "Seconds between status polls when status_wait_timeout_seconds is greater than 0. Defaults to 2; minimum 1.",
+				Optional:            true,
+				Computed:            true,
+				Default:             int64default.StaticInt64(2),
+				Validators: []validator.Int64{
+					int64validator.AtLeast(1),
+				},
+			},
 		},
 	}
 }
@@ -202,6 +225,10 @@ func (r *RequestResource) Create(ctx context.Context, req resource.CreateRequest
 
 	if err := r.applyRequestStatus(ctx, extractedID, desiredStatus); err != nil {
 		resp.Diagnostics.AddError("Update Status Failed", err.Error())
+		return
+	}
+	if err := r.waitForDesiredRequestStatus(ctx, extractedID, desiredStatus, data); err != nil {
+		resp.Diagnostics.AddError("Wait For Request Status Failed", err.Error())
 		return
 	}
 	diags = r.readRequest(ctx, extractedID, &data)
@@ -316,6 +343,10 @@ func (r *RequestResource) Update(ctx context.Context, req resource.UpdateRequest
 		resp.Diagnostics.AddError("Update Status Failed", err.Error())
 		return
 	}
+	if err := r.waitForDesiredRequestStatus(ctx, data.ID.ValueString(), data.Status, data); err != nil {
+		resp.Diagnostics.AddError("Wait For Request Status Failed", err.Error())
+		return
+	}
 
 	diags := r.readRequest(ctx, data.ID.ValueString(), &data)
 	resp.Diagnostics.Append(diags...)
@@ -363,6 +394,127 @@ func (r *RequestResource) applyRequestStatus(ctx context.Context, requestID stri
 		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
 	}
 	return nil
+}
+
+func (r *RequestResource) waitForDesiredRequestStatus(ctx context.Context, requestID string, status types.Int64, data RequestModel) error {
+	if status.IsNull() || status.IsUnknown() {
+		return nil
+	}
+	timeoutSeconds := int64(0)
+	if !data.StatusWaitTimeoutSeconds.IsNull() && !data.StatusWaitTimeoutSeconds.IsUnknown() {
+		timeoutSeconds = data.StatusWaitTimeoutSeconds.ValueInt64()
+	}
+	if timeoutSeconds <= 0 {
+		return nil
+	}
+
+	intervalSeconds := int64(2)
+	if !data.StatusWaitIntervalSeconds.IsNull() && !data.StatusWaitIntervalSeconds.IsUnknown() {
+		intervalSeconds = data.StatusWaitIntervalSeconds.ValueInt64()
+	}
+	if intervalSeconds < 1 {
+		intervalSeconds = 1
+	}
+
+	return waitForRequestStatus(
+		ctx,
+		r.client,
+		requestID,
+		status.ValueInt64(),
+		time.Duration(timeoutSeconds)*time.Second,
+		time.Duration(intervalSeconds)*time.Second,
+		nil,
+	)
+}
+
+// waitForRequestStatus polls GET /api/v1/request/{id} until the observed status
+// matches wantStatus, the timeout elapses, or ctx is cancelled.
+// sleep may be nil to use a context-aware default sleep (injectable for tests).
+//
+// The wait timeout is applied as a context deadline so individual HTTP GETs cannot
+// outlive status_wait_timeout_seconds when the HTTP client timeout is larger.
+func waitForRequestStatus(ctx context.Context, client *APIClient, requestID string, wantStatus int64, timeout, interval time.Duration, sleep func(context.Context, time.Duration) error) error {
+	if sleep == nil {
+		sleep = sleepContext
+	}
+	if interval <= 0 {
+		interval = 2 * time.Second
+	}
+	if timeout <= 0 {
+		return nil
+	}
+
+	deadline := time.Now().Add(timeout)
+	waitCtx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
+
+	var lastStatus int64 = -1
+
+	for {
+		if err := waitCtx.Err(); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return fmt.Errorf("timed out after %s waiting for request %s to reach status %d (last observed %d)", timeout, requestID, wantStatus, lastStatus)
+			}
+			return fmt.Errorf("waiting for request %s status %d: %w", requestID, wantStatus, err)
+		}
+
+		res, err := client.Request(waitCtx, "GET", "/api/v1/request/"+requestID, "", nil)
+		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) || waitCtx.Err() != nil && errors.Is(waitCtx.Err(), context.DeadlineExceeded) {
+				return fmt.Errorf("timed out after %s waiting for request %s to reach status %d (last observed %d)", timeout, requestID, wantStatus, lastStatus)
+			}
+			if errors.Is(err, context.Canceled) || waitCtx.Err() != nil && errors.Is(waitCtx.Err(), context.Canceled) {
+				return fmt.Errorf("waiting for request %s status %d: %w", requestID, wantStatus, context.Canceled)
+			}
+			return fmt.Errorf("waiting for request %s status: %w", requestID, err)
+		}
+		if !StatusIsOK(res.StatusCode) {
+			return fmt.Errorf("waiting for request %s status: status %d: %s", requestID, res.StatusCode, string(res.Body))
+		}
+
+		var m map[string]any
+		if err := json.Unmarshal(res.Body, &m); err != nil {
+			return fmt.Errorf("waiting for request %s status: parse response: %w", requestID, err)
+		}
+		statusVal, ok := m["status"].(float64)
+		if !ok {
+			return fmt.Errorf("waiting for request %s status: response missing numeric status field", requestID)
+		}
+		lastStatus = int64(statusVal)
+		if lastStatus == wantStatus {
+			return nil
+		}
+
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return fmt.Errorf("timed out after %s waiting for request %s to reach status %d (last observed %d)", timeout, requestID, wantStatus, lastStatus)
+		}
+
+		sleepFor := interval
+		if remaining < sleepFor {
+			sleepFor = remaining
+		}
+		if err := sleep(waitCtx, sleepFor); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return fmt.Errorf("timed out after %s waiting for request %s to reach status %d (last observed %d)", timeout, requestID, wantStatus, lastStatus)
+			}
+			if errors.Is(err, context.Canceled) {
+				return fmt.Errorf("waiting for request %s status %d: %w", requestID, wantStatus, err)
+			}
+			return err
+		}
+	}
+}
+
+func sleepContext(ctx context.Context, d time.Duration) error {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
 }
 
 func requestStatusPath(status int64) (string, bool) {
