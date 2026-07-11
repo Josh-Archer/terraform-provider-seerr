@@ -211,7 +211,9 @@ func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewNotificationAgentsDataSource,
 		NewTautulliSettingsDataSource,
 		NewIssuesDataSource,
+		NewIssueDataSource,
 		NewRequestsDataSource,
+		NewRequestDataSource,
 		NewServiceStatusDataSource,
 		NewCurrentUserDataSource,
 		NewDiscoverSliderDataSource,
@@ -222,6 +224,7 @@ func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataS
 		NewOverrideRuleDataSource,
 		NewBlocklistDataSource,
 		NewMediaDataSource,
+		NewMediaItemDataSource,
 		NewDiscoverDataSource,
 	}
 }
