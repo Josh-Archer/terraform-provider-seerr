@@ -211,7 +211,7 @@ jobs:
     needs: [build-test, tofu-test-stable-trusted]
     permissions:
       contents: write
-      actions: read
+      actions: write
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
     steps:
