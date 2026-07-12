@@ -252,11 +252,11 @@ SEERR_TEST_SUITE=all bash ./scripts/test-integration.sh
 
 ## CI model
 
-- Pull requests run the fast gate (`scripts/test-all-locally.sh` without integration) plus the `stable` OpenTofu integration suite.
-- Pushes to `main` run the same gate and stable integration coverage before auto-tagging.
+- Pull requests run the fast gate (`scripts/test-all-locally.sh` without integration) plus the `stable` OpenTofu integration suite against an ephemeral local Seerr target. Pull requests never receive repository secrets and always use `ubuntu-latest`.
+- Pushes to `main`, schedules, and manual runs may use the trusted runner selected by the `TRUSTED_RUNNER_LABEL` variable. Configure that label to a UECB or isolated self-hosted runner only after restricting the `integration` environment and keeping the runner off the pull-request path.
 - Scheduled runs execute the broader `full` compatibility suite only. This keeps the merge gate deterministic while still exercising dependency-sensitive coverage regularly.
 - Manual runs support three modes through the GitHub Actions `integration_mode` input: `stable`, `full`, or `both`.
-- Stable-suite artifacts upload on failure. Full-suite artifacts upload on every run so scheduled/manual compatibility failures keep their diagnostics.
+- Stable- and full-suite artifacts upload only on failure, with a seven-day retention period.
 
 Use the stable suite for merge confidence and the full suite for broader compatibility triage. If a change only fails in the full suite, treat it as an environment or unsupported-endpoint investigation unless the stable suite also regresses.
 
@@ -275,6 +275,8 @@ Releases are created from git tags matching `v*` by GitHub Actions.
 Expected secrets for signed provider releases:
 - `GPG_PRIVATE_KEY`
 - `PASSPHRASE`
+
+Configure these as secrets on the protected `release` environment, not as repository secrets. Require maintainer approval for that environment. Configure `SEERR_URL` and `SEERR_API_KEY` on the protected `integration` environment if external integration testing is needed. Repository-level secrets with these names should be removed after the environment secrets are verified.
 
 ## OpenTofu registry naming
 

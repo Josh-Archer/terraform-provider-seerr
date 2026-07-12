@@ -180,12 +180,5 @@ elif [[ "${test_suite}" != "all" ]]; then
   exit 1
 fi
 
-run env \
-  "SEERR_URL=${SEERR_URL}" \
-  "SEERR_API_KEY=${SEERR_API_KEY}" \
-  "TF_VAR_url=${SEERR_URL}" \
-  "TF_VAR_api_key=${SEERR_API_KEY}" \
-  "${tofu_bin}" test \
-  -var="url=${SEERR_URL}" \
-  -var="api_key=${SEERR_API_KEY}" \
+run "${tofu_bin}" test \
   "${tofu_test_args[@]}" 2>&1 | tee "${tofu_test_log}"
