@@ -220,8 +220,22 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Find orphaned release tag
+        id: orphaned_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$(bash ./scripts/reconcile-release-tags.sh)"
+          tag="${result%%|*}"
+          in_flight="${result#*|}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "in_flight=${in_flight}" >> "$GITHUB_OUTPUT"
+
       - name: Bump version and push tag
         id: tag_version
+        if: steps.orphaned_release.outputs.tag == ''
         uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -230,10 +244,20 @@ jobs:
 
       # Tags created with GITHUB_TOKEN do not fire on.push workflows (GitHub
       # recursion guard). Explicitly dispatch Release so GoReleaser runs.
-      - name: Trigger Release workflow
-        if: steps.tag_version.outputs.new_tag != ''
+      - name: Retry oldest orphaned release
+        if: steps.orphaned_release.outputs.tag != '' && steps.orphaned_release.outputs.in_flight != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.orphaned_release.outputs.tag }}
         run: |
-          echo "Dispatching Release for ${{ steps.tag_version.outputs.new_tag }}"
-          gh workflow run Release --repo "$GITHUB_REPOSITORY" --ref "${{ steps.tag_version.outputs.new_tag }}"
+          echo "Dispatching Release for orphaned tag ${RELEASE_TAG}"
+          gh workflow run Release --repo "$GITHUB_REPOSITORY" --ref "${RELEASE_TAG}"
+
+      - name: Trigger Release workflow for new tag
+        if: steps.orphaned_release.outputs.tag == '' && steps.tag_version.outputs.new_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.tag_version.outputs.new_tag }}
+        run: |
+          echo "Dispatching Release for ${RELEASE_TAG}"
+          gh workflow run Release --repo "$GITHUB_REPOSITORY" --ref "${RELEASE_TAG}"

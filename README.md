@@ -272,6 +272,8 @@ The hook runs the same generated-file verification used by CI and fails the push
 
 Releases are created from git tags matching `v*` by GitHub Actions.
 
+Auto-tagging reconciles orphaned version tags before creating a new version. If a tag exists without a GitHub Release, the oldest pending tag is retried first; an already-running release is not duplicated. Maintainers can run the `Reconcile Releases` workflow manually when a release needs another retry without a new code push. Its optional `tag` input can explicitly backfill an older historical tag.
+
 Expected secrets for signed provider releases:
 - `GPG_PRIVATE_KEY`
 - `PASSPHRASE`
