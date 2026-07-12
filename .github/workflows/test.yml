@@ -25,10 +25,16 @@ permissions:
 jobs:
   build-test:
     name: Build and Test
-    runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
+    # Fork and same-repository PRs always use an isolated GitHub-hosted runner.
+    # Trusted runs can use UECB or an isolated self-hosted runner via this label.
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    permissions:
+      contents: read
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: go.mod
@@ -46,7 +52,11 @@ jobs:
 
   tofu-test-stable:
     name: OpenTofu Stable Integration (${{ matrix.tofu_version }})
-    runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    environment:
+      name: ${{ github.event_name == 'pull_request' && 'public-ci' || 'integration' }}
+    permissions:
+      contents: read
     timeout-minutes: 15
     if: github.event_name != 'schedule' && (github.event_name != 'workflow_dispatch' || inputs.integration_mode != 'full')
     strategy:
@@ -55,19 +65,21 @@ jobs:
         tofu_version:
           - 1.8.0
     env:
-      USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED }}
-      LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
-      LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
+      USE_SELF_HOSTED: ${{ github.event_name == 'pull_request' && 'false' || vars.USE_SELF_HOSTED || 'false' }}
+      LEGACY_SEERR_URL: ${{ github.event_name == 'pull_request' && '' || secrets.SEERR_URL }}
+      LEGACY_SEERR_API_KEY: ${{ github.event_name == 'pull_request' && '' || secrets.SEERR_API_KEY }}
       SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.1.1' }}
       SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: go.mod
           cache: true
       - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v1
+        uses: opentofu/setup-opentofu@9d84900f3238fab8cd84ce47d658d25dd008be2f # v1
         with:
           tofu_version: ${{ matrix.tofu_version }}
       - name: Use legacy external Seerr target when configured
@@ -85,15 +97,19 @@ jobs:
           SEERR_TEST_SUITE: stable
       - name: Upload integration diagnostics
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: stable-integration-artifacts-${{ matrix.tofu_version }}
           path: test-artifacts/
           if-no-files-found: ignore
+          retention-days: 7
 
   tofu-test-full:
     name: OpenTofu Full Compatibility (${{ matrix.tofu_version }})
-    runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    environment: integration
+    permissions:
+      contents: read
     timeout-minutes: 20
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.integration_mode != 'stable')
     strategy:
@@ -102,7 +118,7 @@ jobs:
         tofu_version:
           - 1.8.0
     env:
-      USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED }}
+      USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED || 'false' }}
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
       SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.1.1' }}
@@ -110,12 +126,14 @@ jobs:
       SEERR_TEST_SUITE: all
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: go.mod
           cache: true
       - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v1
+        uses: opentofu/setup-opentofu@9d84900f3238fab8cd84ce47d658d25dd008be2f # v1
         with:
           tofu_version: ${{ matrix.tofu_version }}
       - name: Use legacy external Seerr target when configured
@@ -130,25 +148,27 @@ jobs:
         shell: bash
         run: bash ./scripts/test-integration.sh
       - name: Upload full-suite diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: full-integration-artifacts-${{ matrix.tofu_version }}
           path: test-artifacts/
           if-no-files-found: ignore
+          retention-days: 7
 
   auto-tag:
     name: Auto Tag
     needs: [build-test, tofu-test-stable]
     permissions:
       contents: write
-      actions: write
+      actions: read
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ${{ (vars.USE_SELF_HOSTED == 'true' || vars.USE_SELF_HOSTED == true) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Bump version and push tag
         id: tag_version
