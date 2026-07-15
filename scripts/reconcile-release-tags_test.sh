@@ -52,6 +52,18 @@ assert_output() {
   echo "PASS ${name}"
 }
 
+assert_file_contains() {
+  local name="$1"
+  local file="$2"
+  local expected="$3"
+
+  if ! grep -Fq -- "${expected}" "${file}"; then
+    echo "FAIL ${name}: '${expected}' not found in ${file}" >&2
+    exit 1
+  fi
+  echo "PASS ${name}"
+}
+
 output="$(MOCK_PUBLISHED_TAGS=v0.20.7 select_tag)"
 assert_output "finds hole before later release" "v0.20.5|false" "${output}"
 
@@ -106,3 +118,22 @@ if RELEASE_RECONCILE_FROM_TAG=v9.9.9 select_tag >"${test_root}/unexpected.out" 2
 fi
 grep -Fq "Release tag does not exist" "${test_root}/floor.err"
 echo "PASS missing floor"
+
+release_workflow="${repo_root}/.github/workflows/release.yml"
+test_workflow="${repo_root}/.github/workflows/test.yml"
+assert_file_contains \
+  "tag checkout cannot resolve a same-named branch" \
+  "${release_workflow}" \
+  'ref: refs/tags/${{ env.RELEASE_TAG }}'
+assert_file_contains \
+  "release runs only from the default branch" \
+  "${release_workflow}" \
+  "if: github.ref_name == github.event.repository.default_branch"
+assert_file_contains \
+  "stale push guard fetches the current default-branch tip" \
+  "${test_workflow}" \
+  'refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}'
+assert_file_contains \
+  "stale push guard controls version allocation" \
+  "${test_workflow}" \
+  "if: steps.default_branch_tip.outputs.current == 'true'"

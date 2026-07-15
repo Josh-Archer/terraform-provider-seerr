@@ -18,6 +18,7 @@ permissions:
 
 jobs:
   goreleaser:
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
     environment: release
     permissions:
@@ -83,7 +84,7 @@ jobs:
         if: steps.release_state.outputs.published != 'true'
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ env.RELEASE_TAG }}
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           path: source
           fetch-depth: 0
           persist-credentials: false

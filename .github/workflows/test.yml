@@ -282,8 +282,26 @@ jobs:
             wait_for_release "${tag}"
           done
 
+      - name: Verify current default-branch tip
+        id: default_branch_tip
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            "refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
+          default_tip="$(git rev-parse "refs/remotes/origin/${DEFAULT_BRANCH}^{commit}")"
+          if [[ "${GITHUB_SHA}" != "${default_tip}" ]]; then
+            echo "current=false" >> "${GITHUB_OUTPUT}"
+            echo "Skipping version allocation because ${GITHUB_SHA} is no longer the ${DEFAULT_BRANCH} tip (${default_tip})."
+            exit 0
+          fi
+          echo "current=true" >> "${GITHUB_OUTPUT}"
+
       - name: Bump version and push tag
         id: tag_version
+        if: steps.default_branch_tip.outputs.current == 'true'
         uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -293,7 +311,7 @@ jobs:
       # Tags created with GITHUB_TOKEN do not fire on.push workflows (GitHub
       # recursion guard). Explicitly dispatch Release so GoReleaser runs.
       - name: Trigger Release workflow for new tag
-        if: steps.tag_version.outputs.new_tag != ''
+        if: steps.default_branch_tip.outputs.current == 'true' && steps.tag_version.outputs.new_tag != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.tag_version.outputs.new_tag }}
