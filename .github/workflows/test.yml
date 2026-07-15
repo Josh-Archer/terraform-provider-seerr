@@ -289,15 +289,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --no-tags origin \
-            "refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
-          default_tip="$(git rev-parse "refs/remotes/origin/${DEFAULT_BRANCH}^{commit}")"
-          if [[ "${GITHUB_SHA}" != "${default_tip}" ]]; then
-            echo "current=false" >> "${GITHUB_OUTPUT}"
-            echo "Skipping version allocation because ${GITHUB_SHA} is no longer the ${DEFAULT_BRANCH} tip (${default_tip})."
-            exit 0
+          current="$(bash ./scripts/release-tip-is-current.sh "${GITHUB_SHA}" "${DEFAULT_BRANCH}")"
+          echo "current=${current}" >> "${GITHUB_OUTPUT}"
+          if [[ "${current}" != "true" ]]; then
+            echo "Skipping version allocation because ${GITHUB_SHA} is no longer the ${DEFAULT_BRANCH} tip."
           fi
-          echo "current=true" >> "${GITHUB_OUTPUT}"
 
       - name: Bump version and push tag
         id: tag_version
@@ -308,10 +304,36 @@ jobs:
           create_annotated_tag: true
           tag_prefix: v
 
+      - name: Verify tagged commit is still the default-branch tip
+        id: tagged_branch_tip
+        if: steps.default_branch_tip.outputs.current == 'true' && steps.tag_version.outputs.new_tag != ''
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          RELEASE_TAG: ${{ steps.tag_version.outputs.new_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(bash ./scripts/release-tip-is-current.sh "${GITHUB_SHA}" "${DEFAULT_BRANCH}")"
+          echo "current=${current}" >> "${GITHUB_OUTPUT}"
+          if [[ "${current}" == "true" ]]; then
+            exit 0
+          fi
+
+          git fetch --force origin \
+            "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+          tagged_commit="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
+          if [[ "${tagged_commit}" != "${GITHUB_SHA}" ]]; then
+            echo "Refusing to delete ${RELEASE_TAG}: it no longer points to this run's commit." >&2
+            exit 1
+          fi
+          git push origin ":refs/tags/${RELEASE_TAG}"
+          echo "Removed stale ${RELEASE_TAG}; ${GITHUB_SHA} was no longer the ${DEFAULT_BRANCH} tip after tag creation." >&2
+          exit 1
+
       # Tags created with GITHUB_TOKEN do not fire on.push workflows (GitHub
       # recursion guard). Explicitly dispatch Release so GoReleaser runs.
       - name: Trigger Release workflow for new tag
-        if: steps.default_branch_tip.outputs.current == 'true' && steps.tag_version.outputs.new_tag != ''
+        if: steps.tagged_branch_tip.outputs.current == 'true' && steps.tag_version.outputs.new_tag != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.tag_version.outputs.new_tag }}
