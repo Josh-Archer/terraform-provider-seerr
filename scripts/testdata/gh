@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+contains_tag() {
+  local tags="$1"
+  local needle="$2"
+
+  [[ ",${tags}," == *",${needle},"* ]]
+}
+
+command_name="${1:-}"
+shift || true
+
+case "${command_name}" in
+  api)
+    tag=""
+    for argument in "$@"; do
+      case "${argument}" in
+        repos/*/releases/tags/*)
+          tag="${argument##*/releases/tags/}"
+          ;;
+      esac
+    done
+    [[ -n "${tag}" ]] || {
+      echo "fake gh: missing release tag API path" >&2
+      exit 2
+    }
+
+    if [[ "${MOCK_API_ERROR_TAG:-}" == "${tag}" ]]; then
+      echo "gh: simulated API failure (HTTP 500)" >&2
+      exit 1
+    fi
+    if contains_tag "${MOCK_PUBLISHED_TAGS:-}" "${tag}"; then
+      printf 'false\n'
+      exit 0
+    fi
+    if contains_tag "${MOCK_DRAFT_TAGS:-}" "${tag}"; then
+      printf 'true\n'
+      exit 0
+    fi
+
+    echo "gh: Not Found (HTTP 404)" >&2
+    exit 1
+    ;;
+  run)
+    subcommand="${1:-}"
+    shift || true
+    [[ "${subcommand}" == "list" ]] || {
+      echo "fake gh: unsupported run subcommand ${subcommand}" >&2
+      exit 2
+    }
+    if [[ "${MOCK_RUN_API_ERROR:-false}" == "true" ]]; then
+      echo "gh: simulated run API failure (HTTP 500)" >&2
+      exit 1
+    fi
+
+    tag=""
+    for argument in "$@"; do
+      if [[ "${argument}" == *'Release v'* ]]; then
+        tag="${argument#*Release }"
+        tag="${tag%%\"*}"
+      fi
+    done
+    if contains_tag "${MOCK_ACTIVE_TAGS:-}" "${tag}"; then
+      printf '1\n'
+    else
+      printf '0\n'
+    fi
+    ;;
+  *)
+    echo "fake gh: unsupported command ${command_name}" >&2
+    exit 2
+    ;;
+esac

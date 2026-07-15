@@ -209,31 +209,160 @@ jobs:
   auto-tag:
     name: Auto Tag
     needs: [build-test, tofu-test-stable-trusted]
+    concurrency:
+      group: release-tag-reconciliation
+      cancel-in-progress: false
     permissions:
       contents: write
       actions: write
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Reconcile all eligible release tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_RECONCILE_FROM_TAG: ${{ vars.RELEASE_RECONCILE_FROM_TAG || 'v0.20.5' }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_deadline=$((SECONDS + 3600))
+
+          wait_for_release() {
+            local tag="$1"
+            local response
+
+            while (( SECONDS < release_deadline )); do
+              if response="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" --jq '.draft' 2>&1)"; then
+                if [[ "${response}" == "false" ]]; then
+                  echo "Release ${tag} is published."
+                  return 0
+                fi
+                if [[ "${response}" != "true" ]]; then
+                  echo "Unexpected GitHub Release response for ${tag}: ${response}" >&2
+                  return 1
+                fi
+              elif [[ "${response}" != *"(HTTP 404)"* ]]; then
+                echo "Unable to inspect GitHub Release ${tag}: ${response}" >&2
+                return 1
+              fi
+              sleep 10
+            done
+
+            echo "Timed out waiting for release reconciliation to finish; ${tag} is still unpublished." >&2
+            return 1
+          }
+
+          while true; do
+            result="$(bash ./scripts/reconcile-release-tags.sh)"
+            tag="${result%%|*}"
+            in_flight="${result#*|}"
+
+            if [[ -z "${tag}" ]]; then
+              echo "All eligible release tags are published."
+              break
+            fi
+
+            if [[ "${in_flight}" != "true" ]]; then
+              echo "Dispatching the current hardened Release workflow for orphaned tag ${tag}"
+              gh workflow run release.yml \
+                --repo "${GITHUB_REPOSITORY}" \
+                --ref "${DEFAULT_BRANCH}" \
+                -f "release_tag=${tag}"
+            else
+              echo "Release for ${tag} is already queued or running."
+            fi
+
+            wait_for_release "${tag}"
+          done
+
+      - name: Verify current default-branch tip
+        id: default_branch_tip
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(bash ./scripts/release-tip-is-current.sh "${GITHUB_SHA}" "${DEFAULT_BRANCH}")"
+          echo "current=${current}" >> "${GITHUB_OUTPUT}"
+          if [[ "${current}" != "true" ]]; then
+            echo "Skipping version allocation because ${GITHUB_SHA} is no longer the ${DEFAULT_BRANCH} tip."
+          fi
+
       - name: Bump version and push tag
         id: tag_version
+        if: steps.default_branch_tip.outputs.current == 'true'
         uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          create_annotated_tag: true
+          dry_run: true
           tag_prefix: v
+
+      - name: Create annotated release tag
+        id: create_tag
+        if: steps.default_branch_tip.outputs.current == 'true' && steps.tag_version.outputs.new_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.tag_version.outputs.new_tag }}
+          TAG_MESSAGE: ${{ steps.tag_version.outputs.changelog }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${TAG_MESSAGE}" ]]; then
+            TAG_MESSAGE="Release ${RELEASE_TAG}"
+          fi
+          tag_object_sha="$(gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/git/tags" \
+            -f "tag=${RELEASE_TAG}" \
+            -f "message=${TAG_MESSAGE}" \
+            -f "object=${GITHUB_SHA}" \
+            -f type=commit \
+            --jq .sha)"
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/git/refs" \
+            -f "ref=refs/tags/${RELEASE_TAG}" \
+            -f "sha=${tag_object_sha}" >/dev/null
+          echo "tag_object_sha=${tag_object_sha}" >> "${GITHUB_OUTPUT}"
+
+      - name: Verify tagged commit is still the default-branch tip
+        id: tagged_branch_tip
+        if: steps.create_tag.outputs.tag_object_sha != ''
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          EXPECTED_TAG_OBJECT: ${{ steps.create_tag.outputs.tag_object_sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.tag_version.outputs.new_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(bash ./scripts/release-tip-is-current.sh "${GITHUB_SHA}" "${DEFAULT_BRANCH}")"
+          echo "current=${current}" >> "${GITHUB_OUTPUT}"
+          if [[ "${current}" == "true" ]]; then
+            exit 0
+          fi
+
+          bash ./scripts/delete-release-tag-if-unchanged.sh \
+            "${RELEASE_TAG}" "${EXPECTED_TAG_OBJECT}"
+          echo "Removed stale ${RELEASE_TAG}; ${GITHUB_SHA} was no longer the ${DEFAULT_BRANCH} tip after tag creation." >&2
+          exit 1
 
       # Tags created with GITHUB_TOKEN do not fire on.push workflows (GitHub
       # recursion guard). Explicitly dispatch Release so GoReleaser runs.
-      - name: Trigger Release workflow
-        if: steps.tag_version.outputs.new_tag != ''
+      - name: Trigger Release workflow for new tag
+        if: steps.tagged_branch_tip.outputs.current == 'true' && steps.tag_version.outputs.new_tag != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.tag_version.outputs.new_tag }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          echo "Dispatching Release for ${{ steps.tag_version.outputs.new_tag }}"
-          gh workflow run Release --repo "$GITHUB_REPOSITORY" --ref "${{ steps.tag_version.outputs.new_tag }}"
+          echo "Dispatching Release for ${RELEASE_TAG}"
+          gh workflow run release.yml \
+            --repo "${GITHUB_REPOSITORY}" \
+            --ref "${DEFAULT_BRANCH}" \
+            -f "release_tag=${RELEASE_TAG}"

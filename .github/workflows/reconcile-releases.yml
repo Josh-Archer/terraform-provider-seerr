@@ -1,0 +1,58 @@
+name: Reconcile Releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Specific historical tag to retry; leave blank for the oldest eligible pending tag
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    name: Reconcile orphaned release tags
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-tag-reconciliation
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout tags
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Dispatch the oldest pending release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_RECONCILE_FROM_TAG: ${{ vars.RELEASE_RECONCILE_FROM_TAG || 'v0.20.5' }}
+          RELEASE_TAG_OVERRIDE: ${{ inputs.tag }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$(bash ./scripts/reconcile-release-tags.sh)"
+          tag="${result%%|*}"
+          in_flight="${result#*|}"
+
+          if [[ -z "${tag}" ]]; then
+            echo "No orphaned release tags found."
+            exit 0
+          fi
+
+          if [[ "${in_flight}" == "true" ]]; then
+            echo "Release for ${tag} is already queued or running."
+            exit 0
+          fi
+
+          echo "Dispatching the current hardened Release workflow for orphaned tag ${tag}"
+          gh workflow run release.yml \
+            --repo "${GITHUB_REPOSITORY}" \
+            --ref "${DEFAULT_BRANCH}" \
+            -f "release_tag=${tag}"
