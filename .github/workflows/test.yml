@@ -209,33 +209,81 @@ jobs:
   auto-tag:
     name: Auto Tag
     needs: [build-test, tofu-test-stable-trusted]
+    concurrency:
+      group: release-tag-reconciliation
+      cancel-in-progress: false
     permissions:
       contents: write
       actions: write
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Find orphaned release tag
-        id: orphaned_release
+      - name: Reconcile all eligible release tags
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_RECONCILE_FROM_TAG: ${{ vars.RELEASE_RECONCILE_FROM_TAG || 'v0.20.5' }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         shell: bash
         run: |
           set -euo pipefail
-          result="$(bash ./scripts/reconcile-release-tags.sh)"
-          tag="${result%%|*}"
-          in_flight="${result#*|}"
-          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
-          echo "in_flight=${in_flight}" >> "$GITHUB_OUTPUT"
+          release_deadline=$((SECONDS + 3600))
+
+          wait_for_release() {
+            local tag="$1"
+            local response
+
+            while (( SECONDS < release_deadline )); do
+              if response="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" --jq '.draft' 2>&1)"; then
+                if [[ "${response}" == "false" ]]; then
+                  echo "Release ${tag} is published."
+                  return 0
+                fi
+                if [[ "${response}" != "true" ]]; then
+                  echo "Unexpected GitHub Release response for ${tag}: ${response}" >&2
+                  return 1
+                fi
+              elif [[ "${response}" != *"(HTTP 404)"* ]]; then
+                echo "Unable to inspect GitHub Release ${tag}: ${response}" >&2
+                return 1
+              fi
+              sleep 10
+            done
+
+            echo "Timed out waiting for release reconciliation to finish; ${tag} is still unpublished." >&2
+            return 1
+          }
+
+          while true; do
+            result="$(bash ./scripts/reconcile-release-tags.sh)"
+            tag="${result%%|*}"
+            in_flight="${result#*|}"
+
+            if [[ -z "${tag}" ]]; then
+              echo "All eligible release tags are published."
+              break
+            fi
+
+            if [[ "${in_flight}" != "true" ]]; then
+              echo "Dispatching the current hardened Release workflow for orphaned tag ${tag}"
+              gh workflow run release.yml \
+                --repo "${GITHUB_REPOSITORY}" \
+                --ref "${DEFAULT_BRANCH}" \
+                -f "release_tag=${tag}"
+            else
+              echo "Release for ${tag} is already queued or running."
+            fi
+
+            wait_for_release "${tag}"
+          done
 
       - name: Bump version and push tag
         id: tag_version
-        if: steps.orphaned_release.outputs.tag == ''
         uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -244,20 +292,15 @@ jobs:
 
       # Tags created with GITHUB_TOKEN do not fire on.push workflows (GitHub
       # recursion guard). Explicitly dispatch Release so GoReleaser runs.
-      - name: Retry oldest orphaned release
-        if: steps.orphaned_release.outputs.tag != '' && steps.orphaned_release.outputs.in_flight != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ steps.orphaned_release.outputs.tag }}
-        run: |
-          echo "Dispatching Release for orphaned tag ${RELEASE_TAG}"
-          gh workflow run Release --repo "$GITHUB_REPOSITORY" --ref "${RELEASE_TAG}"
-
       - name: Trigger Release workflow for new tag
-        if: steps.orphaned_release.outputs.tag == '' && steps.tag_version.outputs.new_tag != ''
+        if: steps.tag_version.outputs.new_tag != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.tag_version.outputs.new_tag }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           echo "Dispatching Release for ${RELEASE_TAG}"
-          gh workflow run Release --repo "$GITHUB_REPOSITORY" --ref "${RELEASE_TAG}"
+          gh workflow run release.yml \
+            --repo "${GITHUB_REPOSITORY}" \
+            --ref "${DEFAULT_BRANCH}" \
+            -f "release_tag=${RELEASE_TAG}"

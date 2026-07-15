@@ -1,10 +1,17 @@
 name: Release
+run-name: Release ${{ inputs.release_tag }}
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Exact version tag to build with the current hardened release workflow
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ inputs.release_tag }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -15,16 +22,82 @@ jobs:
     environment: release
     permissions:
       contents: write
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Validate release tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          semver_pattern='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+          if [[ ! "${RELEASE_TAG}" =~ ${semver_pattern} ]]; then
+            echo "Invalid release tag: ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+          gh api --silent "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}"
+
+      - name: Check release state
+        id: release_state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if response="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq '.draft' 2>&1)"; then
+            case "${response}" in
+              false)
+                echo "published=true" >> "$GITHUB_OUTPUT"
+                echo "Release ${RELEASE_TAG} is already published; nothing to do."
+                ;;
+              true)
+                echo "published=false" >> "$GITHUB_OUTPUT"
+                echo "Release ${RELEASE_TAG} has an incomplete draft; resuming it."
+                ;;
+              *)
+                echo "Unexpected GitHub Release response: ${response}" >&2
+                exit 1
+                ;;
+            esac
+          elif [[ "${response}" == *"(HTTP 404)"* ]]; then
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unable to inspect GitHub Release ${RELEASE_TAG}: ${response}" >&2
+            exit 1
+          fi
+
+      # Keep the publishing policy/configuration on the default branch while
+      # building the exact source tree identified by RELEASE_TAG.
+      - name: Checkout release controls
+        if: steps.release_state.outputs.published != 'true'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          # workflow_dispatch resolves github.sha from the selected default-
+          # branch ref, so policy and config match the loaded workflow exactly.
+          ref: ${{ github.sha }}
+          path: release-control
+          persist-credentials: false
+
+      - name: Checkout tagged source
+        if: steps.release_state.outputs.published != 'true'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          path: source
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+
+      - name: Set up Go
+        if: steps.release_state.outputs.published != 'true'
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
-          go-version-file: go.mod
+          go-version-file: source/go.mod
+          cache-dependency-path: source/go.sum
           cache: true
+
       - name: Detect signing availability
+        if: steps.release_state.outputs.published != 'true'
         id: signing
         run: |
           if [ -n "${{ secrets.GPG_PRIVATE_KEY }}" ] && [ -n "${{ secrets.PASSPHRASE }}" ]; then
@@ -32,25 +105,30 @@ jobs:
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
+
       - name: Import GPG key
-        if: ${{ steps.signing.outputs.enabled == 'true' }}
+        if: steps.release_state.outputs.published != 'true' && steps.signing.outputs.enabled == 'true'
         uses: crazy-max/ghaction-import-gpg@e89d40939c28e39f97cf32126055eeae86ba74ec # v6.3.0
         id: import_gpg
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
+
       - name: Run GoReleaser (signed)
-        if: ${{ steps.import_gpg.outputs.fingerprint != '' }}
+        if: steps.release_state.outputs.published != 'true' && steps.import_gpg.outputs.fingerprint != ''
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
         with:
-          args: release --clean
+          workdir: source
+          args: release --clean --config ../release-control/.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+
       - name: Run GoReleaser (unsigned fallback)
-        if: ${{ steps.import_gpg.outputs.fingerprint == '' }}
+        if: steps.release_state.outputs.published != 'true' && steps.import_gpg.outputs.fingerprint == ''
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
         with:
-          args: release --clean --skip=sign
+          workdir: source
+          args: release --clean --skip=sign --config ../release-control/.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

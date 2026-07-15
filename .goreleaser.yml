@@ -55,6 +55,10 @@ signs:
       - "--detach-sign"
       - "${artifact}"
 release:
+  # GoReleaser creates a draft while uploading. Resume that draft after a
+  # partial publication failure and replace any assets already uploaded.
+  use_existing_draft: true
+  replace_existing_artifacts: true
   extra_files:
     - glob: 'terraform-registry-manifest.json'
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'

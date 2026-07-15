@@ -270,9 +270,11 @@ The hook runs the same generated-file verification used by CI and fails the push
 
 ## Release and publish
 
-Releases are created from git tags matching `v*` by GitHub Actions.
+The `Release` workflow builds an explicitly selected version tag. Auto-tagging and manual reconciliation dispatch the workflow from the default branch, so an old tag can never select an old workflow definition.
 
-Auto-tagging reconciles orphaned version tags before creating a new version. If a tag exists without a GitHub Release, the oldest pending tag is retried first; an already-running release is not duplicated. Maintainers can run the `Reconcile Releases` workflow manually when a release needs another retry without a new code push. Its optional `tag` input can explicitly backfill an older historical tag.
+Auto-tagging reconciles orphaned stable version tags before creating a new version. Automatic reconciliation starts at the repository variable `RELEASE_RECONCILE_FROM_TAG` (default `v0.20.5`), which avoids publishing intentionally skipped legacy or prerelease tags. Every eligible orphan is published before the current commit is tagged. Maintainers can run the `Reconcile Releases` workflow manually to retry the oldest eligible tag without a new code push; its optional `tag` input explicitly backfills any valid historical version tag.
+
+Release backfills always execute the current hardened workflow and publishing configuration from the default branch, then build the exact requested tag. The workflows serialize tag allocation and release dispatch, skip already-published releases, resume incomplete drafts, and fail closed when GitHub release state cannot be verified.
 
 Expected secrets for signed provider releases:
 - `GPG_PRIVATE_KEY`
