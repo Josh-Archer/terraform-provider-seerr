@@ -301,14 +301,42 @@ jobs:
         uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          create_annotated_tag: true
+          dry_run: true
           tag_prefix: v
+
+      - name: Create annotated release tag
+        id: create_tag
+        if: steps.default_branch_tip.outputs.current == 'true' && steps.tag_version.outputs.new_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.tag_version.outputs.new_tag }}
+          TAG_MESSAGE: ${{ steps.tag_version.outputs.changelog }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${TAG_MESSAGE}" ]]; then
+            TAG_MESSAGE="Release ${RELEASE_TAG}"
+          fi
+          tag_object_sha="$(gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/git/tags" \
+            -f "tag=${RELEASE_TAG}" \
+            -f "message=${TAG_MESSAGE}" \
+            -f "object=${GITHUB_SHA}" \
+            -f type=commit \
+            --jq .sha)"
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/git/refs" \
+            -f "ref=refs/tags/${RELEASE_TAG}" \
+            -f "sha=${tag_object_sha}" >/dev/null
+          echo "tag_object_sha=${tag_object_sha}" >> "${GITHUB_OUTPUT}"
 
       - name: Verify tagged commit is still the default-branch tip
         id: tagged_branch_tip
-        if: steps.default_branch_tip.outputs.current == 'true' && steps.tag_version.outputs.new_tag != ''
+        if: steps.create_tag.outputs.tag_object_sha != ''
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          EXPECTED_TAG_OBJECT: ${{ steps.create_tag.outputs.tag_object_sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.tag_version.outputs.new_tag }}
         shell: bash
         run: |
@@ -319,14 +347,8 @@ jobs:
             exit 0
           fi
 
-          git fetch --force origin \
-            "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
-          tagged_commit="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
-          if [[ "${tagged_commit}" != "${GITHUB_SHA}" ]]; then
-            echo "Refusing to delete ${RELEASE_TAG}: it no longer points to this run's commit." >&2
-            exit 1
-          fi
-          git push origin ":refs/tags/${RELEASE_TAG}"
+          bash ./scripts/delete-release-tag-if-unchanged.sh \
+            "${RELEASE_TAG}" "${EXPECTED_TAG_OBJECT}"
           echo "Removed stale ${RELEASE_TAG}; ${GITHUB_SHA} was no longer the ${DEFAULT_BRANCH} tip after tag creation." >&2
           exit 1
 

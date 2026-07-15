@@ -4,6 +4,7 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 selector="${repo_root}/scripts/reconcile-release-tags.sh"
 tip_guard="${repo_root}/scripts/release-tip-is-current.sh"
+tag_rollback="${repo_root}/scripts/delete-release-tag-if-unchanged.sh"
 fake_bin="${repo_root}/scripts/testdata"
 test_root="$(mktemp -d)"
 fixture_repo="${test_root}/repo"
@@ -125,6 +126,31 @@ git -C "${fixture_repo}" push -q tip-test main
 output="$(cd "${fixture_repo}" && RELEASE_REMOTE=tip-test bash "${tip_guard}" "${original_tip}" main)"
 assert_output "stale default-branch tip is rejected" "false" "${output}"
 
+git -C "${fixture_repo}" tag -a v8.8.8 -m "stale release tag" "${original_tip}"
+git -C "${fixture_repo}" push -q tip-test refs/tags/v8.8.8
+stale_tag_object="$(git -C "${fixture_repo}" rev-parse refs/tags/v8.8.8)"
+(cd "${fixture_repo}" && bash "${tag_rollback}" v8.8.8 "${stale_tag_object}" tip-test)
+if git --git-dir="${tip_remote}" show-ref --verify --quiet refs/tags/v8.8.8; then
+  echo "FAIL unchanged tag rollback: tag still exists" >&2
+  exit 1
+fi
+echo "PASS unchanged tag rollback"
+
+git -C "${fixture_repo}" tag -f -a v8.8.8 -m "original tag" "${original_tip}"
+git -C "${fixture_repo}" push -q tip-test refs/tags/v8.8.8
+original_tag_object="$(git -C "${fixture_repo}" rev-parse refs/tags/v8.8.8)"
+git -C "${fixture_repo}" tag -f -a v8.8.8 -m "replacement tag" "${original_tip}"
+replacement_tag_object="$(git -C "${fixture_repo}" rev-parse refs/tags/v8.8.8)"
+git -C "${fixture_repo}" push -q --force tip-test refs/tags/v8.8.8
+if (cd "${fixture_repo}" && bash "${tag_rollback}" v8.8.8 "${original_tag_object}" tip-test) \
+  >"${test_root}/unexpected.out" 2>"${test_root}/rollback.err"; then
+  echo "FAIL replaced tag rollback: command succeeded unexpectedly" >&2
+  exit 1
+fi
+grep -Fq "remote tag object changed" "${test_root}/rollback.err"
+remote_tag_object="$(git --git-dir="${tip_remote}" rev-parse refs/tags/v8.8.8)"
+assert_output "replaced tag rollback is refused" "${replacement_tag_object}" "${remote_tag_object}"
+
 python3 - "${release_workflow}" "${test_workflow}" <<'PY'
 from pathlib import Path
 import sys
@@ -167,12 +193,20 @@ if "release-tip-is-current.sh" not in precheck:
 bump = step_block(test_path, "Bump version and push tag")
 if "if: steps.default_branch_tip.outputs.current == 'true'" not in bump:
     raise SystemExit("version allocation is not gated by the pre-tag tip check")
+if "dry_run: true" not in bump:
+    raise SystemExit("version calculation must not create the tag directly")
+
+create_tag = step_block(test_path, "Create annotated release tag")
+for required in ("git/tags", "git/refs", "tag_object_sha="):
+    if required not in create_tag:
+        raise SystemExit(f"annotated tag creation is missing: {required}")
 
 postcheck = step_block(test_path, "Verify tagged commit is still the default-branch tip")
 for required in (
     "release-tip-is-current.sh",
-    'git push origin ":refs/tags/${RELEASE_TAG}"',
-    "tagged_commit=",
+    "delete-release-tag-if-unchanged.sh",
+    "EXPECTED_TAG_OBJECT",
+    "GITHUB_TOKEN",
 ):
     if required not in postcheck:
         raise SystemExit(f"post-tag stale rollback is missing: {required}")
