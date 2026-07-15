@@ -141,7 +141,7 @@ if [[ -z "${SEERR_URL:-}" || -z "${SEERR_API_KEY:-}" ]]; then
 
   while IFS= read -r line; do
     [[ -n "${line}" ]] || continue
-    export "${line}"
+    export "${line?}"
   done <<< "${docker_env}"
 fi
 

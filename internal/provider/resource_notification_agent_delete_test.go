@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -41,9 +42,9 @@ func TestNotificationDeleteConvergedWhenDisabled(t *testing.T) {
 }
 
 func TestNotificationDeleteIgnoresTimeoutWhenAgentAlreadyDisabled(t *testing.T) {
-	var requestCount int
+	var requestCount atomic.Int64
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestCount++
+		requestCount.Add(1)
 		if r.URL.Path != "/api/v1/settings/notifications/pushover" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
@@ -76,7 +77,7 @@ func TestNotificationDeleteIgnoresTimeoutWhenAgentAlreadyDisabled(t *testing.T) 
 	if resp.Diagnostics.HasError() {
 		t.Fatalf("expected delete to succeed after converged timeout, got %v", resp.Diagnostics)
 	}
-	if requestCount < 2 {
-		t.Fatalf("expected timeout recovery to issue a follow-up GET, got %d requests", requestCount)
+	if got := requestCount.Load(); got < 2 {
+		t.Fatalf("expected timeout recovery to issue a follow-up GET, got %d requests", got)
 	}
 }

@@ -97,26 +97,41 @@ jobs:
           cache-dependency-path: source/go.sum
           cache: true
 
-      - name: Detect signing availability
+      - name: Require release signing credentials
         if: steps.release_state.outputs.published != 'true'
-        id: signing
+        env:
+          HAS_GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY != '' }}
+          HAS_GPG_PASSPHRASE: ${{ secrets.PASSPHRASE != '' }}
+        shell: bash
         run: |
-          if [ -n "${{ secrets.GPG_PRIVATE_KEY }}" ] && [ -n "${{ secrets.PASSPHRASE }}" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          if [[ "${HAS_GPG_PRIVATE_KEY}" != "true" || "${HAS_GPG_PASSPHRASE}" != "true" ]]; then
+            echo "Release signing requires both GPG_PRIVATE_KEY and PASSPHRASE secrets." >&2
+            exit 1
           fi
 
       - name: Import GPG key
-        if: steps.release_state.outputs.published != 'true' && steps.signing.outputs.enabled == 'true'
+        if: steps.release_state.outputs.published != 'true'
         uses: crazy-max/ghaction-import-gpg@e89d40939c28e39f97cf32126055eeae86ba74ec # v6.3.0
         id: import_gpg
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
 
-      - name: Run GoReleaser (signed)
-        if: steps.release_state.outputs.published != 'true' && steps.import_gpg.outputs.fingerprint != ''
+      - name: Verify imported signing key
+        if: steps.release_state.outputs.published != 'true'
+        env:
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${GPG_FINGERPRINT}" ]]; then
+            echo "The release signing key was not imported successfully." >&2
+            exit 1
+          fi
+
+      - name: Run GoReleaser
+        if: steps.release_state.outputs.published != 'true'
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
         with:
           workdir: source
@@ -124,12 +139,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
-
-      - name: Run GoReleaser (unsigned fallback)
-        if: steps.release_state.outputs.published != 'true' && steps.import_gpg.outputs.fingerprint == ''
-        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
-        with:
-          workdir: source
-          args: release --clean --skip=sign --config ../release-control/.goreleaser.yml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

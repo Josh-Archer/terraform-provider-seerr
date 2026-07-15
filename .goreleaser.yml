@@ -65,4 +65,7 @@ release:
   # If you want to manually examine the release before its live, uncomment this line:
   # draft: true
 changelog:
-  disable: true
+  # Delegate release-note generation to GitHub so merged pull requests,
+  # contributors, and the full comparison link are included automatically.
+  # Categories are configured in .github/release.yml.
+  use: github-native

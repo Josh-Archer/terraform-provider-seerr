@@ -40,6 +40,34 @@ func TestProviderSurfaceParity(t *testing.T) {
 	assertLocalModuleSourcesExist(t, filepath.Join(repoRoot, "examples", "modules"))
 }
 
+func TestRegisteredDataSourceSchemas(t *testing.T) {
+	ctx := context.Background()
+	provider := New("test")()
+	seen := map[string]struct{}{}
+
+	for _, factory := range provider.DataSources(ctx) {
+		dataSource := factory()
+		var metadata datasource.MetadataResponse
+		dataSource.Metadata(ctx, datasource.MetadataRequest{ProviderTypeName: "seerr"}, &metadata)
+		if strings.TrimSpace(metadata.TypeName) == "" {
+			t.Fatal("registered data source returned an empty type name")
+		}
+		if _, duplicate := seen[metadata.TypeName]; duplicate {
+			t.Fatalf("duplicate registered data source type %s", metadata.TypeName)
+		}
+		seen[metadata.TypeName] = struct{}{}
+
+		var schemaResp datasource.SchemaResponse
+		dataSource.Schema(ctx, datasource.SchemaRequest{}, &schemaResp)
+		if schemaResp.Diagnostics.HasError() {
+			t.Fatalf("data source %s schema diagnostics: %v", metadata.TypeName, schemaResp.Diagnostics)
+		}
+		if len(schemaResp.Schema.Attributes) == 0 && len(schemaResp.Schema.Blocks) == 0 {
+			t.Fatalf("data source %s has an empty schema", metadata.TypeName)
+		}
+	}
+}
+
 func repoRootFromTest(t *testing.T) string {
 	t.Helper()
 	_, filename, _, ok := runtime.Caller(0)

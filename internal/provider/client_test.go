@@ -313,6 +313,31 @@ func TestClientRequestDoesNotRetryContextCancellation(t *testing.T) {
 	}
 }
 
+func TestExtractIDFromJSON(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want string
+		ok   bool
+	}{
+		{name: "string", body: `{"id":"request-42"}`, want: "request-42", ok: true},
+		{name: "number", body: `{"id":42}`, want: "42", ok: true},
+		{name: "blank", body: `{"id":"  "}`},
+		{name: "missing", body: `{"status":"ok"}`},
+		{name: "unsupported", body: `{"id":true}`},
+		{name: "malformed", body: `{`},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, ok := ExtractIDFromJSON([]byte(test.body))
+			if got != test.want || ok != test.ok {
+				t.Fatalf("ExtractIDFromJSON(%s) = %q, %v; want %q, %v", test.body, got, ok, test.want, test.ok)
+			}
+		})
+	}
+}
+
 type roundTripperFunc func(*http.Request) (*http.Response, error)
 
 func (fn roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {

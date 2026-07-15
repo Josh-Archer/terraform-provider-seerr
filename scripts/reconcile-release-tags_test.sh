@@ -121,6 +121,7 @@ echo "PASS missing floor"
 
 release_workflow="${repo_root}/.github/workflows/release.yml"
 test_workflow="${repo_root}/.github/workflows/test.yml"
+# shellcheck disable=SC2016 # Literal GitHub expression under test.
 assert_file_contains \
   "tag checkout cannot resolve a same-named branch" \
   "${release_workflow}" \
@@ -129,6 +130,7 @@ assert_file_contains \
   "release runs only from the default branch" \
   "${release_workflow}" \
   "if: github.ref_name == github.event.repository.default_branch"
+# shellcheck disable=SC2016 # Literal shell expression embedded in the workflow.
 assert_file_contains \
   "stale push guard fetches the current default-branch tip" \
   "${test_workflow}" \

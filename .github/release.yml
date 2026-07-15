@@ -1,0 +1,25 @@
+changelog:
+  categories:
+    - title: Security
+      labels:
+        - security
+    - title: Features
+      labels:
+        - enhancement
+    - title: Bug fixes
+      labels:
+        - bug
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Dependencies
+      labels:
+        - dependencies
+        - github_actions
+        - go
+    - title: Refactoring
+      labels:
+        - refactor
+    - title: Other changes
+      labels:
+        - "*"

@@ -106,6 +106,11 @@ or [`docs/data-sources`](./docs/data-sources) with at least one example usage bl
 - Go `1.25+`
 - OpenTofu `1.8.x+`
 
+CI continuously tests the pinned compatibility endpoints OpenTofu 1.8.0 with
+Seerr 3.1.1 and OpenTofu 1.12.4 with Seerr 3.3.0. These are the minimum and
+recently verified combinations; versions between those endpoints are expected
+to work but are not tested on every pull request.
+
 ## Provider configuration
 
 ```hcl
@@ -246,13 +251,14 @@ SEERR_TEST_SUITE=all bash ./scripts/test-integration.sh
 ```
 
 - `scripts/test-all-locally.sh`: generated-file check, `go build`, `go test`, and optional lint/integration.
+- `scripts/check-coverage.sh`: unit tests plus the CI statement-coverage floor (30% by default).
 - `scripts/test-integration.sh`: builds a provider mirror, boots a local Seerr target when `SEERR_URL` is not already set, and runs `tofu test`.
 - The default integration suite is `stable` and mirrors the CI merge gate.
 - Set `SEERR_TEST_SUITE=all` to run the broader compatibility/dependency-sensitive suite as well.
 
 ## CI model
 
-- Pull requests run the fast gate (`scripts/test-all-locally.sh` without integration) plus the `stable` OpenTofu integration suite against an ephemeral local Seerr target. Pull requests never receive repository secrets and always use `ubuntu-latest`.
+- Pull requests run the fast gate (`scripts/test-all-locally.sh` without integration) plus the `stable` OpenTofu integration suite for the pinned minimum and recent OpenTofu/Seerr combinations against ephemeral local Seerr targets. Pull requests never receive repository secrets and always use `ubuntu-latest`.
 - Pushes to `main`, schedules, and manual runs may use the trusted runner selected by the `TRUSTED_RUNNER_LABEL` variable. Configure that label to a UECB or isolated self-hosted runner only after restricting the `integration` environment and keeping the runner off the pull-request path.
 - Scheduled runs execute the broader `full` compatibility suite only. This keeps the merge gate deterministic while still exercising dependency-sensitive coverage regularly.
 - Manual runs support three modes through the GitHub Actions `integration_mode` input: `stable`, `full`, or `both`.

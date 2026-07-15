@@ -45,27 +45,31 @@ jobs:
         env:
           SEERR_RUN_LINT: "false"
           SEERR_RUN_INTEGRATION: "false"
+      - name: Enforce unit coverage floor
+        run: bash ./scripts/check-coverage.sh
       - name: Run linters
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
         with:
           version: v2.5.0
+      - name: Run actionlint
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # v2.0.0
+        with:
+          scandir: ./scripts
+          version: v0.10.0
 
   tofu-test-stable:
-    name: OpenTofu Stable Integration (${{ matrix.tofu_version }})
+    name: OpenTofu Stable Integration (1.8.0)
     runs-on: ubuntu-latest
     environment: public-ci
     permissions:
       contents: read
     timeout-minutes: 15
     if: github.event_name == 'pull_request'
-    strategy:
-      fail-fast: false
-      matrix:
-        tofu_version:
-          - 1.8.0
     env:
       USE_SELF_HOSTED: "false"
-      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.1.1' }}
+      SEERR_TEST_IMAGE: seerr/seerr:v3.1.1
       SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -78,7 +82,7 @@ jobs:
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@9d84900f3238fab8cd84ce47d658d25dd008be2f # v1
         with:
-          tofu_version: ${{ matrix.tofu_version }}
+          tofu_version: 1.8.0
       - name: Use legacy external Seerr target when configured
         shell: bash
         run: |
@@ -96,13 +100,51 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: stable-integration-artifacts-${{ matrix.tofu_version }}
+          name: stable-integration-artifacts-1.8.0
+          path: test-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  tofu-test-recent:
+    name: OpenTofu Recent Integration (1.12.4, Seerr 3.3.0)
+    runs-on: ubuntu-latest
+    environment: public-ci
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request'
+    env:
+      USE_SELF_HOSTED: "false"
+      SEERR_TEST_IMAGE: seerr/seerr:v3.3.0
+      SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration-recent
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@9d84900f3238fab8cd84ce47d658d25dd008be2f # v1
+        with:
+          tofu_version: 1.12.4
+      - name: OpenTofu stable suite
+        shell: bash
+        run: bash ./scripts/test-integration.sh
+        env:
+          SEERR_TEST_SUITE: stable
+      - name: Upload integration diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: recent-integration-artifacts-1.12.4-seerr-3.3.0
           path: test-artifacts/
           if-no-files-found: ignore
           retention-days: 7
 
   tofu-test-stable-trusted:
-    name: OpenTofu Stable Integration Trusted (${{ matrix.tofu_version }})
+    name: Stable Trusted (${{ matrix.compatibility }}) - OpenTofu ${{ matrix.tofu_version }}, Seerr ${{ matrix.seerr_version }}
     runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
     environment: integration
     permissions:
@@ -112,13 +154,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tofu_version:
-          - 1.8.0
+        include:
+          - compatibility: minimum
+            tofu_version: 1.8.0
+            seerr_version: 3.1.1
+            seerr_image: seerr/seerr:v3.1.1
+          - compatibility: recent
+            tofu_version: 1.12.4
+            seerr_version: 3.3.0
+            seerr_image: seerr/seerr:v3.3.0
     env:
       USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED || 'false' }}
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
-      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.1.1' }}
+      SEERR_TEST_IMAGE: ${{ matrix.seerr_image }}
       SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration-trusted
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -149,13 +198,13 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: trusted-stable-integration-artifacts-${{ matrix.tofu_version }}
+          name: trusted-stable-integration-artifacts-${{ matrix.compatibility }}
           path: test-artifacts/
           if-no-files-found: ignore
           retention-days: 7
 
   tofu-test-full:
-    name: OpenTofu Full Compatibility (${{ matrix.tofu_version }})
+    name: Full (${{ matrix.compatibility }}) - OpenTofu ${{ matrix.tofu_version }}, Seerr ${{ matrix.seerr_version }}
     runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
     environment: integration
     permissions:
@@ -165,13 +214,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tofu_version:
-          - 1.8.0
+        include:
+          - compatibility: minimum
+            tofu_version: 1.8.0
+            seerr_version: 3.1.1
+            seerr_image: seerr/seerr:v3.1.1
+          - compatibility: recent
+            tofu_version: 1.12.4
+            seerr_version: 3.3.0
+            seerr_image: seerr/seerr:v3.3.0
     env:
       USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED || 'false' }}
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
-      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.1.1' }}
+      SEERR_TEST_IMAGE: ${{ matrix.seerr_image }}
       SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration-full
       SEERR_TEST_SUITE: all
     steps:
@@ -201,7 +257,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: full-integration-artifacts-${{ matrix.tofu_version }}
+          name: full-integration-artifacts-${{ matrix.compatibility }}
           path: test-artifacts/
           if-no-files-found: ignore
           retention-days: 7
