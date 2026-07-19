@@ -44,6 +44,7 @@ go_bin="$(resolve_tool go)" || {
 }
 
 run bash "${repo_root}/tools/check-generated.sh"
+run bash "${repo_root}/scripts/reconcile-release-tags_test.sh"
 run "${go_bin}" build ./...
 run "${go_bin}" test ./...
 
