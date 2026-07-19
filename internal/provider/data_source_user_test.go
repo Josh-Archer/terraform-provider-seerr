@@ -4,8 +4,35 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+func TestPopulateUserDataSourceModelPreservesAPICasing(t *testing.T) {
+	data := UserDataSourceModel{}
+	err := populateUserDataSourceModel(&data, map[string]any{
+		"id":          float64(42),
+		"email":       "Case.Sensitive@Example.COM",
+		"username":    "MixedCaseUser",
+		"permissions": "7",
+	})
+	if err != nil {
+		t.Fatalf("populate user data source model: %v", err)
+	}
+
+	if got, want := data.ID, types.StringValue("42"); !got.Equal(want) {
+		t.Fatalf("id = %q, want %q", got.ValueString(), want.ValueString())
+	}
+	if got, want := data.Email, types.StringValue("Case.Sensitive@Example.COM"); !got.Equal(want) {
+		t.Fatalf("email = %q, want %q", got.ValueString(), want.ValueString())
+	}
+	if got, want := data.Username, types.StringValue("MixedCaseUser"); !got.Equal(want) {
+		t.Fatalf("username = %q, want %q", got.ValueString(), want.ValueString())
+	}
+	if got := data.Permissions.ValueInt64(); got != 7 {
+		t.Fatalf("permissions = %d, want 7", got)
+	}
+}
 
 func TestAccUserDataSource(t *testing.T) {
 	username := "terraform_ds_test_user"

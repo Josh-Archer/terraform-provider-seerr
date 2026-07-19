@@ -129,7 +129,15 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	// Populate Data Source
+	if err := populateUserDataSourceModel(&data, matchedUser); err != nil {
+		resp.Diagnostics.AddError("Parse Error", err.Error())
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func populateUserDataSourceModel(data *UserDataSourceModel, matchedUser map[string]any) error {
 	idRaw := matchedUser["id"]
 	switch v := idRaw.(type) {
 	case float64:
@@ -137,15 +145,14 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	case string:
 		data.ID = types.StringValue(v)
 	default:
-		resp.Diagnostics.AddError("Parse Error", "Could not parse user ID.")
-		return
+		return fmt.Errorf("could not parse user ID")
 	}
 
 	if e, ok := matchedUser["email"].(string); ok {
-		data.Email = types.StringValue(strings.ToLower(e))
+		data.Email = types.StringValue(e)
 	}
 	if un, ok := matchedUser["username"].(string); ok {
-		data.Username = types.StringValue(strings.ToLower(un))
+		data.Username = types.StringValue(un)
 	}
 	if p, ok := matchedUser["permissions"].(float64); ok {
 		data.Permissions = types.Int64Value(int64(p))
@@ -155,5 +162,5 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		}
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	return nil
 }
