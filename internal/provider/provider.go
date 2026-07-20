@@ -140,93 +140,11 @@ func (p *SeerrProvider) Configure(ctx context.Context, req provider.ConfigureReq
 }
 
 func (p *SeerrProvider) Resources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{
-		NewAPIObjectResource,
-		NewJobScheduleResource,
-		NewMainSettingsResource,
-		NewPlexSettingsResource,
-		NewJellyfinSettingsResource,
-		NewEmbySettingsResource,
-		NewNotificationDiscordResource,
-		NewNotificationSlackResource,
-		NewNotificationEmailResource,
-		NewNotificationLunaSeaResource,
-		NewNotificationTelegramResource,
-		NewNotificationPushbulletResource,
-		NewNotificationPushoverResource,
-		NewNotificationNtfyResource,
-		NewNotificationWebhookResource,
-		NewNotificationGotifyResource,
-		NewNotificationWebpushResource,
-		NewRadarrServerResource,
-		NewSonarrServerResource,
-		NewUserPermissionsResource,
-		NewUserWatchlistSettingsResource,
-		NewAPIKeyResource,
-		NewUserResource,
-		NewDiscoverSliderResource,
-		NewTautulliSettingsResource,
-		NewUserSettingsPermissionsResource,
-		NewRequestResource,
-		NewRequestRetryResource,
-		NewIssueResource,
-		NewBackupSettingsResource,
-		NewUserInvitationResource,
-		NewNetworkSettingsResource,
-		NewMetadataSettingsResource,
-		NewOverrideRuleResource,
-		NewBlocklistResource,
-	}
+	return RegisteredResources
 }
 
 func (p *SeerrProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{
-		NewAPIRequestDataSource,
-		NewPublicSettingsDataSource,
-		NewMainSettingsDataSource,
-		NewPlexSettingsDataSource,
-		NewJellyfinSettingsDataSource,
-		NewEmbySettingsDataSource,
-		NewNotificationDiscordDataSource,
-		NewNotificationSlackDataSource,
-		NewNotificationEmailDataSource,
-		NewNotificationLunaSeaDataSource,
-		NewNotificationTelegramDataSource,
-		NewNotificationPushbulletDataSource,
-		NewNotificationPushoverDataSource,
-		NewNotificationNtfyDataSource,
-		NewNotificationWebhookDataSource,
-		NewNotificationGotifyDataSource,
-		NewNotificationWebpushDataSource,
-		NewRadarrQualityProfileDataSource,
-		NewRadarrServerDataSource,
-		NewSonarrQualityProfileDataSource,
-		NewSonarrServerDataSource,
-		NewUserPermissionsDataSource,
-		NewUserWatchlistSettingsDataSource,
-		NewAPIKeyDataSource,
-		NewUserDataSource,
-		NewUsersDataSource,
-		NewJobsDataSource,
-		NewNotificationAgentsDataSource,
-		NewTautulliSettingsDataSource,
-		NewIssuesDataSource,
-		NewIssueDataSource,
-		NewRequestsDataSource,
-		NewRequestDataSource,
-		NewServiceStatusDataSource,
-		NewCurrentUserDataSource,
-		NewDiscoverSliderDataSource,
-		NewBackupSettingsDataSource,
-		NewUserInvitationsDataSource,
-		NewNetworkSettingsDataSource,
-		NewMetadataSettingsDataSource,
-		NewOverrideRuleDataSource,
-		NewBlocklistDataSource,
-		NewMediaDataSource,
-		NewMediaItemDataSource,
-		NewDiscoverDataSource,
-	}
+	return RegisteredDataSources
 }
 
 func New(version string) func() provider.Provider {
@@ -323,3 +241,4 @@ func bootstrapAPIKeyFromPlexToken(ctx context.Context, client *APIClient, plexTo
 
 	return fetchedKey, nil
 }
+
