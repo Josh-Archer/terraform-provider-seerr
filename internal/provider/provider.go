@@ -241,4 +241,3 @@ func bootstrapAPIKeyFromPlexToken(ctx context.Context, client *APIClient, plexTo
 
 	return fetchedKey, nil
 }
-
