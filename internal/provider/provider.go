@@ -69,7 +69,7 @@ func (p *SeerrProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 				Sensitive:           true,
 			},
 			"plex_token": schema.StringAttribute{
-				MarkdownDescription: "Plex token used as the `X-Plex-Token` header for authentication. This token must belong to a server admin user in order to be used for the setup flow. Required if `api_key` is not set.",
+				MarkdownDescription: "Plex token used to authenticate with Seerr and fetch the API key. This token must belong to a server admin user in order to be used for the setup flow. Required if `api_key` is not set. Can also be configured via the `SEERR_PLEX_TOKEN` environment variable.",
 				Optional:            true,
 				Sensitive:           true,
 			},
@@ -255,6 +255,9 @@ func resolveProviderConfigValues(data SeerrProviderModel, version string, getenv
 	}
 	if config.APIKey == "" {
 		config.APIKey = strings.TrimSpace(getenv("SEERR_API_KEY"))
+	}
+	if config.PlexToken == "" {
+		config.PlexToken = strings.TrimSpace(getenv("SEERR_PLEX_TOKEN"))
 	}
 	if !data.UserAgent.IsNull() && !data.UserAgent.IsUnknown() && strings.TrimSpace(data.UserAgent.ValueString()) != "" {
 		config.UserAgent = strings.TrimSpace(data.UserAgent.ValueString())

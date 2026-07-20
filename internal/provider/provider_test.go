@@ -65,6 +65,8 @@ func TestResolveProviderConfigValuesUsesEnvironmentFallbacks(t *testing.T) {
 			return "https://seerr.example.com"
 		case "SEERR_API_KEY":
 			return "secret"
+		case "SEERR_PLEX_TOKEN":
+			return "plex-secret"
 		case "SEERR_REQUEST_TIMEOUT_SECONDS":
 			return "45"
 		default:
@@ -79,6 +81,9 @@ func TestResolveProviderConfigValuesUsesEnvironmentFallbacks(t *testing.T) {
 	}
 	if config.APIKey != "secret" {
 		t.Fatalf("expected env API key, got %q", config.APIKey)
+	}
+	if config.PlexToken != "plex-secret" {
+		t.Fatalf("expected env Plex token, got %q", config.PlexToken)
 	}
 	if config.RequestTimeout != 45*time.Second {
 		t.Fatalf("expected 45s timeout, got %s", config.RequestTimeout)
