@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -56,6 +57,36 @@ func (r *APIKeyResource) Configure(_ context.Context, req resource.ConfigureRequ
 	r.client = c
 }
 
+func (r *APIKeyResource) regenerateKey(ctx context.Context, data *APIKeyModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	res, err := r.client.Request(ctx, "POST", "/api/v1/settings/main/regenerate", "", nil)
+	if err != nil {
+		diags.AddError("Regenerate Failed", err.Error())
+		return diags
+	}
+	if !StatusIsOK(res.StatusCode) {
+		diags.AddError("Regenerate Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
+		return diags
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(res.Body, &decoded); err != nil {
+		diags.AddError("Regenerate Failed", fmt.Sprintf("failed to decode response: %s", err))
+		return diags
+	}
+
+	apiKey, ok := decoded["apiKey"].(string)
+	if !ok {
+		diags.AddError("Regenerate Failed", "apiKey not found in response")
+		return diags
+	}
+
+	data.ApiKey = types.StringValue(apiKey)
+	data.StatusCode = types.Int64Value(int64(res.StatusCode))
+	return diags
+}
+
 func (r *APIKeyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data APIKeyModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
@@ -63,30 +94,11 @@ func (r *APIKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	res, err := r.client.Request(ctx, "POST", "/api/v1/settings/main/regenerate", "", nil)
-	if err != nil {
-		resp.Diagnostics.AddError("Regenerate Failed", err.Error())
+	diags := r.regenerateKey(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Regenerate Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
-		return
-	}
-
-	var decoded map[string]any
-	if err := json.Unmarshal(res.Body, &decoded); err != nil {
-		resp.Diagnostics.AddError("Regenerate Failed", fmt.Sprintf("failed to decode response: %s", err))
-		return
-	}
-
-	apiKey, ok := decoded["apiKey"].(string)
-	if !ok {
-		resp.Diagnostics.AddError("Regenerate Failed", "apiKey not found in response")
-		return
-	}
-
-	data.ApiKey = types.StringValue(apiKey)
-	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -127,8 +139,19 @@ func (r *APIKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 }
 
 func (r *APIKeyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Update will regenerate the key again.
-	r.Create(ctx, resource.CreateRequest{Plan: req.Plan}, &resource.CreateResponse{State: resp.State, Diagnostics: resp.Diagnostics})
+	var data APIKeyModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags := r.regenerateKey(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (r *APIKeyResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
