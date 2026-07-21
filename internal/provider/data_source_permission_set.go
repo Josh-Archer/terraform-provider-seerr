@@ -1,4 +1,4 @@
-﻿package provider
+package provider
 
 import (
 	"context"
@@ -49,36 +49,36 @@ func NewPermissionSetDataSource() datasource.DataSource {
 type permissionSetDataSource struct{}
 
 type permissionSetDataSourceModel struct {
-	Permissions         types.Int64 `tfsdk:"permissions"`
-	Admin               types.Bool  `tfsdk:"admin"`
-	ManageSettings      types.Bool  `tfsdk:"manage_settings"`
-	ManageUsers         types.Bool  `tfsdk:"manage_users"`
-	ManageRequests      types.Bool  `tfsdk:"manage_requests"`
-	Request             types.Bool  `tfsdk:"request"`
-	Vote                types.Bool  `tfsdk:"vote"`
-	AutoApprove         types.Bool  `tfsdk:"auto_approve"`
-	AutoApproveMovie    types.Bool  `tfsdk:"auto_approve_movie"`
-	AutoApproveTv       types.Bool  `tfsdk:"auto_approve_tv"`
-	Request4K           types.Bool  `tfsdk:"request_4k"`
-	Request4KMovie      types.Bool  `tfsdk:"request_4k_movie"`
-	Request4KTv         types.Bool  `tfsdk:"request_4k_tv"`
-	RequestAdvanced     types.Bool  `tfsdk:"request_advanced"`
-	RequestView         types.Bool  `tfsdk:"request_view"`
-	AutoApprove4K       types.Bool  `tfsdk:"auto_approve_4k"`
-	AutoApprove4KMovie  types.Bool  `tfsdk:"auto_approve_4k_movie"`
-	AutoApprove4KTv     types.Bool  `tfsdk:"auto_approve_4k_tv"`
-	RequestMovie        types.Bool  `tfsdk:"request_movie"`
-	RequestTv           types.Bool  `tfsdk:"request_tv"`
-	ManageIssues        types.Bool  `tfsdk:"manage_issues"`
-	ViewIssues          types.Bool  `tfsdk:"view_issues"`
-	CreateIssues        types.Bool  `tfsdk:"create_issues"`
-	AutoRequest         types.Bool  `tfsdk:"auto_request"`
-	AutoRequestMovie    types.Bool  `tfsdk:"auto_request_movie"`
-	AutoRequestTv       types.Bool  `tfsdk:"auto_request_tv"`
-	RecentView          types.Bool  `tfsdk:"recent_view"`
-	WatchlistView       types.Bool  `tfsdk:"watchlist_view"`
-	ManageBlocklist     types.Bool  `tfsdk:"manage_blocklist"`
-	ViewBlocklist       types.Bool  `tfsdk:"view_blocklist"`
+	Permissions        types.Int64 `tfsdk:"permissions"`
+	Admin              types.Bool  `tfsdk:"admin"`
+	ManageSettings     types.Bool  `tfsdk:"manage_settings"`
+	ManageUsers        types.Bool  `tfsdk:"manage_users"`
+	ManageRequests     types.Bool  `tfsdk:"manage_requests"`
+	Request            types.Bool  `tfsdk:"request"`
+	Vote               types.Bool  `tfsdk:"vote"`
+	AutoApprove        types.Bool  `tfsdk:"auto_approve"`
+	AutoApproveMovie   types.Bool  `tfsdk:"auto_approve_movie"`
+	AutoApproveTv      types.Bool  `tfsdk:"auto_approve_tv"`
+	Request4K          types.Bool  `tfsdk:"request_4k"`
+	Request4KMovie     types.Bool  `tfsdk:"request_4k_movie"`
+	Request4KTv        types.Bool  `tfsdk:"request_4k_tv"`
+	RequestAdvanced    types.Bool  `tfsdk:"request_advanced"`
+	RequestView        types.Bool  `tfsdk:"request_view"`
+	AutoApprove4K      types.Bool  `tfsdk:"auto_approve_4k"`
+	AutoApprove4KMovie types.Bool  `tfsdk:"auto_approve_4k_movie"`
+	AutoApprove4KTv    types.Bool  `tfsdk:"auto_approve_4k_tv"`
+	RequestMovie       types.Bool  `tfsdk:"request_movie"`
+	RequestTv          types.Bool  `tfsdk:"request_tv"`
+	ManageIssues       types.Bool  `tfsdk:"manage_issues"`
+	ViewIssues         types.Bool  `tfsdk:"view_issues"`
+	CreateIssues       types.Bool  `tfsdk:"create_issues"`
+	AutoRequest        types.Bool  `tfsdk:"auto_request"`
+	AutoRequestMovie   types.Bool  `tfsdk:"auto_request_movie"`
+	AutoRequestTv      types.Bool  `tfsdk:"auto_request_tv"`
+	RecentView         types.Bool  `tfsdk:"recent_view"`
+	WatchlistView      types.Bool  `tfsdk:"watchlist_view"`
+	ManageBlocklist    types.Bool  `tfsdk:"manage_blocklist"`
+	ViewBlocklist      types.Bool  `tfsdk:"view_blocklist"`
 }
 
 func (d *permissionSetDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
