@@ -38,13 +38,18 @@ else
 fi
 
 echo "Validating modules..."
+shopt -s nullglob
 for d in "${repo_root}/modules"/* "${repo_root}/examples/modules"/*; do
   if [ -d "$d" ]; then
     echo "Validating $d..."
     cd "$d"
-    tofu init -backend=false
+    # Provider resolution still requires init for nested modules, even with
+    # development overrides. All modules must declare josh-archer/seerr so
+    # OpenTofu does not invent a hashicorp/seerr dependency.
+    tofu init -backend=false -input=false
     tofu validate
   fi
 done
+shopt -u nullglob
 
 echo "Module validation complete."
