@@ -89,4 +89,5 @@ var RegisteredDataSources = []func() datasource.DataSource{
 	NewMediaDataSource,
 	NewMediaItemDataSource,
 	NewDiscoverDataSource,
+	NewPermissionSetDataSource,
 }
