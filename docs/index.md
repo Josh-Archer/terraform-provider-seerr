@@ -12,12 +12,24 @@ Provider for Seerr APIs.
 ## Example Usage
 
 ```terraform
+# Standard setup using an API key
 provider "seerr" {
   url     = "https://seerr.example.com"
   api_key = var.seerr_api_key
 }
 
 variable "seerr_api_key" {
+  type      = string
+  sensitive = true
+}
+
+# First-run setup using a Plex token to bootstrap the API key
+provider "seerr" {
+  url        = "https://seerr.example.com"
+  plex_token = var.plex_token
+}
+
+variable "plex_token" {
   type      = string
   sensitive = true
 }
@@ -30,7 +42,7 @@ variable "seerr_api_key" {
 
 - `api_key` (String, Sensitive) Seerr API key used as the `X-Api-Key` header. Required if `plex_token` is not set. Can also be configured via the `SEERR_API_KEY` environment variable.
 - `insecure_skip_verify` (Boolean) Skip TLS certificate verification.
-- `plex_token` (String, Sensitive) Plex token used as the `X-Plex-Token` header for authentication. This token must belong to a server admin user in order to be used for the setup flow. Required if `api_key` is not set.
+- `plex_token` (String, Sensitive) Plex token used to authenticate with Seerr and fetch the API key. This token must belong to a server admin user in order to be used for the setup flow. Required if `api_key` is not set. Can also be configured via the `SEERR_PLEX_TOKEN` environment variable.
 - `request_timeout_seconds` (Number) HTTP request timeout in seconds for Seerr API calls and ARR quality-profile lookups. Defaults to 120 seconds. Can also be configured via the `SEERR_REQUEST_TIMEOUT_SECONDS` environment variable.
 - `url` (String) Base URL for Seerr, for example `https://seerr.example.com`. Can also be configured via the `SEERR_URL` environment variable.
 - `user_agent` (String) Optional custom User-Agent header.
