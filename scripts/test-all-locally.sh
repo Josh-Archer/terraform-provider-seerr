@@ -72,6 +72,13 @@ case "${SEERR_RUN_LINT:-auto}" in
     ;;
 esac
 
+if tofu_bin="$(resolve_tool tofu)"; then
+  run bash "${repo_root}/scripts/validate-modules.sh"
+else
+  echo "Skipping module validation; 'tofu' command not found on PATH" >&2
+fi
+
 if [[ "${SEERR_RUN_INTEGRATION:-false}" == "true" ]]; then
   run bash "${repo_root}/scripts/test-integration.sh"
 fi
+

@@ -39,6 +39,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.8.0
       - run: go mod download
       - name: Run fast merge gate
         run: bash ./scripts/test-all-locally.sh
@@ -366,3 +370,4 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --ref "${DEFAULT_BRANCH}" \
             -f "release_tag=${RELEASE_TAG}"
+
