@@ -267,6 +267,18 @@ func setNotificationClientState(ctx context.Context, writer notificationAttribut
 	return diags
 }
 
+func isKnownNonNullString(v types.String) bool {
+	return !v.IsNull() && !v.IsUnknown()
+}
+
+func isKnownNonNullBool(v types.Bool) bool {
+	return !v.IsNull() && !v.IsUnknown()
+}
+
+func isKnownNonNullInt64(v types.Int64) bool {
+	return !v.IsNull() && !v.IsUnknown()
+}
+
 func buildPayload(ctx context.Context, data *NotificationAgentModel) (string, error) {
 	payload := notificationAgentPayload{
 		Enabled:     data.Enabled.ValueBool(),
@@ -278,154 +290,154 @@ func buildPayload(ctx context.Context, data *NotificationAgentModel) (string, er
 	switch data.Agent.ValueString() {
 	case "discord":
 		if data.Discord != nil {
-			if !data.Discord.BotUsername.IsNull() {
+			if isKnownNonNullString(data.Discord.BotUsername) {
 				payload.Options["botUsername"] = data.Discord.BotUsername.ValueString()
 			}
-			if !data.Discord.BotAvatarUrl.IsNull() {
+			if isKnownNonNullString(data.Discord.BotAvatarUrl) {
 				payload.Options["botAvatarUrl"] = data.Discord.BotAvatarUrl.ValueString()
 			}
-			if !data.Discord.WebhookUrl.IsNull() {
+			if isKnownNonNullString(data.Discord.WebhookUrl) {
 				payload.Options["webhookUrl"] = data.Discord.WebhookUrl.ValueString()
 			}
-			if !data.Discord.EnableMentions.IsNull() {
+			if isKnownNonNullBool(data.Discord.EnableMentions) {
 				payload.Options["enableMentions"] = data.Discord.EnableMentions.ValueBool()
 			}
 		}
 	case "slack":
 		if data.Slack != nil {
-			if !data.Slack.WebhookUrl.IsNull() {
+			if isKnownNonNullString(data.Slack.WebhookUrl) {
 				payload.Options["webhookUrl"] = data.Slack.WebhookUrl.ValueString()
 			}
 		}
 	case "email":
 		if data.Email != nil {
-			if !data.Email.EmailFrom.IsNull() {
+			if isKnownNonNullString(data.Email.EmailFrom) {
 				payload.Options["emailFrom"] = data.Email.EmailFrom.ValueString()
 			}
-			if !data.Email.SmtpHost.IsNull() {
+			if isKnownNonNullString(data.Email.SmtpHost) {
 				payload.Options["smtpHost"] = data.Email.SmtpHost.ValueString()
 			}
-			if !data.Email.SmtpPort.IsNull() {
+			if isKnownNonNullInt64(data.Email.SmtpPort) {
 				payload.Options["smtpPort"] = data.Email.SmtpPort.ValueInt64()
 			}
-			if !data.Email.Secure.IsNull() {
+			if isKnownNonNullBool(data.Email.Secure) {
 				payload.Options["secure"] = data.Email.Secure.ValueBool()
 			}
-			if !data.Email.IgnoreTls.IsNull() {
+			if isKnownNonNullBool(data.Email.IgnoreTls) {
 				payload.Options["ignoreTls"] = data.Email.IgnoreTls.ValueBool()
 			}
-			if !data.Email.RequireTls.IsNull() {
+			if isKnownNonNullBool(data.Email.RequireTls) {
 				payload.Options["requireTls"] = data.Email.RequireTls.ValueBool()
 			}
-			if !data.Email.AuthUser.IsNull() {
+			if isKnownNonNullString(data.Email.AuthUser) {
 				payload.Options["authUser"] = data.Email.AuthUser.ValueString()
 			}
-			if !data.Email.AuthPass.IsNull() {
+			if isKnownNonNullString(data.Email.AuthPass) {
 				payload.Options["authPass"] = data.Email.AuthPass.ValueString()
 			}
-			if !data.Email.AllowSelfSigned.IsNull() {
+			if isKnownNonNullBool(data.Email.AllowSelfSigned) {
 				payload.Options["allowSelfSigned"] = data.Email.AllowSelfSigned.ValueBool()
 			}
-			if !data.Email.SenderName.IsNull() {
+			if isKnownNonNullString(data.Email.SenderName) {
 				payload.Options["senderName"] = data.Email.SenderName.ValueString()
 			}
-			if !data.Email.PgpPrivateKey.IsNull() {
+			if isKnownNonNullString(data.Email.PgpPrivateKey) {
 				payload.Options["pgpPrivateKey"] = data.Email.PgpPrivateKey.ValueString()
 			}
-			if !data.Email.PgpPassword.IsNull() {
+			if isKnownNonNullString(data.Email.PgpPassword) {
 				payload.Options["pgpPassword"] = data.Email.PgpPassword.ValueString()
 			}
 		}
 	case "lunasea":
 		if data.LunaSea != nil {
-			if !data.LunaSea.WebhookUrl.IsNull() {
+			if isKnownNonNullString(data.LunaSea.WebhookUrl) {
 				payload.Options["webhookUrl"] = data.LunaSea.WebhookUrl.ValueString()
 			}
-			if !data.LunaSea.ProfileName.IsNull() {
+			if isKnownNonNullString(data.LunaSea.ProfileName) {
 				payload.Options["profileName"] = data.LunaSea.ProfileName.ValueString()
 			}
 		}
 	case "telegram":
 		if data.Telegram != nil {
-			if !data.Telegram.BotUsername.IsNull() {
+			if isKnownNonNullString(data.Telegram.BotUsername) {
 				payload.Options["botUsername"] = data.Telegram.BotUsername.ValueString()
 			}
-			if !data.Telegram.BotAPI.IsNull() {
+			if isKnownNonNullString(data.Telegram.BotAPI) {
 				payload.Options["botAPI"] = data.Telegram.BotAPI.ValueString()
 			}
-			if !data.Telegram.ChatId.IsNull() {
+			if isKnownNonNullString(data.Telegram.ChatId) {
 				payload.Options["chatId"] = data.Telegram.ChatId.ValueString()
 			}
-			if !data.Telegram.SendSilently.IsNull() {
+			if isKnownNonNullBool(data.Telegram.SendSilently) {
 				payload.Options["sendSilently"] = data.Telegram.SendSilently.ValueBool()
 			}
 		}
 	case "pushbullet":
 		if data.Pushbullet != nil {
-			if !data.Pushbullet.AccessToken.IsNull() {
+			if isKnownNonNullString(data.Pushbullet.AccessToken) {
 				payload.Options["accessToken"] = data.Pushbullet.AccessToken.ValueString()
 			}
-			if !data.Pushbullet.ChannelTag.IsNull() {
+			if isKnownNonNullString(data.Pushbullet.ChannelTag) {
 				payload.Options["channelTag"] = data.Pushbullet.ChannelTag.ValueString()
 			}
 		}
 	case "pushover":
 		if data.Pushover != nil {
-			if !data.Pushover.AccessToken.IsNull() {
+			if isKnownNonNullString(data.Pushover.AccessToken) {
 				payload.Options["accessToken"] = data.Pushover.AccessToken.ValueString()
 			}
-			if !data.Pushover.UserToken.IsNull() {
+			if isKnownNonNullString(data.Pushover.UserToken) {
 				payload.Options["userToken"] = data.Pushover.UserToken.ValueString()
 			}
-			if !data.Pushover.Sound.IsNull() {
+			if isKnownNonNullString(data.Pushover.Sound) {
 				payload.Options["sound"] = data.Pushover.Sound.ValueString()
 			}
 		}
 	case "ntfy":
 		if data.Ntfy != nil {
-			if !data.Ntfy.Url.IsNull() {
+			if isKnownNonNullString(data.Ntfy.Url) {
 				payload.Options["url"] = data.Ntfy.Url.ValueString()
 			}
-			if !data.Ntfy.Topic.IsNull() {
+			if isKnownNonNullString(data.Ntfy.Topic) {
 				payload.Options["topic"] = data.Ntfy.Topic.ValueString()
 			}
-			if !data.Ntfy.AuthMethodUsernamePassword.IsNull() {
+			if isKnownNonNullBool(data.Ntfy.AuthMethodUsernamePassword) {
 				payload.Options["authMethodUsernamePassword"] = data.Ntfy.AuthMethodUsernamePassword.ValueBool()
 			}
-			if !data.Ntfy.Username.IsNull() {
+			if isKnownNonNullString(data.Ntfy.Username) {
 				payload.Options["username"] = data.Ntfy.Username.ValueString()
 			}
-			if !data.Ntfy.Password.IsNull() {
+			if isKnownNonNullString(data.Ntfy.Password) {
 				payload.Options["password"] = data.Ntfy.Password.ValueString()
 			}
-			if !data.Ntfy.AuthMethodToken.IsNull() {
+			if isKnownNonNullBool(data.Ntfy.AuthMethodToken) {
 				payload.Options["authMethodToken"] = data.Ntfy.AuthMethodToken.ValueBool()
 			}
-			if !data.Ntfy.Token.IsNull() {
+			if isKnownNonNullString(data.Ntfy.Token) {
 				payload.Options["token"] = data.Ntfy.Token.ValueString()
 			}
-			if !data.Ntfy.Priority.IsNull() {
+			if isKnownNonNullInt64(data.Ntfy.Priority) {
 				payload.Options["priority"] = data.Ntfy.Priority.ValueInt64()
 			}
 		}
 	case "webhook":
 		if data.Webhook != nil {
-			if !data.Webhook.WebhookUrl.IsNull() {
+			if isKnownNonNullString(data.Webhook.WebhookUrl) {
 				payload.Options["webhookUrl"] = data.Webhook.WebhookUrl.ValueString()
 			}
-			if !data.Webhook.JsonPayload.IsNull() {
+			if isKnownNonNullString(data.Webhook.JsonPayload) {
 				payload.Options["jsonPayload"] = data.Webhook.JsonPayload.ValueString()
 			}
-			if !data.Webhook.AuthHeader.IsNull() {
+			if isKnownNonNullString(data.Webhook.AuthHeader) {
 				payload.Options["authHeader"] = data.Webhook.AuthHeader.ValueString()
 			}
 		}
 	case "gotify":
 		if data.Gotify != nil {
-			if !data.Gotify.Url.IsNull() {
+			if isKnownNonNullString(data.Gotify.Url) {
 				payload.Options["url"] = data.Gotify.Url.ValueString()
 			}
-			if !data.Gotify.Token.IsNull() {
+			if isKnownNonNullString(data.Gotify.Token) {
 				payload.Options["token"] = data.Gotify.Token.ValueString()
 			}
 		}
