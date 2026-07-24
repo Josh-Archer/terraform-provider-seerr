@@ -2,12 +2,14 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -125,6 +127,114 @@ func assertPathNotRequested(t *testing.T, requested []string, unexpected path.Pa
 	for _, key := range requested {
 		if key == unexpectedKey {
 			t.Fatalf("did not expect path %q to be requested, got %v", unexpectedKey, requested)
+		}
+	}
+}
+
+func TestBuildPayloadNotificationOptionHygiene(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// Case 1: Priority is Unknown (omitted in plan for Optional+Computed attribute)
+	modelUnknown := &NotificationAgentModel{
+		Agent:       types.StringValue("ntfy"),
+		Enabled:     types.BoolValue(true),
+		EmbedPoster: types.BoolValue(false),
+		Ntfy: &NotificationAgentNtfyModel{
+			Url:      types.StringValue("https://ntfy.example.com"),
+			Topic:    types.StringValue("test"),
+			Priority: types.Int64Unknown(),
+		},
+	}
+	payloadStr, err := buildPayload(ctx, modelUnknown)
+	if err != nil {
+		t.Fatalf("buildPayload failed: %v", err)
+	}
+	if reflect.ValueOf(payloadStr).Kind() == reflect.String && (reflect.ValueOf(payloadStr).Len() == 0 || (payloadStr != "" && (func() bool {
+		var m struct {
+			Options map[string]interface{} `json:"options"`
+		}
+		_ = json.Unmarshal([]byte(payloadStr), &m)
+		_, exists := m.Options["priority"]
+		return exists
+	})())) {
+		t.Fatalf("expected priority key to be omitted from payload options when unknown, got %s", payloadStr)
+	}
+
+	// Case 2: Priority is Null
+	modelNull := &NotificationAgentModel{
+		Agent:       types.StringValue("ntfy"),
+		Enabled:     types.BoolValue(true),
+		EmbedPoster: types.BoolValue(false),
+		Ntfy: &NotificationAgentNtfyModel{
+			Url:      types.StringValue("https://ntfy.example.com"),
+			Topic:    types.StringValue("test"),
+			Priority: types.Int64Null(),
+		},
+	}
+	payloadStrNull, err := buildPayload(ctx, modelNull)
+	if err != nil {
+		t.Fatalf("buildPayload failed: %v", err)
+	}
+	var mNull struct {
+		Options map[string]interface{} `json:"options"`
+	}
+	if err := json.Unmarshal([]byte(payloadStrNull), &mNull); err != nil {
+		t.Fatalf("json unmarshal failed: %v", err)
+	}
+	if _, exists := mNull.Options["priority"]; exists {
+		t.Fatalf("expected priority key to be omitted from payload options when null, got %s", payloadStrNull)
+	}
+
+	// Case 3: Priority is explicitly set (e.g. 5)
+	modelSet := &NotificationAgentModel{
+		Agent:       types.StringValue("ntfy"),
+		Enabled:     types.BoolValue(true),
+		EmbedPoster: types.BoolValue(false),
+		Ntfy: &NotificationAgentNtfyModel{
+			Url:      types.StringValue("https://ntfy.example.com"),
+			Topic:    types.StringValue("test"),
+			Priority: types.Int64Value(5),
+		},
+	}
+	payloadStrSet, err := buildPayload(ctx, modelSet)
+	if err != nil {
+		t.Fatalf("buildPayload failed: %v", err)
+	}
+	var mSet struct {
+		Options map[string]interface{} `json:"options"`
+	}
+	if err := json.Unmarshal([]byte(payloadStrSet), &mSet); err != nil {
+		t.Fatalf("json unmarshal failed: %v", err)
+	}
+	pVal, exists := mSet.Options["priority"]
+	if !exists || pVal != float64(5) {
+		t.Fatalf("expected priority key to be 5 in payload options, got %#v in %s", pVal, payloadStrSet)
+	}
+}
+
+func TestNotificationAgentSchemasOptionalComputedAudit(t *testing.T) {
+	t.Parallel()
+
+	options := notificationAgentResourceOptionAttributes()
+	for agentName, agentAttr := range options {
+		nested, ok := agentAttr.(schema.SingleNestedAttribute)
+		if !ok {
+			continue
+		}
+		for attrName, attr := range nested.Attributes {
+			isRequired := attr.IsRequired()
+			isComputed := attr.IsComputed()
+			isOptional := attr.IsOptional()
+
+			if !isRequired {
+				if !isOptional {
+					t.Errorf("agent %s attribute %s: expected Optional to be true", agentName, attrName)
+				}
+				if !isComputed {
+					t.Errorf("agent %s attribute %s: expected Computed to be true for state hygiene", agentName, attrName)
+				}
+			}
 		}
 	}
 }
