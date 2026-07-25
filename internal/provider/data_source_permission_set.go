@@ -1,3 +1,4 @@
+//go:generate go run ../../tools/gen_permissions.go
 package provider
 
 import (
@@ -9,38 +10,6 @@ import (
 )
 
 var _ datasource.DataSource = &permissionSetDataSource{}
-
-var PermissionsMap = map[string]int64{
-	"admin":                 2,
-	"manage_settings":       4,
-	"manage_users":          8,
-	"manage_requests":       16,
-	"request":               32,
-	"vote":                  64,
-	"auto_approve":          128,
-	"auto_approve_movie":    256,
-	"auto_approve_tv":       512,
-	"request_4k":            1024,
-	"request_4k_movie":      2048,
-	"request_4k_tv":         4096,
-	"request_advanced":      8192,
-	"request_view":          16384,
-	"auto_approve_4k":       32768,
-	"auto_approve_4k_movie": 65536,
-	"auto_approve_4k_tv":    131072,
-	"request_movie":         262144,
-	"request_tv":            524288,
-	"manage_issues":         1048576,
-	"view_issues":           2097152,
-	"create_issues":         4194304,
-	"auto_request":          8388608,
-	"auto_request_movie":    16777216,
-	"auto_request_tv":       33554432,
-	"recent_view":           67108864,
-	"watchlist_view":        134217728,
-	"manage_blocklist":      268435456,
-	"view_blocklist":        1073741824,
-}
 
 func NewPermissionSetDataSource() datasource.DataSource {
 	return &permissionSetDataSource{}
