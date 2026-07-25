@@ -45,6 +45,7 @@ var RegisteredResources = []func() resource.Resource{
 	NewJellyfinLibrarySettingsResource,
 	NewPlexLibrarySyncResource,
 	NewJellyfinLibrarySyncResource,
+	NewUserQuotaResource,
 }
 
 var RegisteredDataSources = []func() datasource.DataSource{
@@ -96,4 +97,5 @@ var RegisteredDataSources = []func() datasource.DataSource{
 	NewPermissionSetDataSource,
 	NewPlexLibrarySettingsDataSource,
 	NewJellyfinLibrarySettingsDataSource,
+	NewUserQuotaDataSource,
 }
