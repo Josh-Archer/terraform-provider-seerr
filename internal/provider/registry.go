@@ -41,6 +41,10 @@ var RegisteredResources = []func() resource.Resource{
 	NewMetadataSettingsResource,
 	NewOverrideRuleResource,
 	NewBlocklistResource,
+	NewPlexLibrarySettingsResource,
+	NewJellyfinLibrarySettingsResource,
+	NewPlexLibrarySyncResource,
+	NewJellyfinLibrarySyncResource,
 }
 
 var RegisteredDataSources = []func() datasource.DataSource{
@@ -90,4 +94,6 @@ var RegisteredDataSources = []func() datasource.DataSource{
 	NewMediaItemDataSource,
 	NewDiscoverDataSource,
 	NewPermissionSetDataSource,
+	NewPlexLibrarySettingsDataSource,
+	NewJellyfinLibrarySettingsDataSource,
 }

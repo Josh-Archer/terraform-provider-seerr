@@ -105,13 +105,12 @@ func DefaultRules() []PathRule {
 		{PathPattern: "/api-key", Classification: ClassCovered, MappedResource: "seerr_api_key", Notes: "API key resource & data source"},
 		{PathPattern: "/api-key/regenerate", Classification: ClassCovered, MappedResource: "seerr_api_key", Notes: "API key regenerate action"},
 
-		// --- Uncovered Settings / User Endpoints (Backlog Candidates) ---
+		{PathPattern: "/settings/plex/library", Classification: ClassCovered, MappedResource: "seerr_plex_library_settings", Notes: "Plex library enable/disable settings"},
+		{PathPattern: "/settings/plex/sync", Classification: ClassCovered, MappedResource: "seerr_plex_library_sync", Notes: "Plex library sync trigger"},
+		{PathPattern: "/settings/jellyfin/library", Classification: ClassCovered, MappedResource: "seerr_jellyfin_library_settings", Notes: "Jellyfin library enable/disable settings"},
+		{PathPattern: "/settings/jellyfin/sync", Classification: ClassCovered, MappedResource: "seerr_jellyfin_library_sync", Notes: "Jellyfin library sync trigger"},
 		{PathPattern: "/settings/jobs/{jobId}/run", Classification: ClassUncovered, Notes: "Job trigger action (Issue #123 candidate)"},
 		{PathPattern: "/settings/jobs/{jobId}/cancel", Classification: ClassUncovered, Notes: "Job cancel action (Issue #123 candidate)"},
-		{PathPattern: "/settings/plex/library", Classification: ClassUncovered, Notes: "Plex library sync settings (Issue #121 candidate)"},
-		{PathPattern: "/settings/plex/sync", Classification: ClassUncovered, Notes: "Plex library sync trigger (Issue #121 candidate)"},
-		{PathPattern: "/settings/jellyfin/library", Classification: ClassUncovered, Notes: "Jellyfin library sync settings (Issue #121 candidate)"},
-		{PathPattern: "/settings/jellyfin/sync", Classification: ClassUncovered, Notes: "Jellyfin library sync trigger (Issue #121 candidate)"},
 		{PathPattern: "/user/import-from-plex", Classification: ClassUncovered, Notes: "Plex user import action (Issue #124 candidate)"},
 		{PathPattern: "/user/import-from-jellyfin", Classification: ClassUncovered, Notes: "Jellyfin user import action (Issue #124 candidate)"},
 		{PathPattern: "/user/{userId}/quota", Classification: ClassUncovered, Notes: "User quota settings (Issue #122 candidate)"},
