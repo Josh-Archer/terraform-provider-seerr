@@ -168,15 +168,17 @@ func (r *PlexLibrarySettingsResource) updatePlexLibraries(ctx context.Context, d
 		}
 	}
 
-	enableQuery := ""
-	for i, id := range enabledList {
-		if i > 0 {
-			enableQuery += ","
+	apiPath := "/api/v1/settings/plex/library"
+	if len(enabledList) > 0 {
+		enableQuery := ""
+		for i, id := range enabledList {
+			if i > 0 {
+				enableQuery += ","
+			}
+			enableQuery += id
 		}
-		enableQuery += id
+		apiPath = fmt.Sprintf("/api/v1/settings/plex/library?enable=%s", enableQuery)
 	}
-
-	apiPath := fmt.Sprintf("/api/v1/settings/plex/library?enable=%s", enableQuery)
 	res, err := r.client.Request(ctx, "GET", apiPath, "", nil)
 	if err != nil {
 		return err
