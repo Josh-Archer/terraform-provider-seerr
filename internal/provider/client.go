@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -53,6 +54,7 @@ type APIResponse struct {
 const (
 	maxRequestAttempts = 3
 	requestRetryDelay  = 250 * time.Millisecond
+	maxRetryAfter      = 60 * time.Second
 )
 
 func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bool, timeout time.Duration) *APIClient {
@@ -155,6 +157,14 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 			return nil, err
 		}
 
+		if retryableMethod && attempt < maxRequestAttempts && isRetryableStatusCode(res.StatusCode) {
+			delay := retryDelayForResponse(res, attempt)
+			if err := sleepWithContext(ctx, delay); err != nil {
+				return &APIResponse{StatusCode: res.StatusCode, Body: respBody, Headers: res.Header}, nil
+			}
+			continue
+		}
+
 		return &APIResponse{
 			StatusCode: res.StatusCode,
 			Body:       respBody,
@@ -172,6 +182,50 @@ func shouldRetryMethod(method string) bool {
 	default:
 		return false
 	}
+}
+
+func isRetryableStatusCode(code int) bool {
+	switch code {
+	case http.StatusTooManyRequests, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		return true
+	default:
+		return false
+	}
+}
+
+func retryDelayForResponse(res *http.Response, attempt int) time.Duration {
+	if res.StatusCode == http.StatusTooManyRequests {
+		if delay := parseRetryAfter(res.Header.Get("Retry-After")); delay > 0 {
+			if delay > maxRetryAfter {
+				delay = maxRetryAfter
+			}
+			return delay
+		}
+	}
+	return requestRetryDelay * time.Duration(attempt)
+}
+
+func parseRetryAfter(value string) time.Duration {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 0
+	}
+
+	// Try parsing as seconds first.
+	if seconds, err := strconv.ParseFloat(value, 64); err == nil && seconds >= 0 {
+		return time.Duration(seconds * float64(time.Second))
+	}
+
+	// Try parsing as HTTP-date (RFC 1123).
+	if t, err := time.Parse(time.RFC1123, value); err == nil {
+		delta := time.Until(t)
+		if delta < 0 {
+			delta = 0
+		}
+		return delta
+	}
+
+	return 0
 }
 
 func (c *APIClient) resolvePath(path string) (*url.URL, error) {
