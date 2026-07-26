@@ -168,15 +168,17 @@ func (r *JellyfinLibrarySettingsResource) updateJellyfinLibraries(ctx context.Co
 		}
 	}
 
-	enableQuery := ""
-	for i, id := range enabledList {
-		if i > 0 {
-			enableQuery += ","
+	apiPath := "/api/v1/settings/jellyfin/library"
+	if len(enabledList) > 0 {
+		enableQuery := ""
+		for i, id := range enabledList {
+			if i > 0 {
+				enableQuery += ","
+			}
+			enableQuery += id
 		}
-		enableQuery += id
+		apiPath = fmt.Sprintf("/api/v1/settings/jellyfin/library?enable=%s", enableQuery)
 	}
-
-	apiPath := fmt.Sprintf("/api/v1/settings/jellyfin/library?enable=%s", enableQuery)
 	res, err := r.client.Request(ctx, "GET", apiPath, "", nil)
 	if err != nil {
 		return err
@@ -216,8 +218,8 @@ func (r *JellyfinLibrarySettingsResource) parseJellyfinLibraryResponse(ctx conte
 		return fmt.Errorf("failed to decode jellyfin library response: %w", err)
 	}
 
-	var libModels []JellyfinLibraryModel
-	var enabledIDs []string
+	libModels := make([]JellyfinLibraryModel, 0, len(rawLibs))
+	enabledIDs := make([]string, 0)
 
 	for _, l := range rawLibs {
 		idStr := fmt.Sprintf("%v", l.ID)

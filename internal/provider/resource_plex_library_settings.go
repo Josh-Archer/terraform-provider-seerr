@@ -218,8 +218,8 @@ func (r *PlexLibrarySettingsResource) parsePlexLibraryResponse(ctx context.Conte
 		return fmt.Errorf("failed to decode plex library response: %w", err)
 	}
 
-	var libModels []PlexLibraryModel
-	var enabledIDs []string
+	libModels := make([]PlexLibraryModel, 0, len(rawLibs))
+	enabledIDs := make([]string, 0)
 
 	for _, l := range rawLibs {
 		idStr := fmt.Sprintf("%v", l.ID)
