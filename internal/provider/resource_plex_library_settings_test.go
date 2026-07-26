@@ -49,3 +49,27 @@ func TestPlexLibrarySettingsParseResponse(t *testing.T) {
 	require.False(t, diags.HasError())
 	assert.ElementsMatch(t, []string{"1", "2"}, enabled)
 }
+
+func TestPlexLibrarySettingsEmptyEnabledLibraries(t *testing.T) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/v1/settings/plex/library", r.URL.Path)
+		assert.Empty(t, r.URL.Query().Get("enable"))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`[]`))
+	}))
+	defer mockServer.Close()
+
+	baseURL, err := url.Parse(mockServer.URL)
+	require.NoError(t, err)
+
+	client := NewClient(baseURL, "test-api-key", "test-agent", false, defaultRequestTimeout)
+	res := &PlexLibrarySettingsResource{client: client}
+
+	ctx := context.Background()
+	var data PlexLibrarySettingsModel
+	data.EnabledLibraries, _ = types.SetValueFrom(ctx, types.StringType, []string{})
+
+	err = res.updatePlexLibraries(ctx, &data)
+	require.NoError(t, err)
+}

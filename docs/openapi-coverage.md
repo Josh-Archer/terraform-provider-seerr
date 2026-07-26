@@ -6,9 +6,9 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 
 - **Total OpenAPI Paths**: 163
 - **Total Endpoints (Methods)**: 212
-- **Covered Paths**: 51 (31.3%)
+- **Covered Paths**: 54 (33.1%)
 - **Intentionally Out of Scope**: 106 (65.0%)
-- **Uncovered Settings/User Backlog**: 6 (3.7%)
+- **Uncovered Settings/User Backlog**: 3 (1.8%)
 
 ## Classification Legend
 
@@ -160,14 +160,14 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/tv/{tvId}/season/{seasonNumber}` | GET | `intentionally-out-of-scope` | TMDB TV season details |
 | `/tv/{tvId}/similar` | GET | `intentionally-out-of-scope` | TMDB TV similar query |
 | `/user` | GET, POST, PUT | `covered` | `seerr_user` - User list/create resource & data source |
-| `/user/import-from-jellyfin` | POST | `uncovered` | Jellyfin user import action (Issue #124 candidate) |
-| `/user/import-from-plex` | POST | `uncovered` | Plex user import action (Issue #124 candidate) |
+| `/user/import-from-jellyfin` | POST | `covered` | `seerr_user_import_jellyfin` - Jellyfin user import resource & data source |
+| `/user/import-from-plex` | POST | `covered` | `seerr_user_import_plex` - Plex user import resource & data source |
 | `/user/jellyfin/{jellyfinUserId}` | GET | `intentionally-out-of-scope` | Jellyfin user lookup |
 | `/user/registerPushSubscription` | POST | `intentionally-out-of-scope` | Browser push notification registration |
 | `/user/{userId}` | DELETE, GET, PUT | `covered` | `seerr_user` - User resource & data source |
 | `/user/{userId}/pushSubscription/{endpoint}` | DELETE, GET | `intentionally-out-of-scope` | Browser push notification item |
 | `/user/{userId}/pushSubscriptions` | GET | `intentionally-out-of-scope` | Browser push notifications list |
-| `/user/{userId}/quota` | GET | `uncovered` | User quota settings (Issue #122 candidate) |
+| `/user/{userId}/quota` | GET | `covered` | `seerr_user_quota` - User quota resource & data source |
 | `/user/{userId}/requests` | GET | `intentionally-out-of-scope` | Per-user request history query endpoint |
 | `/user/{userId}/settings/linked-accounts/jellyfin` | DELETE, POST | `intentionally-out-of-scope` | Jellyfin account linking |
 | `/user/{userId}/settings/linked-accounts/jellyfin/quickconnect` | POST | `intentionally-out-of-scope` | Jellyfin QuickConnect linking |
