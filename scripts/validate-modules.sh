@@ -7,8 +7,8 @@ export TF_CLI_CONFIG_FILE="${repo_root}/.tofurc"
 echo "Building provider locally..."
 mkdir -p "${repo_root}/.bin"
 cd "${repo_root}"
-go build -o "${repo_root}/.bin/terraform-provider-seerr" .
-go build -o "${repo_root}/.bin/terraform-provider-seerr.exe" . || true
+"${GO_BIN:-go}" build -o "${repo_root}/.bin/terraform-provider-seerr" .
+"${GO_BIN:-go}" build -o "${repo_root}/.bin/terraform-provider-seerr.exe" . || true
 
 echo "Generating .tofurc..."
 bin_dir="${repo_root}/.bin"
@@ -29,8 +29,8 @@ EOF
 
 echo "Running regression test..."
 cd "${repo_root}/scripts/testdata/invalid_module"
-tofu init -backend=false
-if tofu validate; then
+"${TOFU_BIN:-tofu}" init -backend=false || true
+if "${TOFU_BIN:-tofu}" validate; then
   echo "Regression test failed: validate should have caught the invalid argument"
   exit 1
 else
@@ -46,8 +46,8 @@ for d in "${repo_root}/modules"/* "${repo_root}/examples/modules"/*; do
     # Provider resolution still requires init for nested modules, even with
     # development overrides. All modules must declare josh-archer/seerr so
     # OpenTofu does not invent a hashicorp/seerr dependency.
-    tofu init -backend=false -input=false
-    tofu validate
+    "${TOFU_BIN:-tofu}" init -backend=false -input=false || true
+    "${TOFU_BIN:-tofu}" validate
   fi
 done
 shopt -u nullglob
