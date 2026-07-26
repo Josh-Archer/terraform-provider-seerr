@@ -42,6 +42,7 @@ go_bin="$(resolve_tool go)" || {
   echo "Unable to find 'go' on PATH." >&2
   exit 1
 }
+export GO_BIN="${go_bin}"
 
 run bash "${repo_root}/tools/check-generated.sh"
 run bash "${repo_root}/scripts/reconcile-release-tags_test.sh"
@@ -73,6 +74,7 @@ case "${SEERR_RUN_LINT:-auto}" in
 esac
 
 if tofu_bin="$(resolve_tool tofu)"; then
+  export TOFU_BIN="${tofu_bin}"
   run bash "${repo_root}/scripts/validate-modules.sh"
 else
   echo "Skipping module validation; 'tofu' command not found on PATH" >&2

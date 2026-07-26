@@ -111,9 +111,9 @@ func DefaultRules() []PathRule {
 		{PathPattern: "/settings/jellyfin/sync", Classification: ClassCovered, MappedResource: "seerr_jellyfin_library_sync", Notes: "Jellyfin library sync trigger"},
 		{PathPattern: "/settings/jobs/{jobId}/run", Classification: ClassUncovered, Notes: "Job trigger action (Issue #123 candidate)"},
 		{PathPattern: "/settings/jobs/{jobId}/cancel", Classification: ClassUncovered, Notes: "Job cancel action (Issue #123 candidate)"},
-		{PathPattern: "/user/import-from-plex", Classification: ClassUncovered, Notes: "Plex user import action (Issue #124 candidate)"},
-		{PathPattern: "/user/import-from-jellyfin", Classification: ClassUncovered, Notes: "Jellyfin user import action (Issue #124 candidate)"},
-		{PathPattern: "/user/{userId}/quota", Classification: ClassUncovered, Notes: "User quota settings (Issue #122 candidate)"},
+		{PathPattern: "/user/import-from-plex", Classification: ClassCovered, MappedResource: "seerr_user_import_plex", Notes: "Plex user import resource & data source"},
+		{PathPattern: "/user/import-from-jellyfin", Classification: ClassCovered, MappedResource: "seerr_user_import_jellyfin", Notes: "Jellyfin user import resource & data source"},
+		{PathPattern: "/user/{userId}/quota", Classification: ClassCovered, MappedResource: "seerr_user_quota", Notes: "User quota resource & data source"},
 
 		// --- Intentionally Out of Scope: Transient test actions, runtime flushes/logs, auth, status, search/tmdb ---
 		{PathPattern: "/settings/main/regenerate", Classification: ClassIntentionallyOutOfScope, Notes: "API key regeneration helper on main settings endpoint"},
