@@ -6,9 +6,9 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 
 - **Total OpenAPI Paths**: 163
 - **Total Endpoints (Methods)**: 212
-- **Covered Paths**: 54 (33.1%)
-- **Intentionally Out of Scope**: 106 (65.0%)
-- **Uncovered Settings/User Backlog**: 3 (1.8%)
+- **Covered Paths**: 66 (40.5%)
+- **Intentionally Out of Scope**: 96 (58.9%)
+- **Uncovered Settings/User Backlog**: 1 (0.6%)
 
 ## Classification Legend
 
@@ -107,8 +107,8 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/settings/jellyfin/sync` | GET, POST | `covered` | `seerr_jellyfin_library_sync` - Jellyfin library sync trigger |
 | `/settings/jellyfin/users` | GET | `intentionally-out-of-scope` | Transient user lookup for Jellyfin server configuration |
 | `/settings/jobs` | GET | `covered` | `seerr_jobs` - Jobs data source |
-| `/settings/jobs/{jobId}/cancel` | POST | `uncovered` | Job cancel action (Issue #123 candidate) |
-| `/settings/jobs/{jobId}/run` | POST | `uncovered` | Job trigger action (Issue #123 candidate) |
+| `/settings/jobs/{jobId}/cancel` | POST | `covered` | `seerr_job_run` - Job cancel action on destroy |
+| `/settings/jobs/{jobId}/run` | POST | `covered` | `seerr_job_run` - Job trigger action resource |
 | `/settings/jobs/{jobId}/schedule` | POST | `covered` | `seerr_job_schedule` - Job schedule resource |
 | `/settings/logs` | GET | `intentionally-out-of-scope` | Runtime application logs endpoint |
 | `/settings/main` | GET, POST | `covered` | `seerr_main_settings` - Main settings resource & data source |
@@ -117,26 +117,26 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/settings/metadatas/test` | POST | `intentionally-out-of-scope` | Transient test endpoint for metadata provider |
 | `/settings/network` | GET, POST | `covered` | `seerr_network_settings` - Network settings resource & data source |
 | `/settings/notifications/discord` | GET, POST | `covered` | `seerr_notification_discord` - Discord notification agent resource & data source |
-| `/settings/notifications/discord/test` | POST | `intentionally-out-of-scope` | Transient notification test action |
+| `/settings/notifications/discord/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/notifications/email` | GET, POST | `covered` | `seerr_notification_email` - Email notification agent resource & data source |
-| `/settings/notifications/email/test` | POST | `intentionally-out-of-scope` | Transient notification test action |
+| `/settings/notifications/email/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/notifications/gotify` | GET, POST | `covered` | `seerr_notification_gotify` - Gotify notification agent resource & data source |
-| `/settings/notifications/gotify/test` | POST | `intentionally-out-of-scope` | Transient notification test action |
+| `/settings/notifications/gotify/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/notifications/ntfy` | GET, POST | `covered` | `seerr_notification_ntfy` - Ntfy notification agent resource & data source |
-| `/settings/notifications/ntfy/test` | POST | `intentionally-out-of-scope` | Transient notification test action |
+| `/settings/notifications/ntfy/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/notifications/pushbullet` | GET, POST | `covered` | `seerr_notification_pushbullet` - Pushbullet notification agent resource & data source |
-| `/settings/notifications/pushbullet/test` | POST | `intentionally-out-of-scope` | Transient notification test action |
+| `/settings/notifications/pushbullet/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/notifications/pushover` | GET, POST | `covered` | `seerr_notification_pushover` - Pushover notification agent resource & data source |
 | `/settings/notifications/pushover/sounds` | GET | `intentionally-out-of-scope` | Static sound lookup helper for Pushover |
-| `/settings/notifications/pushover/test` | POST | `intentionally-out-of-scope` | Transient notification test action |
+| `/settings/notifications/pushover/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/notifications/slack` | GET, POST | `covered` | `seerr_notification_slack` - Slack notification agent resource & data source |
-| `/settings/notifications/slack/test` | POST | `intentionally-out-of-scope` | Transient notification test action |
+| `/settings/notifications/slack/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/notifications/telegram` | GET, POST | `covered` | `seerr_notification_telegram` - Telegram notification agent resource & data source |
-| `/settings/notifications/telegram/test` | POST | `intentionally-out-of-scope` | Transient notification test action |
+| `/settings/notifications/telegram/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/notifications/webhook` | GET, POST | `covered` | `seerr_notification_webhook` - Webhook notification agent resource & data source |
-| `/settings/notifications/webhook/test` | POST | `intentionally-out-of-scope` | Transient notification test action |
+| `/settings/notifications/webhook/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/notifications/webpush` | GET, POST | `covered` | `seerr_notification_webpush` - Webpush notification agent resource & data source |
-| `/settings/notifications/webpush/test` | POST | `intentionally-out-of-scope` | Transient notification test action |
+| `/settings/notifications/webpush/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/plex` | GET, POST | `covered` | `seerr_plex_settings` - Plex settings resource & data source |
 | `/settings/plex/devices/servers` | GET | `intentionally-out-of-scope` | Transient device discovery endpoint for Plex |
 | `/settings/plex/library` | GET | `covered` | `seerr_plex_library_settings` - Plex library enable/disable settings |
