@@ -39,7 +39,7 @@ func (t *authTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", t.userAgent)
-	if req.Body != nil {
+	if req.Body != nil || req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodPatch {
 		req.Header.Set("Content-Type", "application/json")
 	}
 	return t.next.RoundTrip(req)
@@ -112,6 +112,9 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 
 	method = strings.ToUpper(strings.TrimSpace(method))
 	retryableMethod := shouldRetryMethod(method)
+	if strings.TrimSpace(body) == "" && (method == http.MethodPost || method == http.MethodPut || method == http.MethodPatch) {
+		body = "{}"
+	}
 	bodyBytes := []byte(body)
 	var lastErr error
 
