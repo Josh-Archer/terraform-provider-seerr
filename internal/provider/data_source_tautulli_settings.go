@@ -19,6 +19,7 @@ type TautulliSettingsDataSource struct {
 type TautulliSettingsDataSourceModel struct {
 	ID           types.String `tfsdk:"id"`
 	Hostname     types.String `tfsdk:"hostname"`
+	IP           types.String `tfsdk:"ip"`
 	Port         types.Int64  `tfsdk:"port"`
 	UseSSL       types.Bool   `tfsdk:"use_ssl"`
 	URLBase      types.String `tfsdk:"url_base"`
@@ -43,6 +44,10 @@ func (d *TautulliSettingsDataSource) Schema(_ context.Context, _ datasource.Sche
 			},
 			"hostname": schema.StringAttribute{
 				MarkdownDescription: "The hostname of the Tautulli server.",
+				Computed:            true,
+			},
+			"ip": schema.StringAttribute{
+				MarkdownDescription: "The IP address or hostname of the Tautulli server.",
 				Computed:            true,
 			},
 			"port": schema.Int64Attribute{
@@ -116,22 +121,26 @@ func (d *TautulliSettingsDataSource) Read(ctx context.Context, req datasource.Re
 		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("failed to decode response: %s", err))
 		return
 	}
-	if v, ok := decoded["hostname"].(string); ok {
+	if v, ok := stringValueFromAny(decoded["hostname"]); ok {
 		data.Hostname = types.StringValue(v)
+		data.IP = types.StringValue(v)
+	} else if v, ok := stringValueFromAny(decoded["ip"]); ok {
+		data.Hostname = types.StringValue(v)
+		data.IP = types.StringValue(v)
 	}
-	if v, ok := decoded["port"].(float64); ok {
-		data.Port = types.Int64Value(int64(v))
+	if v, ok := int64ValueFromAny(decoded["port"]); ok {
+		data.Port = types.Int64Value(v)
 	}
-	if v, ok := decoded["useSsl"].(bool); ok {
+	if v, ok := boolValueFromAny(decoded["useSsl"]); ok {
 		data.UseSSL = types.BoolValue(v)
 	}
-	if v, ok := decoded["urlBase"].(string); ok {
+	if v, ok := stringValueFromAny(decoded["urlBase"]); ok {
 		data.URLBase = types.StringValue(v)
 	}
-	if v, ok := decoded["apiKey"].(string); ok && v != "" {
+	if v, ok := stringValueFromAny(decoded["apiKey"]); ok && v != "" {
 		data.APIKey = types.StringValue(v)
 	}
-	if v, ok := decoded["externalUrl"].(string); ok {
+	if v, ok := stringValueFromAny(decoded["externalUrl"]); ok {
 		data.ExternalURL = types.StringValue(v)
 	}
 

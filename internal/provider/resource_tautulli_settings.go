@@ -25,6 +25,7 @@ type TautulliSettingsResource struct {
 type TautulliSettingsModel struct {
 	ID           types.String `tfsdk:"id"`
 	Hostname     types.String `tfsdk:"hostname"`
+	IP           types.String `tfsdk:"ip"`
 	Port         types.Int64  `tfsdk:"port"`
 	UseSSL       types.Bool   `tfsdk:"use_ssl"`
 	URLBase      types.String `tfsdk:"url_base"`
@@ -55,6 +56,11 @@ func (r *TautulliSettingsResource) Schema(_ context.Context, _ resource.SchemaRe
 				Optional:            true,
 				Computed:            true,
 				Default:             stringdefault.StaticString(""),
+			},
+			"ip": schema.StringAttribute{
+				MarkdownDescription: "The IP address or hostname of the Tautulli server.",
+				Optional:            true,
+				Computed:            true,
 			},
 			"port": schema.Int64Attribute{
 				MarkdownDescription: "The port of the Tautulli server.",
@@ -116,8 +122,10 @@ func (r *TautulliSettingsResource) Create(ctx context.Context, req resource.Crea
 	}
 
 	payload := make(map[string]any)
-	if !data.Hostname.IsNull() && !data.Hostname.IsUnknown() {
+	if !data.Hostname.IsNull() && !data.Hostname.IsUnknown() && data.Hostname.ValueString() != "" {
 		payload["hostname"] = data.Hostname.ValueString()
+	} else if !data.IP.IsNull() && !data.IP.IsUnknown() && data.IP.ValueString() != "" {
+		payload["hostname"] = data.IP.ValueString()
 	}
 	if !data.Port.IsNull() && !data.Port.IsUnknown() {
 		payload["port"] = data.Port.ValueInt64()
@@ -180,8 +188,10 @@ func (r *TautulliSettingsResource) Update(ctx context.Context, req resource.Upda
 	}
 
 	payload := make(map[string]any)
-	if !data.Hostname.IsNull() && !data.Hostname.IsUnknown() {
+	if !data.Hostname.IsNull() && !data.Hostname.IsUnknown() && data.Hostname.ValueString() != "" {
 		payload["hostname"] = data.Hostname.ValueString()
+	} else if !data.IP.IsNull() && !data.IP.IsUnknown() && data.IP.ValueString() != "" {
+		payload["hostname"] = data.IP.ValueString()
 	}
 	if !data.Port.IsNull() && !data.Port.IsUnknown() {
 		payload["port"] = data.Port.ValueInt64()
@@ -255,27 +265,32 @@ func (r *TautulliSettingsResource) applyDecodedTautulliSettings(data *TautulliSe
 	previousAPIKey := data.APIKey
 
 	data.Hostname = types.StringNull()
+	data.IP = types.StringNull()
 	data.Port = types.Int64Null()
 	data.UseSSL = types.BoolNull()
 	data.URLBase = types.StringNull()
 	data.ExternalURL = types.StringNull()
 
-	if v, ok := decoded["hostname"].(string); ok {
+	if v, ok := stringValueFromAny(decoded["hostname"]); ok {
 		data.Hostname = types.StringValue(v)
+		data.IP = types.StringValue(v)
+	} else if v, ok := stringValueFromAny(decoded["ip"]); ok {
+		data.Hostname = types.StringValue(v)
+		data.IP = types.StringValue(v)
 	}
-	if v, ok := decoded["port"].(float64); ok {
-		data.Port = types.Int64Value(int64(v))
+	if v, ok := int64ValueFromAny(decoded["port"]); ok {
+		data.Port = types.Int64Value(v)
 	}
-	if v, ok := decoded["useSsl"].(bool); ok {
+	if v, ok := boolValueFromAny(decoded["useSsl"]); ok {
 		data.UseSSL = types.BoolValue(v)
 	}
-	if v, ok := decoded["urlBase"].(string); ok {
+	if v, ok := stringValueFromAny(decoded["urlBase"]); ok {
 		data.URLBase = types.StringValue(v)
 	}
-	if v, ok := decoded["apiKey"].(string); ok && v != "" {
+	if v, ok := stringValueFromAny(decoded["apiKey"]); ok && v != "" {
 		data.APIKey = types.StringValue(v)
 	}
-	if v, ok := decoded["externalUrl"].(string); ok {
+	if v, ok := stringValueFromAny(decoded["externalUrl"]); ok {
 		data.ExternalURL = types.StringValue(v)
 	}
 	if data.APIKey.IsNull() && !previousAPIKey.IsNull() && !previousAPIKey.IsUnknown() {
