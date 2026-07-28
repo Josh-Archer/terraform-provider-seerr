@@ -109,6 +109,8 @@ func DefaultRules() []PathRule {
 		{PathPattern: "/settings/plex/sync", Classification: ClassCovered, MappedResource: "seerr_plex_library_sync", Notes: "Plex library sync trigger"},
 		{PathPattern: "/settings/jellyfin/library", Classification: ClassCovered, MappedResource: "seerr_jellyfin_library_settings", Notes: "Jellyfin library enable/disable settings"},
 		{PathPattern: "/settings/jellyfin/sync", Classification: ClassCovered, MappedResource: "seerr_jellyfin_library_sync", Notes: "Jellyfin library sync trigger"},
+		{PathPattern: "/settings/emby/library", Classification: ClassCovered, MappedResource: "seerr_emby_library_settings", Notes: "Emby library enable/disable settings"},
+		{PathPattern: "/settings/emby/sync", Classification: ClassCovered, MappedResource: "seerr_emby_library_sync", Notes: "Emby library sync trigger"},
 		{PathPattern: "/settings/jobs/{jobId}/run", Classification: ClassCovered, MappedResource: "seerr_job_run", Notes: "Job trigger action resource"},
 		{PathPattern: "/settings/jobs/{jobId}/cancel", Classification: ClassCovered, MappedResource: "seerr_job_run", Notes: "Job cancel action on destroy"},
 		{PathPattern: "/user/import-from-plex", Classification: ClassCovered, MappedResource: "seerr_user_import_plex", Notes: "Plex user import resource & data source"},
