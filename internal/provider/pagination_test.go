@@ -304,6 +304,258 @@ func TestUsersDataSourceReadAggregatesMultiplePages(t *testing.T) {
 	}
 }
 
+func TestFetchAllPaginatedResultsServerCappedPageSizeWithTotal(t *testing.T) {
+	const totalItems = 120
+	const serverCap = 25
+	const requestedPageSize = 100
+
+	items := make([]map[string]any, 0, totalItems)
+	for i := 1; i <= totalItems; i++ {
+		items = append(items, map[string]any{"id": i, "name": fmt.Sprintf("item-%d", i)})
+	}
+
+	var callSkips []int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		skip, _ := strconv.Atoi(r.URL.Query().Get("skip"))
+		callSkips = append(callSkips, skip)
+
+		start := skip
+		if start > len(items) {
+			start = len(items)
+		}
+		end := start + serverCap
+		if end > len(items) {
+			end = len(items)
+		}
+		pageResults := items[start:end]
+
+		w.Header().Set("Content-Type", "application/json")
+		// Server returns total count but does not include pages/page metadata.
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"results": pageResults,
+			"pageInfo": map[string]any{
+				"pageSize": serverCap,
+				"results":  len(pageResults),
+				"total":    totalItems,
+			},
+		})
+	}))
+	defer srv.Close()
+
+	client := testPaginationClient(t, srv.URL)
+	results, err := fetchAllPaginatedResults(context.Background(), client, "/api/v1/item", requestedPageSize)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got, want := len(results), totalItems; got != want {
+		t.Fatalf("expected %d aggregated results, got %d", want, got)
+	}
+
+	// Expect 5 requests: skip 0 (25), skip 25 (25), skip 50 (25), skip 75 (25), skip 100 (20)
+	expectedSkips := []int{0, 25, 50, 75, 100}
+	if len(callSkips) != len(expectedSkips) {
+		t.Fatalf("expected %d calls, got %d (%v)", len(expectedSkips), len(callSkips), callSkips)
+	}
+	for i, expected := range expectedSkips {
+		if callSkips[i] != expected {
+			t.Fatalf("call %d: expected skip=%d, got %d", i, expected, callSkips[i])
+		}
+	}
+}
+
+func TestFetchAllPaginatedResultsLargeCatalog(t *testing.T) {
+	const totalItems = 550
+	const pageSize = 100
+
+	items := make([]map[string]any, 0, totalItems)
+	for i := 1; i <= totalItems; i++ {
+		items = append(items, map[string]any{"id": i, "name": fmt.Sprintf("catalog-item-%d", i)})
+	}
+
+	var callSkips []int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		skip, _ := strconv.Atoi(r.URL.Query().Get("skip"))
+		callSkips = append(callSkips, skip)
+
+		start := skip
+		if start > len(items) {
+			start = len(items)
+		}
+		end := start + pageSize
+		if end > len(items) {
+			end = len(items)
+		}
+		pageResults := items[start:end]
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"results": pageResults,
+			"pageInfo": map[string]any{
+				"pages":    (totalItems + pageSize - 1) / pageSize,
+				"page":     (skip / pageSize) + 1,
+				"pageSize": pageSize,
+				"results":  len(pageResults),
+				"total":    totalItems,
+			},
+		})
+	}))
+	defer srv.Close()
+
+	client := testPaginationClient(t, srv.URL)
+	results, err := fetchAllPaginatedResults(context.Background(), client, "/api/v1/large", pageSize)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got, want := len(results), totalItems; got != want {
+		t.Fatalf("expected %d results, got %d", want, got)
+	}
+	if got, want := len(callSkips), 6; got != want {
+		t.Fatalf("expected %d calls for 550 items, got %d (%v)", want, got, callSkips)
+	}
+}
+
+func TestFetchAllPaginatedResultsRawArrayResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[{"id": 1, "name": "a"}, {"id": 2, "name": "b"}]`))
+	}))
+	defer srv.Close()
+
+	client := testPaginationClient(t, srv.URL)
+	results, err := fetchAllPaginatedResults(context.Background(), client, "/api/v1/raw", 100)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got, want := len(results), 2; got != want {
+		t.Fatalf("expected %d items, got %d", want, got)
+	}
+	if got, want := intFromAny(results[0]["id"]), 1; got != want {
+		t.Fatalf("first item id: got %d, want %d", got, want)
+	}
+}
+
+func TestRequestsDataSourceReadAggregatesMultiplePages(t *testing.T) {
+	const totalRequests = 250
+	all := make([]map[string]any, 0, totalRequests)
+	for i := 1; i <= totalRequests; i++ {
+		all = append(all, map[string]any{
+			"id":     float64(i),
+			"status": float64(1),
+			"media":  map[string]any{"id": float64(1000 + i)},
+			"requestedBy": map[string]any{"id": float64(2000 + i)},
+		})
+	}
+
+	var callSkips []int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/request" {
+			http.NotFound(w, r)
+			return
+		}
+		skip, _ := strconv.Atoi(r.URL.Query().Get("skip"))
+		callSkips = append(callSkips, skip)
+
+		start := skip
+		if start > len(all) {
+			start = len(all)
+		}
+		end := start + defaultPaginationPageSize
+		if end > len(all) {
+			end = len(all)
+		}
+		pageResults := all[start:end]
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"results": pageResults,
+			"pageInfo": map[string]any{
+				"pages":    (totalRequests + defaultPaginationPageSize - 1) / defaultPaginationPageSize,
+				"page":     (skip / defaultPaginationPageSize) + 1,
+				"pageSize": defaultPaginationPageSize,
+				"results":  len(pageResults),
+				"total":    totalRequests,
+			},
+		})
+	}))
+	defer srv.Close()
+
+	ds := &RequestsDataSource{client: testPaginationClient(t, srv.URL)}
+	results, err := fetchAllPaginatedResults(context.Background(), ds.client, "/api/v1/request", defaultPaginationPageSize)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got, want := len(results), totalRequests; got != want {
+		t.Fatalf("expected %d requests, got %d", want, got)
+	}
+	if len(callSkips) < 3 {
+		t.Fatalf("expected at least 3 page calls for 250 requests, got %v", callSkips)
+	}
+}
+
+func TestIssuesDataSourceReadAggregatesMultiplePages(t *testing.T) {
+	const totalIssues = 300
+	all := make([]map[string]any, 0, totalIssues)
+	for i := 1; i <= totalIssues; i++ {
+		all = append(all, map[string]any{
+			"id":        float64(i),
+			"issueType": float64(1),
+			"status":    float64(1),
+			"media":     map[string]any{"id": float64(5000 + i)},
+			"createdBy": map[string]any{"id": float64(6000 + i)},
+		})
+	}
+
+	var callSkips []int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/issue" {
+			http.NotFound(w, r)
+			return
+		}
+		skip, _ := strconv.Atoi(r.URL.Query().Get("skip"))
+		callSkips = append(callSkips, skip)
+
+		start := skip
+		if start > len(all) {
+			start = len(all)
+		}
+		end := start + defaultPaginationPageSize
+		if end > len(all) {
+			end = len(all)
+		}
+		pageResults := all[start:end]
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"results": pageResults,
+			"pageInfo": map[string]any{
+				"pages":    (totalIssues + defaultPaginationPageSize - 1) / defaultPaginationPageSize,
+				"page":     (skip / defaultPaginationPageSize) + 1,
+				"pageSize": defaultPaginationPageSize,
+				"results":  len(pageResults),
+				"total":    totalIssues,
+			},
+		})
+	}))
+	defer srv.Close()
+
+	ds := &IssuesDataSource{client: testPaginationClient(t, srv.URL)}
+	results, err := fetchAllPaginatedResults(context.Background(), ds.client, "/api/v1/issue", defaultPaginationPageSize)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got, want := len(results), totalIssues; got != want {
+		t.Fatalf("expected %d issues, got %d", want, got)
+	}
+	if len(callSkips) < 3 {
+		t.Fatalf("expected at least 3 page calls for 300 issues, got %v", callSkips)
+	}
+}
+
 func testPaginationClient(t *testing.T, rawURL string) *APIClient {
 	t.Helper()
 	baseURL, err := url.Parse(rawURL)

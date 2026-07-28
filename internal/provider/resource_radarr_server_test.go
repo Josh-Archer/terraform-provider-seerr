@@ -204,3 +204,85 @@ func TestParseURLIntoModel_NoURL(t *testing.T) {
 		t.Errorf("Port default: got %d, want 7878", data.Port.ValueInt64())
 	}
 }
+
+// TestReadRadarrStateFromJSON_NullValuesPreserved verifies explicit API nulls
+// remain null in model state.
+func TestReadRadarrStateFromJSON_NullValuesPreserved(t *testing.T) {
+	raw := `{
+		"id":                  1,
+		"name":                null,
+		"hostname":            null,
+		"port":                null,
+		"useSsl":              null,
+		"baseUrl":             null,
+		"is4k":                null,
+		"minimumAvailability": null,
+		"isDefault":           null,
+		"enableScan":          null,
+		"syncEnabled":         null,
+		"preventSearch":       null,
+		"tagRequests":         null,
+		"tags":                null
+	}`
+
+	tagsVal, _ := types.ListValueFrom(context.Background(), types.Int64Type, []int64{1})
+	data := &RadarrServerModel{
+		Name:                types.StringValue("Prior"),
+		Hostname:            types.StringValue("prior.local"),
+		Port:                types.Int64Value(7878),
+		UseSSL:              types.BoolValue(true),
+		BaseURL:             types.StringValue("/prior"),
+		Is4K:                types.BoolValue(true),
+		MinimumAvailability: types.StringValue("released"),
+		IsDefault:           types.BoolValue(true),
+		EnableScan:          types.BoolValue(true),
+		SyncEnabled:         types.BoolValue(true),
+		PreventSearch:       types.BoolValue(true),
+		TagRequestsWithUser: types.BoolValue(true),
+		Tags:                tagsVal,
+	}
+
+	if err := readRadarrStateFromJSON(context.Background(), []byte(raw), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !data.Name.IsNull() {
+		t.Errorf("Name should be null, got %v", data.Name)
+	}
+	if !data.Hostname.IsNull() {
+		t.Errorf("Hostname should be null, got %v", data.Hostname)
+	}
+	if !data.Port.IsNull() {
+		t.Errorf("Port should be null, got %v", data.Port)
+	}
+	if !data.UseSSL.IsNull() {
+		t.Errorf("UseSSL should be null, got %v", data.UseSSL)
+	}
+	if !data.BaseURL.IsNull() {
+		t.Errorf("BaseURL should be null, got %v", data.BaseURL)
+	}
+	if !data.Is4K.IsNull() {
+		t.Errorf("Is4K should be null, got %v", data.Is4K)
+	}
+	if !data.MinimumAvailability.IsNull() {
+		t.Errorf("MinimumAvailability should be null, got %v", data.MinimumAvailability)
+	}
+	if !data.IsDefault.IsNull() {
+		t.Errorf("IsDefault should be null, got %v", data.IsDefault)
+	}
+	if !data.EnableScan.IsNull() {
+		t.Errorf("EnableScan should be null, got %v", data.EnableScan)
+	}
+	if !data.SyncEnabled.IsNull() {
+		t.Errorf("SyncEnabled should be null, got %v", data.SyncEnabled)
+	}
+	if !data.PreventSearch.IsNull() {
+		t.Errorf("PreventSearch should be null, got %v", data.PreventSearch)
+	}
+	if !data.TagRequestsWithUser.IsNull() {
+		t.Errorf("TagRequestsWithUser should be null, got %v", data.TagRequestsWithUser)
+	}
+	if !data.Tags.IsNull() {
+		t.Errorf("Tags should be null, got %v", data.Tags)
+	}
+}

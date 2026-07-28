@@ -4,6 +4,7 @@ import (
 	setvalidator "github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	dschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -16,7 +17,7 @@ func notificationAgentResourceOptionAttributes() map[string]schema.Attribute {
 				"bot_username":    schema.StringAttribute{Optional: true, Computed: true},
 				"bot_avatar_url":  schema.StringAttribute{Optional: true, Computed: true},
 				"webhook_url":     schema.StringAttribute{Required: true},
-				"enable_mentions": schema.BoolAttribute{Optional: true, Computed: true},
+				"enable_mentions": schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 			},
 		},
 		"slack": schema.SingleNestedAttribute{
@@ -31,12 +32,12 @@ func notificationAgentResourceOptionAttributes() map[string]schema.Attribute {
 				"email_from":        schema.StringAttribute{Required: true},
 				"smtp_host":         schema.StringAttribute{Required: true},
 				"smtp_port":         schema.Int64Attribute{Required: true},
-				"secure":            schema.BoolAttribute{Optional: true, Computed: true},
-				"ignore_tls":        schema.BoolAttribute{Optional: true, Computed: true},
-				"require_tls":       schema.BoolAttribute{Optional: true, Computed: true},
+				"secure":            schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
+				"ignore_tls":        schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
+				"require_tls":       schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 				"auth_user":         schema.StringAttribute{Optional: true, Computed: true},
 				"auth_pass":         schema.StringAttribute{Optional: true, Sensitive: true, Computed: true},
-				"allow_self_signed": schema.BoolAttribute{Optional: true, Computed: true},
+				"allow_self_signed": schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 				"sender_name":       schema.StringAttribute{Required: true},
 				"pgp_private_key":   schema.StringAttribute{Optional: true, Sensitive: true, Computed: true},
 				"pgp_password":      schema.StringAttribute{Optional: true, Sensitive: true, Computed: true},
@@ -55,7 +56,7 @@ func notificationAgentResourceOptionAttributes() map[string]schema.Attribute {
 				"bot_username":  schema.StringAttribute{Optional: true, Computed: true},
 				"bot_api":       schema.StringAttribute{Required: true, Sensitive: true},
 				"chat_id":       schema.StringAttribute{Required: true},
-				"send_silently": schema.BoolAttribute{Optional: true, Computed: true},
+				"send_silently": schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 			},
 		},
 		"pushbullet": schema.SingleNestedAttribute{
@@ -78,10 +79,10 @@ func notificationAgentResourceOptionAttributes() map[string]schema.Attribute {
 			Attributes: map[string]schema.Attribute{
 				"url":                           schema.StringAttribute{Required: true},
 				"topic":                         schema.StringAttribute{Required: true},
-				"auth_method_username_password": schema.BoolAttribute{Optional: true, Computed: true},
+				"auth_method_username_password": schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 				"username":                      schema.StringAttribute{Optional: true, Computed: true},
 				"password":                      schema.StringAttribute{Optional: true, Sensitive: true, Computed: true},
-				"auth_method_token":             schema.BoolAttribute{Optional: true, Computed: true},
+				"auth_method_token":             schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 				"token":                         schema.StringAttribute{Optional: true, Sensitive: true, Computed: true},
 				"priority":                      schema.Int64Attribute{Optional: true, Computed: true},
 			},
