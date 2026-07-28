@@ -1,0 +1,23 @@
+# This file is maintained automatically by "tofu init".
+# Manual edits may be lost in future updates.
+
+provider "registry.opentofu.org/josh-archer/seerr" {
+  version = "0.24.0"
+  hashes = [
+    "h1:ffKbNSRvJA//MhTOWNThIw/P+lEi5DEBXE9P+zJcxKQ=",
+    "zh:21698a2ccc1f1b8265ddb0f114b73b83bf782bf9fff2b8345ba5533b324959ed",
+    "zh:231026f4dd01a883989e628ae7a757639506e8beabd6b86e59961833d091470d",
+    "zh:2f9f7a8a0757f78e0f00e414c67da0f4898d20075126b98492bad8f0cb95f8ea",
+    "zh:32c60013908e2145cb6eb2b747354f47af694886ed418edd727e9886d323b5ce",
+    "zh:3d10ef8dfe4986dea91123d548745f0c27c2289dbd5e8732dd09c28293a6815a",
+    "zh:45f93eedad62119d49833c2f54e037791da6f59f611413e3574aca6d6f3f6140",
+    "zh:602df01453b8c052c9f9230f54ad61b810fee7f2f146ea7a53576325ad8478ea",
+    "zh:673c0a4f2c0f432fb144ec8019f44b44678c4846dda3d3f8d045b21f7fcc179c",
+    "zh:79550c41ce1d2e6b063d275422dd64d68a9d5b897f06f94e26c9fa539236f279",
+    "zh:80f966d056c0b9be47f4ce9581a1c0d9acd999c2fde3eaa6c5348da6d6f55df6",
+    "zh:890df766e9b839623b1f0437355032a3c006226a6c200cd911e15ee1a9014e9f",
+    "zh:8b9d1203d43c32679195761860a8dfcdd8b502476dec703ca27f644c09c813e3",
+    "zh:97e7b70ab977eb2b70cf53d803ac6d3ccceadc6ded1861f36a43139a579428dc",
+    "zh:cf5542ce3d4152ef224ec58391d904a6866ce3f05e0f4df873386860b84723b7",
+  ]
+}

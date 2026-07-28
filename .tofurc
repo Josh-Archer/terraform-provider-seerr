@@ -1,0 +1,8 @@
+provider_installation {
+  dev_overrides {
+    "registry.opentofu.org/josh-archer/seerr" = "/mnt/c/Code/terraform-provider-seerr/.bin"
+    "registry.terraform.io/josh-archer/seerr" = "/mnt/c/Code/terraform-provider-seerr/.bin"
+    "josh-archer/seerr" = "/mnt/c/Code/terraform-provider-seerr/.bin"
+  }
+  direct {}
+}
