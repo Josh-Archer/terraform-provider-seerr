@@ -72,7 +72,7 @@ jobs:
       # building the exact source tree identified by RELEASE_TAG.
       - name: Checkout release controls
         if: steps.release_state.outputs.published != 'true'
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # workflow_dispatch resolves github.sha from the selected default-
           # branch ref, so policy and config match the loaded workflow exactly.
@@ -82,7 +82,7 @@ jobs:
 
       - name: Checkout tagged source
         if: steps.release_state.outputs.published != 'true'
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/tags/${{ env.RELEASE_TAG }}
           path: source
@@ -91,7 +91,7 @@ jobs:
 
       - name: Set up Go
         if: steps.release_state.outputs.published != 'true'
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: source/go.mod
           cache-dependency-path: source/go.sum
