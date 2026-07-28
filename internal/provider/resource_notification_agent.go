@@ -679,7 +679,7 @@ func (r *NotificationClientResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	// Capture plan state to preserve sensitive fields
+	// Capture plan state to preserve sensitive and optional fields
 	planData := data
 
 	if err := parsePayload(ctx, &data, res.Body); err != nil {
@@ -687,8 +687,7 @@ func (r *NotificationClientResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	// Preserve sensitive fields from plan if API didn't return them
-	preserveSensitiveNotificationFields(&data, &planData)
+	normalizeNotificationModel(&data, &planData)
 	data.ID = types.StringValue(r.agent)
 	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &data)...)
 }
@@ -715,11 +714,13 @@ func (r *NotificationClientResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-	// Capture current state to preserve sensitive fields
+	// Capture current state to preserve sensitive and optional fields
 	var state NotificationAgentModel
 	diags := req.State.Get(ctx, &state)
 	if !diags.HasError() {
-		preserveSensitiveNotificationFields(&data, &state)
+		normalizeNotificationModel(&data, &state)
+	} else {
+		normalizeNotificationModel(&data, nil)
 	}
 
 	data.ID = types.StringValue(r.agent)
@@ -749,7 +750,7 @@ func (r *NotificationClientResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	// Capture plan state to preserve sensitive fields
+	// Capture plan state to preserve sensitive and optional fields
 	planData := data
 
 	if err := parsePayload(ctx, &data, res.Body); err != nil {
@@ -757,72 +758,215 @@ func (r *NotificationClientResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	// Preserve sensitive fields from plan if API didn't return them
-	preserveSensitiveNotificationFields(&data, &planData)
+	normalizeNotificationModel(&data, &planData)
 	data.ID = types.StringValue(r.agent)
 	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &data)...)
 }
 
-func preserveSensitiveNotificationFields(data, source *NotificationAgentModel) {
-	if source == nil {
-		return
+func normalizeStringField(target *types.String, sourceVal types.String) {
+	if target.IsNull() || target.ValueString() == "" {
+		if !sourceVal.IsNull() && sourceVal.ValueString() != "" {
+			*target = sourceVal
+		} else if !sourceVal.IsNull() && sourceVal.ValueString() == "" {
+			*target = types.StringValue("")
+		} else {
+			*target = types.StringNull()
+		}
 	}
+}
+
+func normalizeBoolField(target *types.Bool, sourceVal types.Bool) {
+	if target.IsNull() {
+		if !sourceVal.IsNull() {
+			*target = sourceVal
+		} else {
+			*target = types.BoolValue(false)
+		}
+	}
+}
+
+func normalizeInt64Field(target *types.Int64, sourceVal types.Int64) {
+	if target.IsNull() || target.ValueInt64() == 0 {
+		if !sourceVal.IsNull() && sourceVal.ValueInt64() != 0 {
+			*target = sourceVal
+		} else if !sourceVal.IsNull() && sourceVal.ValueInt64() == 0 {
+			*target = types.Int64Value(0)
+		} else {
+			*target = types.Int64Null()
+		}
+	}
+}
+
+func normalizeSetField(target *types.Set, sourceVal types.Set) {
+	if target.IsNull() || len(target.Elements()) == 0 {
+		if !sourceVal.IsNull() && len(sourceVal.Elements()) > 0 {
+			*target = sourceVal
+		} else if !sourceVal.IsNull() && len(sourceVal.Elements()) == 0 {
+			setVal, _ := types.SetValueFrom(context.Background(), types.StringType, []string{})
+			*target = setVal
+		} else {
+			*target = types.SetNull(types.StringType)
+		}
+	}
+}
+
+func normalizeNotificationModel(data, source *NotificationAgentModel) {
+	var srcTypes types.Set
+	if source != nil {
+		srcTypes = source.NotificationTypes
+	}
+	normalizeSetField(&data.NotificationTypes, srcTypes)
 
 	switch data.Agent.ValueString() {
+	case "discord":
+		if data.Discord != nil {
+			var srcBotUsername, srcBotAvatarUrl, srcWebhookUrl types.String
+			var srcEnableMentions types.Bool
+			if source != nil && source.Discord != nil {
+				srcBotUsername = source.Discord.BotUsername
+				srcBotAvatarUrl = source.Discord.BotAvatarUrl
+				srcWebhookUrl = source.Discord.WebhookUrl
+				srcEnableMentions = source.Discord.EnableMentions
+			}
+			normalizeStringField(&data.Discord.BotUsername, srcBotUsername)
+			normalizeStringField(&data.Discord.BotAvatarUrl, srcBotAvatarUrl)
+			normalizeStringField(&data.Discord.WebhookUrl, srcWebhookUrl)
+			normalizeBoolField(&data.Discord.EnableMentions, srcEnableMentions)
+		}
+	case "slack":
+		if data.Slack != nil {
+			var srcWebhookUrl types.String
+			if source != nil && source.Slack != nil {
+				srcWebhookUrl = source.Slack.WebhookUrl
+			}
+			normalizeStringField(&data.Slack.WebhookUrl, srcWebhookUrl)
+		}
 	case "email":
-		if data.Email != nil && source.Email != nil {
-			if data.Email.AuthPass.IsNull() {
-				data.Email.AuthPass = source.Email.AuthPass
+		if data.Email != nil {
+			var srcEmailFrom, srcSmtpHost, srcAuthUser, srcAuthPass, srcSenderName, srcPgpPrivateKey, srcPgpPassword types.String
+			var srcSmtpPort types.Int64
+			var srcSecure, srcIgnoreTls, srcRequireTls, srcAllowSelfSigned types.Bool
+			if source != nil && source.Email != nil {
+				srcEmailFrom = source.Email.EmailFrom
+				srcSmtpHost = source.Email.SmtpHost
+				srcSmtpPort = source.Email.SmtpPort
+				srcSecure = source.Email.Secure
+				srcIgnoreTls = source.Email.IgnoreTls
+				srcRequireTls = source.Email.RequireTls
+				srcAuthUser = source.Email.AuthUser
+				srcAuthPass = source.Email.AuthPass
+				srcAllowSelfSigned = source.Email.AllowSelfSigned
+				srcSenderName = source.Email.SenderName
+				srcPgpPrivateKey = source.Email.PgpPrivateKey
+				srcPgpPassword = source.Email.PgpPassword
 			}
-			if data.Email.PgpPrivateKey.IsNull() {
-				data.Email.PgpPrivateKey = source.Email.PgpPrivateKey
+			normalizeStringField(&data.Email.EmailFrom, srcEmailFrom)
+			normalizeStringField(&data.Email.SmtpHost, srcSmtpHost)
+			normalizeInt64Field(&data.Email.SmtpPort, srcSmtpPort)
+			normalizeBoolField(&data.Email.Secure, srcSecure)
+			normalizeBoolField(&data.Email.IgnoreTls, srcIgnoreTls)
+			normalizeBoolField(&data.Email.RequireTls, srcRequireTls)
+			normalizeStringField(&data.Email.AuthUser, srcAuthUser)
+			normalizeStringField(&data.Email.AuthPass, srcAuthPass)
+			normalizeBoolField(&data.Email.AllowSelfSigned, srcAllowSelfSigned)
+			normalizeStringField(&data.Email.SenderName, srcSenderName)
+			normalizeStringField(&data.Email.PgpPrivateKey, srcPgpPrivateKey)
+			normalizeStringField(&data.Email.PgpPassword, srcPgpPassword)
+		}
+	case "lunasea":
+		if data.LunaSea != nil {
+			var srcWebhookUrl, srcProfileName types.String
+			if source != nil && source.LunaSea != nil {
+				srcWebhookUrl = source.LunaSea.WebhookUrl
+				srcProfileName = source.LunaSea.ProfileName
 			}
-			if data.Email.PgpPassword.IsNull() {
-				data.Email.PgpPassword = source.Email.PgpPassword
-			}
+			normalizeStringField(&data.LunaSea.WebhookUrl, srcWebhookUrl)
+			normalizeStringField(&data.LunaSea.ProfileName, srcProfileName)
 		}
 	case "telegram":
-		if data.Telegram != nil && source.Telegram != nil {
-			if data.Telegram.BotAPI.IsNull() {
-				data.Telegram.BotAPI = source.Telegram.BotAPI
+		if data.Telegram != nil {
+			var srcBotUsername, srcBotAPI, srcChatId types.String
+			var srcSendSilently types.Bool
+			if source != nil && source.Telegram != nil {
+				srcBotUsername = source.Telegram.BotUsername
+				srcBotAPI = source.Telegram.BotAPI
+				srcChatId = source.Telegram.ChatId
+				srcSendSilently = source.Telegram.SendSilently
 			}
+			normalizeStringField(&data.Telegram.BotUsername, srcBotUsername)
+			normalizeStringField(&data.Telegram.BotAPI, srcBotAPI)
+			normalizeStringField(&data.Telegram.ChatId, srcChatId)
+			normalizeBoolField(&data.Telegram.SendSilently, srcSendSilently)
 		}
 	case "pushbullet":
-		if data.Pushbullet != nil && source.Pushbullet != nil {
-			if data.Pushbullet.AccessToken.IsNull() {
-				data.Pushbullet.AccessToken = source.Pushbullet.AccessToken
+		if data.Pushbullet != nil {
+			var srcAccessToken, srcChannelTag types.String
+			if source != nil && source.Pushbullet != nil {
+				srcAccessToken = source.Pushbullet.AccessToken
+				srcChannelTag = source.Pushbullet.ChannelTag
 			}
+			normalizeStringField(&data.Pushbullet.AccessToken, srcAccessToken)
+			normalizeStringField(&data.Pushbullet.ChannelTag, srcChannelTag)
 		}
 	case "pushover":
-		if data.Pushover != nil && source.Pushover != nil {
-			if data.Pushover.AccessToken.IsNull() {
-				data.Pushover.AccessToken = source.Pushover.AccessToken
+		if data.Pushover != nil {
+			var srcAccessToken, srcUserToken, srcSound types.String
+			if source != nil && source.Pushover != nil {
+				srcAccessToken = source.Pushover.AccessToken
+				srcUserToken = source.Pushover.UserToken
+				srcSound = source.Pushover.Sound
 			}
-			if data.Pushover.UserToken.IsNull() {
-				data.Pushover.UserToken = source.Pushover.UserToken
-			}
+			normalizeStringField(&data.Pushover.AccessToken, srcAccessToken)
+			normalizeStringField(&data.Pushover.UserToken, srcUserToken)
+			normalizeStringField(&data.Pushover.Sound, srcSound)
 		}
 	case "ntfy":
-		if data.Ntfy != nil && source.Ntfy != nil {
-			if data.Ntfy.Password.IsNull() {
-				data.Ntfy.Password = source.Ntfy.Password
+		if data.Ntfy != nil {
+			var srcUrl, srcTopic, srcUsername, srcPassword, srcToken types.String
+			var srcAuthUserPass, srcAuthToken types.Bool
+			var srcPriority types.Int64
+			if source != nil && source.Ntfy != nil {
+				srcUrl = source.Ntfy.Url
+				srcTopic = source.Ntfy.Topic
+				srcAuthUserPass = source.Ntfy.AuthMethodUsernamePassword
+				srcUsername = source.Ntfy.Username
+				srcPassword = source.Ntfy.Password
+				srcAuthToken = source.Ntfy.AuthMethodToken
+				srcToken = source.Ntfy.Token
+				srcPriority = source.Ntfy.Priority
 			}
-			if data.Ntfy.Token.IsNull() {
-				data.Ntfy.Token = source.Ntfy.Token
-			}
+			normalizeStringField(&data.Ntfy.Url, srcUrl)
+			normalizeStringField(&data.Ntfy.Topic, srcTopic)
+			normalizeBoolField(&data.Ntfy.AuthMethodUsernamePassword, srcAuthUserPass)
+			normalizeStringField(&data.Ntfy.Username, srcUsername)
+			normalizeStringField(&data.Ntfy.Password, srcPassword)
+			normalizeBoolField(&data.Ntfy.AuthMethodToken, srcAuthToken)
+			normalizeStringField(&data.Ntfy.Token, srcToken)
+			normalizeInt64Field(&data.Ntfy.Priority, srcPriority)
 		}
 	case "webhook":
-		if data.Webhook != nil && source.Webhook != nil {
-			if data.Webhook.AuthHeader.IsNull() {
-				data.Webhook.AuthHeader = source.Webhook.AuthHeader
+		if data.Webhook != nil {
+			var srcWebhookUrl, srcJsonPayload, srcAuthHeader types.String
+			if source != nil && source.Webhook != nil {
+				srcWebhookUrl = source.Webhook.WebhookUrl
+				srcJsonPayload = source.Webhook.JsonPayload
+				srcAuthHeader = source.Webhook.AuthHeader
 			}
+			normalizeStringField(&data.Webhook.WebhookUrl, srcWebhookUrl)
+			normalizeStringField(&data.Webhook.JsonPayload, srcJsonPayload)
+			normalizeStringField(&data.Webhook.AuthHeader, srcAuthHeader)
 		}
 	case "gotify":
-		if data.Gotify != nil && source.Gotify != nil {
-			if data.Gotify.Token.IsNull() {
-				data.Gotify.Token = source.Gotify.Token
+		if data.Gotify != nil {
+			var srcUrl, srcToken types.String
+			if source != nil && source.Gotify != nil {
+				srcUrl = source.Gotify.Url
+				srcToken = source.Gotify.Token
 			}
+			normalizeStringField(&data.Gotify.Url, srcUrl)
+			normalizeStringField(&data.Gotify.Token, srcToken)
 		}
+	case "webpush":
 	}
 }
 

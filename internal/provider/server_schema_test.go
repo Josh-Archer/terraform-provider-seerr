@@ -27,26 +27,95 @@ func TestSonarrServerResourceSchemaOmitsRawJSON(t *testing.T) {
 	}
 }
 
-func TestServerResourceEnableScanPreservesUnmanagedNull(t *testing.T) {
-	tests := map[string]func(context.Context, resource.SchemaRequest, *resource.SchemaResponse){
-		"radarr": (&RadarrServerResource{}).Schema,
-		"sonarr": (&SonarrServerResource{}).Schema,
+func TestServerResourceAttributesNoStaticDefaults(t *testing.T) {
+	radarrOptComputed := map[string]string{
+		"name":                   "string",
+		"hostname":               "string",
+		"port":                   "int64",
+		"use_ssl":                "bool",
+		"base_url":               "string",
+		"quality_profile_name":   "string",
+		"is_4k":                  "bool",
+		"minimum_availability":   "string",
+		"is_default":             "bool",
+		"enable_scan":            "bool",
+		"sync_enabled":           "bool",
+		"prevent_search":         "bool",
+		"tag_requests_with_user": "bool",
 	}
 
-	for name, buildSchema := range tests {
-		t.Run(name, func(t *testing.T) {
-			var resp resource.SchemaResponse
-			buildSchema(context.Background(), resource.SchemaRequest{}, &resp)
+	sonarrOptComputed := map[string]string{
+		"name":                   "string",
+		"hostname":               "string",
+		"port":                   "int64",
+		"use_ssl":                "bool",
+		"base_url":               "string",
+		"quality_profile_name":   "string",
+		"active_anime_directory": "string",
+		"is_4k":                  "bool",
+		"is_default":             "bool",
+		"enable_scan":            "bool",
+		"enable_season_folders":  "bool",
+		"sync_enabled":           "bool",
+		"prevent_search":         "bool",
+		"tag_requests_with_user": "bool",
+	}
 
-			attr, ok := resp.Schema.Attributes["enable_scan"].(rschema.BoolAttribute)
-			if !ok {
-				t.Fatalf("enable_scan schema attribute has type %T, want BoolAttribute", resp.Schema.Attributes["enable_scan"])
-			}
-			if attr.Default != nil {
-				t.Fatal("enable_scan should not have a static default; imported API null must remain unmanaged")
-			}
-			if len(attr.PlanModifiers) == 0 {
-				t.Fatal("enable_scan should preserve prior state while unknown")
+	tests := []struct {
+		name        string
+		buildSchema func(context.Context, resource.SchemaRequest, *resource.SchemaResponse)
+		attributes  map[string]string
+	}{
+		{"radarr", (&RadarrServerResource{}).Schema, radarrOptComputed},
+		{"sonarr", (&SonarrServerResource{}).Schema, sonarrOptComputed},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var resp resource.SchemaResponse
+			tt.buildSchema(context.Background(), resource.SchemaRequest{}, &resp)
+
+			for attrName, attrType := range tt.attributes {
+				attr, ok := resp.Schema.Attributes[attrName]
+				if !ok {
+					t.Fatalf("attribute %q missing from schema", attrName)
+				}
+
+				switch attrType {
+				case "string":
+					sa, ok := attr.(rschema.StringAttribute)
+					if !ok {
+						t.Fatalf("%s: attribute %q is not StringAttribute", tt.name, attrName)
+					}
+					if sa.Default != nil {
+						t.Fatalf("%s: attribute %q must not have static default to avoid import clobber risk", tt.name, attrName)
+					}
+					if len(sa.PlanModifiers) == 0 {
+						t.Fatalf("%s: attribute %q must have plan modifiers to preserve state", tt.name, attrName)
+					}
+				case "bool":
+					ba, ok := attr.(rschema.BoolAttribute)
+					if !ok {
+						t.Fatalf("%s: attribute %q is not BoolAttribute", tt.name, attrName)
+					}
+					if ba.Default != nil {
+						t.Fatalf("%s: attribute %q must not have static default to avoid import clobber risk", tt.name, attrName)
+					}
+					if len(ba.PlanModifiers) == 0 {
+						t.Fatalf("%s: attribute %q must have plan modifiers to preserve state", tt.name, attrName)
+					}
+				case "int64":
+					ia, ok := attr.(rschema.Int64Attribute)
+					if !ok {
+						t.Fatalf("%s: attribute %q is not Int64Attribute", tt.name, attrName)
+					}
+					if ia.Default != nil {
+						t.Fatalf("%s: attribute %q must not have static default to avoid import clobber risk", tt.name, attrName)
+					}
+					if len(ia.PlanModifiers) == 0 {
+						t.Fatalf("%s: attribute %q must have plan modifiers to preserve state", tt.name, attrName)
+					}
+				}
 			}
 		})
 	}

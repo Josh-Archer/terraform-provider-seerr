@@ -13,11 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -81,7 +79,9 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 			"name": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  stringdefault.StaticString("Sonarr"),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"url": schema.StringAttribute{
 				Optional: true,
@@ -93,7 +93,9 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 			"hostname": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  stringdefault.StaticString("sonarr-service"),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.MatchRoot("url")),
 				},
@@ -101,6 +103,9 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 			"port": schema.Int64Attribute{
 				Optional: true,
 				Computed: true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 				Validators: []validator.Int64{
 					int64validator.ConflictsWith(path.MatchRoot("url")),
 				},
@@ -112,20 +117,33 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 			"use_ssl": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  booldefault.StaticBool(false),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"base_url": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  stringdefault.StaticString(""),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"quality_profile_id": schema.Int64Attribute{Required: true},
 			"quality_profile_name": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
-			"active_directory":       schema.StringAttribute{Required: true},
-			"active_anime_directory": schema.StringAttribute{Optional: true},
+			"active_directory": schema.StringAttribute{Required: true},
+			"active_anime_directory": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"tags": schema.ListAttribute{
 				Optional:    true,
 				ElementType: types.Int64Type,
@@ -137,12 +155,16 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 			"is_4k": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  booldefault.StaticBool(false),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"is_default": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  booldefault.StaticBool(true),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"enable_scan": schema.BoolAttribute{
 				Optional: true,
@@ -154,22 +176,30 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 			"enable_season_folders": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  booldefault.StaticBool(true),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"sync_enabled": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  booldefault.StaticBool(true),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"prevent_search": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  booldefault.StaticBool(false),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"tag_requests_with_user": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
-				Default:  booldefault.StaticBool(true),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"extra_payload_json": schema.StringAttribute{Optional: true},
 		},
@@ -246,6 +276,73 @@ func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerMod
 	if animeDir == "" {
 		animeDir = data.ActiveDirectory.ValueString()
 	}
+
+	name := "Sonarr"
+	if !data.Name.IsNull() && !data.Name.IsUnknown() && strings.TrimSpace(data.Name.ValueString()) != "" {
+		name = strings.TrimSpace(data.Name.ValueString())
+	}
+	data.Name = types.StringValue(name)
+
+	hostname := "sonarr-service"
+	if !data.Hostname.IsNull() && !data.Hostname.IsUnknown() && strings.TrimSpace(data.Hostname.ValueString()) != "" {
+		hostname = strings.TrimSpace(data.Hostname.ValueString())
+	}
+	data.Hostname = types.StringValue(hostname)
+
+	port := int64(8989)
+	if !data.Port.IsNull() && !data.Port.IsUnknown() {
+		port = data.Port.ValueInt64()
+	}
+	data.Port = types.Int64Value(port)
+
+	useSSL := false
+	if !data.UseSSL.IsNull() && !data.UseSSL.IsUnknown() {
+		useSSL = data.UseSSL.ValueBool()
+	}
+	data.UseSSL = types.BoolValue(useSSL)
+
+	baseURL := ""
+	if !data.BaseURL.IsNull() && !data.BaseURL.IsUnknown() {
+		baseURL = data.BaseURL.ValueString()
+	}
+	data.BaseURL = types.StringValue(baseURL)
+
+	is4K := false
+	if !data.Is4K.IsNull() && !data.Is4K.IsUnknown() {
+		is4K = data.Is4K.ValueBool()
+	}
+	data.Is4K = types.BoolValue(is4K)
+
+	isDefault := true
+	if !data.IsDefault.IsNull() && !data.IsDefault.IsUnknown() {
+		isDefault = data.IsDefault.ValueBool()
+	}
+	data.IsDefault = types.BoolValue(isDefault)
+
+	enableSeasonFolders := true
+	if !data.EnableSeasonFolders.IsNull() && !data.EnableSeasonFolders.IsUnknown() {
+		enableSeasonFolders = data.EnableSeasonFolders.ValueBool()
+	}
+	data.EnableSeasonFolders = types.BoolValue(enableSeasonFolders)
+
+	syncEnabled := true
+	if !data.SyncEnabled.IsNull() && !data.SyncEnabled.IsUnknown() {
+		syncEnabled = data.SyncEnabled.ValueBool()
+	}
+	data.SyncEnabled = types.BoolValue(syncEnabled)
+
+	preventSearch := false
+	if !data.PreventSearch.IsNull() && !data.PreventSearch.IsUnknown() {
+		preventSearch = data.PreventSearch.ValueBool()
+	}
+	data.PreventSearch = types.BoolValue(preventSearch)
+
+	tagRequests := true
+	if !data.TagRequestsWithUser.IsNull() && !data.TagRequestsWithUser.IsUnknown() {
+		tagRequests = data.TagRequestsWithUser.ValueBool()
+	}
+	data.TagRequestsWithUser = types.BoolValue(tagRequests)
+
 	profileName := ""
 	if !data.QualityProfileName.IsNull() && !data.QualityProfileName.IsUnknown() {
 		profileName = strings.TrimSpace(data.QualityProfileName.ValueString())
@@ -255,10 +352,10 @@ func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerMod
 		profile, lookupErr := findArrProfile(
 			ctx,
 			data.URL.ValueString(),
-			data.Hostname.ValueString(),
-			data.Port.ValueInt64(),
-			data.UseSSL.ValueBool(),
-			data.BaseURL.ValueString(),
+			hostname,
+			port,
+			useSSL,
+			baseURL,
 			data.APIKey.ValueString(),
 			r.client.Timeout(),
 			&profileID,
@@ -275,10 +372,10 @@ func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerMod
 	if err := ValidateArrConnectivity(
 		ctx,
 		data.URL.ValueString(),
-		data.Hostname.ValueString(),
-		data.Port.ValueInt64(),
-		data.UseSSL.ValueBool(),
-		data.BaseURL.ValueString(),
+		hostname,
+		port,
+		useSSL,
+		baseURL,
 		data.APIKey.ValueString(),
 		r.client.Timeout(),
 	); err != nil {
@@ -286,24 +383,24 @@ func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerMod
 	}
 
 	base := map[string]any{
-		"name":                 data.Name.ValueString(),
-		"hostname":             data.Hostname.ValueString(),
-		"port":                 data.Port.ValueInt64(),
+		"name":                 name,
+		"hostname":             hostname,
+		"port":                 port,
 		"apiKey":               data.APIKey.ValueString(),
-		"useSsl":               data.UseSSL.ValueBool(),
-		"baseUrl":              data.BaseURL.ValueString(),
+		"useSsl":               useSSL,
+		"baseUrl":              baseURL,
 		"activeProfileId":      data.QualityProfileID.ValueInt64(),
 		"activeProfileName":    profileName,
 		"activeDirectory":      data.ActiveDirectory.ValueString(),
 		"activeAnimeDirectory": animeDir,
 		"tags":                 tags,
 		"animeTags":            animeTags,
-		"is4k":                 data.Is4K.ValueBool(),
-		"isDefault":            data.IsDefault.ValueBool(),
-		"enableSeasonFolders":  data.EnableSeasonFolders.ValueBool(),
-		"syncEnabled":          data.SyncEnabled.ValueBool(),
-		"preventSearch":        data.PreventSearch.ValueBool(),
-		"tagRequests":          data.TagRequestsWithUser.ValueBool(),
+		"is4k":                 is4K,
+		"isDefault":            isDefault,
+		"enableSeasonFolders":  enableSeasonFolders,
+		"syncEnabled":          syncEnabled,
+		"preventSearch":        preventSearch,
+		"tagRequests":          tagRequests,
 	}
 	setOptionalBool(base, "enableScan", data.EnableScan)
 	merged, err := mergeJSON(base, data.ExtraPayloadJSON.ValueString())
@@ -346,6 +443,10 @@ func (r *SonarrServerResource) Create(ctx context.Context, req resource.CreateRe
 	parsed, _ := requireInt64ID(id)
 	data.ServerID = types.Int64Value(parsed)
 	data.ID = types.StringValue(id)
+	if err := readSonarrStateFromJSON(ctx, res.Body, &data); err != nil {
+		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("read state after create: %s", err))
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -361,98 +462,172 @@ func readSonarrStateFromJSON(ctx context.Context, item []byte, data *SonarrServe
 		return fmt.Errorf("parse sonarr server response: %w", err)
 	}
 
-	if v, ok := m["name"].(string); ok {
-		data.Name = types.StringValue(v)
+	if val, ok := m["name"]; ok {
+		if v, ok := val.(string); ok {
+			data.Name = types.StringValue(v)
+		} else if val == nil {
+			data.Name = types.StringNull()
+		}
 	}
-	if v, ok := m["hostname"].(string); ok {
-		data.Hostname = types.StringValue(v)
+	if val, ok := m["hostname"]; ok {
+		if v, ok := val.(string); ok {
+			data.Hostname = types.StringValue(v)
+		} else if val == nil {
+			data.Hostname = types.StringNull()
+		}
 	}
-	if v, ok := m["port"].(float64); ok {
-		data.Port = types.Int64Value(int64(v))
+	if val, ok := m["port"]; ok {
+		if v, ok := val.(float64); ok {
+			data.Port = types.Int64Value(int64(v))
+		} else if val == nil {
+			data.Port = types.Int64Null()
+		}
 	}
-	if v, ok := m["useSsl"].(bool); ok {
-		data.UseSSL = types.BoolValue(v)
+	if val, ok := m["useSsl"]; ok {
+		if v, ok := val.(bool); ok {
+			data.UseSSL = types.BoolValue(v)
+		} else if val == nil {
+			data.UseSSL = types.BoolNull()
+		}
 	}
-	if v, ok := m["baseUrl"].(string); ok {
-		data.BaseURL = types.StringValue(v)
+	if val, ok := m["baseUrl"]; ok {
+		if v, ok := val.(string); ok {
+			data.BaseURL = types.StringValue(v)
+		} else if val == nil {
+			data.BaseURL = types.StringNull()
+		}
 	}
-	if v, ok := m["activeProfileId"].(float64); ok {
-		data.QualityProfileID = types.Int64Value(int64(v))
+	if val, ok := m["activeProfileId"]; ok {
+		if v, ok := val.(float64); ok {
+			data.QualityProfileID = types.Int64Value(int64(v))
+		} else if val == nil {
+			data.QualityProfileID = types.Int64Null()
+		}
 	}
-	if v, ok := m["activeProfileName"].(string); ok {
-		data.QualityProfileName = types.StringValue(v)
+	if val, ok := m["activeProfileName"]; ok {
+		if v, ok := val.(string); ok {
+			data.QualityProfileName = types.StringValue(v)
+		} else if val == nil {
+			data.QualityProfileName = types.StringNull()
+		}
 	}
-	if v, ok := m["activeDirectory"].(string); ok {
-		data.ActiveDirectory = types.StringValue(v)
+	if val, ok := m["activeDirectory"]; ok {
+		if v, ok := val.(string); ok {
+			data.ActiveDirectory = types.StringValue(v)
+		} else if val == nil {
+			data.ActiveDirectory = types.StringNull()
+		}
 	}
-	if v, ok := m["activeAnimeDirectory"].(string); ok {
-		data.ActiveAnimeDirectory = types.StringValue(v)
+	if val, ok := m["activeAnimeDirectory"]; ok {
+		if v, ok := val.(string); ok {
+			data.ActiveAnimeDirectory = types.StringValue(v)
+		} else if val == nil {
+			data.ActiveAnimeDirectory = types.StringNull()
+		}
 	}
-	if v, ok := m["is4k"].(bool); ok {
-		data.Is4K = types.BoolValue(v)
+	if val, ok := m["is4k"]; ok {
+		if v, ok := val.(bool); ok {
+			data.Is4K = types.BoolValue(v)
+		} else if val == nil {
+			data.Is4K = types.BoolNull()
+		}
 	}
-	if v, ok := m["isDefault"].(bool); ok {
-		data.IsDefault = types.BoolValue(v)
+	if val, ok := m["isDefault"]; ok {
+		if v, ok := val.(bool); ok {
+			data.IsDefault = types.BoolValue(v)
+		} else if val == nil {
+			data.IsDefault = types.BoolNull()
+		}
 	}
-	if v, ok := m["enableScan"].(bool); ok {
-		data.EnableScan = types.BoolValue(v)
+	if val, ok := m["enableScan"]; ok {
+		if v, ok := val.(bool); ok {
+			data.EnableScan = types.BoolValue(v)
+		} else if val == nil {
+			data.EnableScan = types.BoolNull()
+		}
 	}
-	if v, ok := m["enableSeasonFolders"].(bool); ok {
-		data.EnableSeasonFolders = types.BoolValue(v)
+	if val, ok := m["enableSeasonFolders"]; ok {
+		if v, ok := val.(bool); ok {
+			data.EnableSeasonFolders = types.BoolValue(v)
+		} else if val == nil {
+			data.EnableSeasonFolders = types.BoolNull()
+		}
 	}
-	if v, ok := m["syncEnabled"].(bool); ok {
-		data.SyncEnabled = types.BoolValue(v)
+	if val, ok := m["syncEnabled"]; ok {
+		if v, ok := val.(bool); ok {
+			data.SyncEnabled = types.BoolValue(v)
+		} else if val == nil {
+			data.SyncEnabled = types.BoolNull()
+		}
 	}
-	if v, ok := m["preventSearch"].(bool); ok {
-		data.PreventSearch = types.BoolValue(v)
+	if val, ok := m["preventSearch"]; ok {
+		if v, ok := val.(bool); ok {
+			data.PreventSearch = types.BoolValue(v)
+		} else if val == nil {
+			data.PreventSearch = types.BoolNull()
+		}
 	}
-	if v, ok := m["tagRequests"].(bool); ok {
-		data.TagRequestsWithUser = types.BoolValue(v)
+	if val, ok := m["tagRequests"]; ok {
+		if v, ok := val.(bool); ok {
+			data.TagRequestsWithUser = types.BoolValue(v)
+		} else if val == nil {
+			data.TagRequestsWithUser = types.BoolNull()
+		}
 	}
 	if data.APIKey.IsNull() || data.APIKey.IsUnknown() {
-		if v, ok := m["apiKey"].(string); ok {
-			data.APIKey = types.StringValue(v)
+		if val, ok := m["apiKey"]; ok {
+			if v, ok := val.(string); ok {
+				data.APIKey = types.StringValue(v)
+			}
 		}
 	}
 
 	// tags
 	if raw, ok := m["tags"]; ok {
-		var ids []int64
-		if arr, ok := raw.([]any); ok {
-			for _, el := range arr {
-				if f, ok := el.(float64); ok {
-					ids = append(ids, int64(f))
+		if raw == nil {
+			data.Tags = types.ListNull(types.Int64Type)
+		} else {
+			var ids []int64
+			if arr, ok := raw.([]any); ok {
+				for _, el := range arr {
+					if f, ok := el.(float64); ok {
+						ids = append(ids, int64(f))
+					}
 				}
 			}
+			if ids == nil {
+				ids = []int64{}
+			}
+			listVal, diags := types.ListValueFrom(ctx, types.Int64Type, ids)
+			if diags.HasError() {
+				return fmt.Errorf("build tags list: %s", diags[0].Detail())
+			}
+			data.Tags = listVal
 		}
-		if ids == nil {
-			ids = []int64{}
-		}
-		listVal, diags := types.ListValueFrom(ctx, types.Int64Type, ids)
-		if diags.HasError() {
-			return fmt.Errorf("build tags list: %s", diags[0].Detail())
-		}
-		data.Tags = listVal
 	}
 
 	// animeTags
 	if raw, ok := m["animeTags"]; ok {
-		var ids []int64
-		if arr, ok := raw.([]any); ok {
-			for _, el := range arr {
-				if f, ok := el.(float64); ok {
-					ids = append(ids, int64(f))
+		if raw == nil {
+			data.AnimeTags = types.ListNull(types.Int64Type)
+		} else {
+			var ids []int64
+			if arr, ok := raw.([]any); ok {
+				for _, el := range arr {
+					if f, ok := el.(float64); ok {
+						ids = append(ids, int64(f))
+					}
 				}
 			}
+			if ids == nil {
+				ids = []int64{}
+			}
+			listVal, diags := types.ListValueFrom(ctx, types.Int64Type, ids)
+			if diags.HasError() {
+				return fmt.Errorf("build animeTags list: %s", diags[0].Detail())
+			}
+			data.AnimeTags = listVal
 		}
-		if ids == nil {
-			ids = []int64{}
-		}
-		listVal, diags := types.ListValueFrom(ctx, types.Int64Type, ids)
-		if diags.HasError() {
-			return fmt.Errorf("build animeTags list: %s", diags[0].Detail())
-		}
-		data.AnimeTags = listVal
 	}
 
 	return nil

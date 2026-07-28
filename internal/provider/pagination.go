@@ -33,6 +33,11 @@ func fetchAllPaginatedResults(ctx context.Context, client *APIClient, basePath s
 
 	var all []map[string]any
 	skip := 0
+	if skipStr := query.Get("skip"); skipStr != "" {
+		if initialSkip, err := strconv.Atoi(skipStr); err == nil && initialSkip > 0 {
+			skip = initialSkip
+		}
+	}
 
 	for {
 		pageQuery := cloneURLValues(query)
@@ -63,13 +68,13 @@ func fetchAllPaginatedResults(ctx context.Context, client *APIClient, basePath s
 
 		all = append(all, pageResults...)
 
-		// Stop when we know we are on the last page, when the page is short of pageSize,
+		// Stop when we know we are on the last page, when the page is short of effective pageSize,
 		// or when we have accumulated the reported total.
 		if shouldStopPagination(pageInfo, len(pageResults), pageSize, len(all)) {
 			break
 		}
 
-		// Advance skip by the number of results returned (equivalent to pageSize when full).
+		// Advance skip by the number of results returned so far.
 		skip = len(all)
 	}
 
@@ -93,6 +98,10 @@ func parsePaginatedResponse(body []byte) ([]map[string]any, pageInfo, error) {
 		PageInfo json.RawMessage  `json:"pageInfo"`
 	}
 	if err := json.Unmarshal(body, &payload); err != nil {
+		var rawArray []map[string]any
+		if errArr := json.Unmarshal(body, &rawArray); errArr == nil {
+			return rawArray, pageInfo{}, nil
+		}
 		return nil, pageInfo{}, fmt.Errorf("failed to parse paginated response: %w", err)
 	}
 
@@ -133,26 +142,39 @@ func shouldStopPagination(info pageInfo, pageLen, pageSize, totalFetched int) bo
 	if pageLen == 0 {
 		return true
 	}
-	// Prefer server pagination metadata when present.
+
+	// 1. If server pagination metadata includes total count:
+	if info.hasTotal && info.total >= 0 {
+		if totalFetched >= info.total {
+			return true
+		}
+		// Server reported total count and totalFetched < info.total, meaning more items exist.
+		// If server pageInfo explicitly says current page reaches or exceeds total pages, stop.
+		if info.hasPage && info.hasPages && info.page > 0 && info.pages > 0 {
+			if info.page >= info.pages {
+				return true
+			}
+		}
+		// Do not stop on short page alone when total count indicates more items remain.
+		return false
+	}
+
+	// 2. If server pagination metadata has page and pages (without total):
 	if info.hasPage && info.hasPages && info.page > 0 && info.pages > 0 {
 		if info.page >= info.pages {
 			return true
 		}
-		// Metadata says more pages exist; do not stop on a short page alone
-		// (servers may cap page size below the requested take).
-		if info.hasTotal && info.total >= 0 && totalFetched >= info.total {
-			return true
-		}
 		return false
 	}
-	if info.hasTotal && info.total >= 0 && totalFetched >= info.total {
-		return true
+
+	// 3. Fallback heuristic (no usable pageInfo metadata available):
+	// Stop if page length is less than effective page size.
+	effectivePageSize := pageSize
+	if info.pageSize > 0 {
+		effectivePageSize = info.pageSize
 	}
-	// Short-page heuristic only when no usable pageInfo metadata is available.
-	if pageLen < pageSize {
-		return true
-	}
-	return false
+
+	return pageLen < effectivePageSize
 }
 
 // formatAPIErrorBody extracts message/error from a JSON API body when present,

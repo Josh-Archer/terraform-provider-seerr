@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -28,22 +27,12 @@ func sweepUser(region string) error {
 	}
 
 	ctx := context.Background()
-	res, err := client.Request(ctx, "GET", "/api/v1/user?take=1000", "", nil)
+	results, err := fetchAllPaginatedResults(ctx, client, "/api/v1/user", defaultPaginationPageSize)
 	if err != nil {
 		return fmt.Errorf("error fetching users: %s", err)
 	}
-	if !StatusIsOK(res.StatusCode) {
-		return fmt.Errorf("error fetching users: status %d", res.StatusCode)
-	}
 
-	var parsedResponse struct {
-		Results []map[string]any `json:"results"`
-	}
-	if err := json.Unmarshal(res.Body, &parsedResponse); err != nil {
-		return fmt.Errorf("error parsing users response: %s", err)
-	}
-
-	for _, user := range parsedResponse.Results {
+	for _, user := range results {
 		idRaw, ok := user["id"]
 		if !ok {
 			continue
