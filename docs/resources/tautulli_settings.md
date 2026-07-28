@@ -30,6 +30,7 @@ resource "seerr_tautulli_settings" "example" {
 - `api_key` (String, Sensitive) The API key for the Tautulli server.
 - `external_url` (String) The external URL for the Tautulli server.
 - `hostname` (String) The hostname of the Tautulli server.
+- `ip` (String) The IP address or hostname of the Tautulli server.
 - `port` (Number) The port of the Tautulli server.
 - `url_base` (String) The base URL for the Tautulli server.
 - `use_ssl` (Boolean) Whether to use SSL for the connection.

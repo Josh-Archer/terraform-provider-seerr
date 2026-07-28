@@ -1,4 +1,4 @@
-package openapi
+package main
 
 import (
 	"fmt"
@@ -398,4 +398,41 @@ func FindRepoRoot() (string, error) {
 		dir = parent
 	}
 	return "", fmt.Errorf("go.mod not found in parent directories")
+}
+
+func main() {
+	root, err := FindRepoRoot()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to find repo root: %v\n", err)
+		os.Exit(1)
+	}
+
+	specPath := filepath.Join(root, "tools", "openapi", "seerr-api.yml")
+	spec, err := ParseOpenAPISpec(specPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to parse openapi spec at %s: %v\n", specPath, err)
+		os.Exit(1)
+	}
+
+	report, err := AnalyzeCoverage(spec, DefaultRules())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to analyze coverage: %v\n", err)
+		os.Exit(1)
+	}
+
+	if len(report.UnclassifiedPaths) > 0 {
+		fmt.Fprintf(os.Stderr, "Found %d unclassified OpenAPI path(s):\n%v\nAll paths must be classified in DefaultRules() as 'covered', 'intentionally-out-of-scope', or 'uncovered'.\n",
+			len(report.UnclassifiedPaths), report.UnclassifiedPaths)
+		os.Exit(1)
+	}
+
+	fmt.Printf("OpenAPI Coverage Summary: Total Paths=%d, Covered=%d, Intentionally Out of Scope=%d, Uncovered=%d\n",
+		report.TotalPaths, report.CoveredPaths, report.IntentionallyOutOfScopePaths, report.UncoveredPaths)
+
+	docContent := GenerateMarkdownReport(report)
+	docPath := filepath.Join(root, "docs", "openapi-coverage.md")
+	if err := os.WriteFile(docPath, []byte(docContent), 0644); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to write openapi-coverage.md: %v\n", err)
+		os.Exit(1)
+	}
 }

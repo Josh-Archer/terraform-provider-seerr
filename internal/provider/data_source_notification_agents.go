@@ -17,9 +17,11 @@ type NotificationAgentsDataSource struct {
 }
 
 type NotificationAgentSummaryModel struct {
-	Agent       types.String `tfsdk:"agent"`
-	Enabled     types.Bool   `tfsdk:"enabled"`
-	EmbedPoster types.Bool   `tfsdk:"embed_poster"`
+	Agent             types.String `tfsdk:"agent"`
+	Enabled           types.Bool   `tfsdk:"enabled"`
+	EmbedPoster       types.Bool   `tfsdk:"embed_poster"`
+	Types             types.Int64  `tfsdk:"types"`
+	NotificationTypes types.Set    `tfsdk:"notification_types"`
 }
 
 type NotificationAgentsDataSourceModel struct {
@@ -58,6 +60,15 @@ func (d *NotificationAgentsDataSource) Schema(_ context.Context, _ datasource.Sc
 						},
 						"embed_poster": schema.BoolAttribute{
 							MarkdownDescription: "Whether to embed poster images in notifications.",
+							Computed:            true,
+						},
+						"types": schema.Int64Attribute{
+							MarkdownDescription: "Bitmask integer representing enabled notification event types.",
+							Computed:            true,
+						},
+						"notification_types": schema.SetAttribute{
+							MarkdownDescription: "Set of enabled notification event type names.",
+							ElementType:         types.StringType,
 							Computed:            true,
 						},
 					},
@@ -130,15 +141,25 @@ func (d *NotificationAgentsDataSource) readNotificationAgentSummaries(ctx contex
 		}
 
 		agent := NotificationAgentSummaryModel{
-			Agent:       types.StringValue(agentName),
-			Enabled:     types.BoolNull(),
-			EmbedPoster: types.BoolNull(),
+			Agent:             types.StringValue(agentName),
+			Enabled:           types.BoolNull(),
+			EmbedPoster:       types.BoolNull(),
+			Types:             types.Int64Null(),
+			NotificationTypes: types.SetNull(types.StringType),
 		}
 		if enabled, ok := boolValueFromAny(agentMap["enabled"]); ok {
 			agent.Enabled = types.BoolValue(enabled)
 		}
 		if embed, ok := boolValueFromAny(agentMap["embedPoster"]); ok {
 			agent.EmbedPoster = types.BoolValue(embed)
+		}
+		if tVal, ok := int64ValueFromAny(agentMap["types"]); ok {
+			agent.Types = types.Int64Value(tVal)
+			eventNames := parseNotificationTypesBitmask(tVal)
+			setVal, diags := types.SetValueFrom(ctx, types.StringType, eventNames)
+			if !diags.HasError() {
+				agent.NotificationTypes = setVal
+			}
 		}
 
 		agents = append(agents, agent)

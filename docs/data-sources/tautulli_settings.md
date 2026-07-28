@@ -21,6 +21,7 @@ Read Seerr Tautulli settings via /api/v1/settings/tautulli.
 - `external_url` (String) The external URL for the Tautulli server.
 - `hostname` (String) The hostname of the Tautulli server.
 - `id` (String) The ID of this resource.
+- `ip` (String) The IP address or hostname of the Tautulli server.
 - `port` (Number) The port of the Tautulli server.
 - `response_json` (String) Raw JSON response body.
 - `status_code` (Number) HTTP status code.

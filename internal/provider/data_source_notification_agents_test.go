@@ -20,10 +20,10 @@ func TestNotificationAgentsDataSourceReadsPerAgentEndpoints(t *testing.T) {
 			http.NotFound(w, r)
 		case "/api/v1/settings/notifications/discord":
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"enabled":true,"embedPoster":false}`))
+			_, _ = w.Write([]byte(`{"enabled":true,"embedPoster":false,"types":6}`))
 		case "/api/v1/settings/notifications/ntfy":
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"enabled":false,"embedPoster":true}`))
+			_, _ = w.Write([]byte(`{"enabled":false,"embedPoster":true,"types":256}`))
 		default:
 			http.NotFound(w, r)
 		}
@@ -55,11 +55,20 @@ func TestNotificationAgentsDataSourceReadsPerAgentEndpoints(t *testing.T) {
 	if got := agents[0].Enabled.ValueBool(); !got {
 		t.Fatalf("expected discord enabled true, got %v", got)
 	}
+	if got := agents[0].Types.ValueInt64(); got != 6 {
+		t.Fatalf("expected discord types 6, got %d", got)
+	}
+	if agents[0].NotificationTypes.IsNull() || len(agents[0].NotificationTypes.Elements()) != 2 {
+		t.Fatalf("expected 2 notification types for discord, got %v", agents[0].NotificationTypes)
+	}
 	if got := agents[1].Agent.ValueString(); got != "ntfy" {
 		t.Fatalf("expected second agent ntfy, got %q", got)
 	}
 	if got := agents[1].EmbedPoster.ValueBool(); !got {
 		t.Fatalf("expected ntfy embed_poster true, got %v", got)
+	}
+	if got := agents[1].Types.ValueInt64(); got != 256 {
+		t.Fatalf("expected ntfy types 256, got %d", got)
 	}
 }
 

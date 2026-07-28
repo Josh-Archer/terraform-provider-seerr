@@ -442,9 +442,9 @@ func TestRequestsDataSourceReadAggregatesMultiplePages(t *testing.T) {
 	all := make([]map[string]any, 0, totalRequests)
 	for i := 1; i <= totalRequests; i++ {
 		all = append(all, map[string]any{
-			"id":     float64(i),
-			"status": float64(1),
-			"media":  map[string]any{"id": float64(1000 + i)},
+			"id":          float64(i),
+			"status":      float64(1),
+			"media":       map[string]any{"id": float64(1000 + i)},
 			"requestedBy": map[string]any{"id": float64(2000 + i)},
 		})
 	}

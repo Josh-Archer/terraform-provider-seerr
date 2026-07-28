@@ -403,3 +403,41 @@ func ValidateArrConnectivity(ctx context.Context, rawURL, hostname string, port 
 
 	return nil
 }
+
+func parseNotificationTypesBitmask(mask int64) []string {
+	var eventNames []string
+	if mask&2 != 0 {
+		eventNames = append(eventNames, "MEDIA_PENDING")
+	}
+	if mask&4 != 0 {
+		eventNames = append(eventNames, "MEDIA_APPROVED")
+	}
+	if mask&8 != 0 {
+		eventNames = append(eventNames, "MEDIA_AVAILABLE")
+	}
+	if mask&16 != 0 {
+		eventNames = append(eventNames, "MEDIA_FAILED")
+	}
+	if mask&64 != 0 {
+		eventNames = append(eventNames, "MEDIA_DECLINED")
+	}
+	if mask&128 != 0 {
+		eventNames = append(eventNames, "MEDIA_AUTO_APPROVED")
+	}
+	if mask&256 != 0 {
+		eventNames = append(eventNames, "ISSUE_CREATED")
+	}
+	if mask&512 != 0 {
+		eventNames = append(eventNames, "ISSUE_COMMENT")
+	}
+	if mask&1024 != 0 {
+		eventNames = append(eventNames, "ISSUE_RESOLVED")
+	}
+	if mask&2048 != 0 {
+		eventNames = append(eventNames, "ISSUE_REOPENED")
+	}
+	if mask&4096 != 0 {
+		eventNames = append(eventNames, "MEDIA_AUTO_REQUESTED")
+	}
+	return eventNames
+}

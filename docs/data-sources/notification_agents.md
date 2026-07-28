@@ -36,3 +36,5 @@ Read-Only:
 - `agent` (String) The name of the agent (e.g., discord, slack, email).
 - `embed_poster` (Boolean) Whether to embed poster images in notifications.
 - `enabled` (Boolean) Whether the agent is enabled.
+- `notification_types` (Set of String) Set of enabled notification event type names.
+- `types` (Number) Bitmask integer representing enabled notification event types.
