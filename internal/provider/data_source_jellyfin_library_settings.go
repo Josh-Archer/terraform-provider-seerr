@@ -107,8 +107,8 @@ func (d *JellyfinLibrarySettingsDataSource) Read(ctx context.Context, req dataso
 		return
 	}
 
-	var libModels []JellyfinLibraryModel
-	var enabledIDs []string
+	libModels := make([]JellyfinLibraryModel, 0, len(rawLibs))
+	enabledIDs := make([]string, 0)
 
 	for _, l := range rawLibs {
 		idStr := fmt.Sprintf("%v", l.ID)

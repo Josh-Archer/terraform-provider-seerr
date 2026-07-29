@@ -26,6 +26,7 @@ type JellyfinSettingsDataSourceModel struct {
 	ExternalHostname          types.String `tfsdk:"external_hostname"`
 	JellyfinForgotPasswordURL types.String `tfsdk:"jellyfin_forgot_password_url"`
 	ServerID                  types.String `tfsdk:"server_id"`
+	APIKey                    types.String `tfsdk:"api_key"`
 	ResponseJSON              types.String `tfsdk:"response_json"`
 	StatusCode                types.Int64  `tfsdk:"status_code"`
 }
@@ -70,6 +71,11 @@ func (d *JellyfinSettingsDataSource) Schema(_ context.Context, _ datasource.Sche
 			"jellyfin_forgot_password_url": schema.StringAttribute{
 				MarkdownDescription: "The URL for forgotten passwords on the Jellyfin server.",
 				Computed:            true,
+			},
+			"api_key": schema.StringAttribute{
+				MarkdownDescription: "The API key for the Jellyfin server.",
+				Computed:            true,
+				Sensitive:           true,
 			},
 			"server_id": schema.StringAttribute{
 				MarkdownDescription: "The unique server ID of the connected Jellyfin server.",
@@ -145,6 +151,9 @@ func (d *JellyfinSettingsDataSource) Read(ctx context.Context, req datasource.Re
 	}
 	if v, ok := decoded["jellyfinForgotPasswordUrl"].(string); ok {
 		data.JellyfinForgotPasswordURL = types.StringValue(v)
+	}
+	if v, ok := decoded["apiKey"].(string); ok && v != "" {
+		data.APIKey = types.StringValue(v)
 	}
 	if v, ok := decoded["serverId"].(string); ok {
 		data.ServerID = types.StringValue(v)

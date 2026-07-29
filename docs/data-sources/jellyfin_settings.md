@@ -25,6 +25,7 @@ output "jellyfin_url_base" {
 
 ### Read-Only
 
+- `api_key` (String, Sensitive) The API key for the Jellyfin server.
 - `external_hostname` (String) The external hostname for the Jellyfin server.
 - `id` (String) The ID of this resource.
 - `ip` (String) The IP address or hostname of the Jellyfin server.
