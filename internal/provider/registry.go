@@ -52,6 +52,7 @@ var RegisteredResources = []func() resource.Resource{
 	NewUserImportJellyfinResource,
 	NewJobRunResource,
 	NewNotificationAgentTestResource,
+	NewUserNotificationSettingsResource,
 }
 
 var RegisteredDataSources = []func() datasource.DataSource{
@@ -107,4 +108,5 @@ var RegisteredDataSources = []func() datasource.DataSource{
 	NewUserQuotaDataSource,
 	NewUserImportPlexDataSource,
 	NewUserImportJellyfinDataSource,
+	NewUserNotificationSettingsDataSource,
 }
