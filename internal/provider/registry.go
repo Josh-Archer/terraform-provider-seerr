@@ -108,5 +108,7 @@ var RegisteredDataSources = []func() datasource.DataSource{
 	NewUserQuotaDataSource,
 	NewUserImportPlexDataSource,
 	NewUserImportJellyfinDataSource,
+	NewEmailSettingsDataSource,
+	NewPushbulletSettingsDataSource,
 	NewUserNotificationSettingsDataSource,
 }

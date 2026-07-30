@@ -19,6 +19,7 @@ Read Seerr webpush notification settings via /api/v1/settings/notifications/webp
 
 - `embed_poster` (Boolean)
 - `enabled` (Boolean)
+- `id` (String) The ID of this resource.
 - `notification_types` (Set of String)
 - `webpush` (Attributes) (see [below for nested schema](#nestedatt--webpush))
 
