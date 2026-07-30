@@ -20,6 +20,7 @@ Read Seerr gotify notification settings via /api/v1/settings/notifications/gotif
 - `embed_poster` (Boolean)
 - `enabled` (Boolean)
 - `gotify` (Attributes) (see [below for nested schema](#nestedatt--gotify))
+- `id` (String) The ID of this resource.
 - `notification_types` (Set of String)
 
 <a id="nestedatt--gotify"></a>

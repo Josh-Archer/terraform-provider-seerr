@@ -222,7 +222,7 @@ func DefaultRules() []PathRule {
 		{PathPattern: "/user/{userId}/settings/linked-accounts/jellyfin", Classification: ClassIntentionallyOutOfScope, Notes: "Jellyfin account linking"},
 		{PathPattern: "/user/{userId}/settings/linked-accounts/jellyfin/quickconnect", Classification: ClassIntentionallyOutOfScope, Notes: "Jellyfin QuickConnect linking"},
 		{PathPattern: "/user/{userId}/settings/linked-accounts/plex", Classification: ClassIntentionallyOutOfScope, Notes: "Plex account linking"},
-		{PathPattern: "/user/{userId}/settings/notifications", Classification: ClassUncovered, Notes: "User notification settings (backlog candidate)"},
+		{PathPattern: "/user/{userId}/settings/notifications", Classification: ClassCovered, MappedResource: "seerr_user_notification_settings", Notes: "User notification settings resource & data source"},
 		{PathPattern: "/user/{userId}/watch_data", Classification: ClassIntentionallyOutOfScope, Notes: "Per-user watch data query"},
 
 		// Additional Blocklist / Override Rule / Discover / Issue / Media endpoints

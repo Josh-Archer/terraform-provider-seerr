@@ -19,6 +19,7 @@ Read Seerr telegram notification settings via /api/v1/settings/notifications/tel
 
 - `embed_poster` (Boolean)
 - `enabled` (Boolean)
+- `id` (String) The ID of this resource.
 - `notification_types` (Set of String)
 - `telegram` (Attributes) (see [below for nested schema](#nestedatt--telegram))
 

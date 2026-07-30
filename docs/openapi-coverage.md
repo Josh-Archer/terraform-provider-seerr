@@ -6,9 +6,9 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 
 - **Total OpenAPI Paths**: 163
 - **Total Endpoints (Methods)**: 212
-- **Covered Paths**: 66 (40.5%)
+- **Covered Paths**: 67 (41.1%)
 - **Intentionally Out of Scope**: 96 (58.9%)
-- **Uncovered Settings/User Backlog**: 1 (0.6%)
+- **Uncovered Settings/User Backlog**: 0 (0.0%)
 
 ## Classification Legend
 
@@ -173,7 +173,7 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/user/{userId}/settings/linked-accounts/jellyfin/quickconnect` | POST | `intentionally-out-of-scope` | Jellyfin QuickConnect linking |
 | `/user/{userId}/settings/linked-accounts/plex` | DELETE, POST | `intentionally-out-of-scope` | Plex account linking |
 | `/user/{userId}/settings/main` | GET, POST | `covered` | `seerr_user` - User main settings |
-| `/user/{userId}/settings/notifications` | GET, POST | `uncovered` | User notification settings (backlog candidate) |
+| `/user/{userId}/settings/notifications` | GET, POST | `covered` | `seerr_user_notification_settings` - User notification settings resource & data source |
 | `/user/{userId}/settings/password` | GET, POST | `intentionally-out-of-scope` | Interactive password update action |
 | `/user/{userId}/settings/permissions` | GET, POST | `covered` | `seerr_user_permissions` - User permissions resource & data source |
 | `/user/{userId}/watch_data` | GET | `intentionally-out-of-scope` | Per-user watch data query |
