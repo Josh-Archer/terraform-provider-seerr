@@ -10,14 +10,19 @@ import (
 )
 
 type NotificationClientDataSource struct {
-	client *APIClient
-	agent  string
+	client   *APIClient
+	agent    string
+	typeName string
 }
 
 var _ datasource.DataSource = &NotificationClientDataSource{}
 
 func newNotificationClientDataSource(agent string) datasource.DataSource {
 	return &NotificationClientDataSource{agent: agent}
+}
+
+func newNotificationClientDataSourceWithTypeName(agent, typeName string) datasource.DataSource {
+	return &NotificationClientDataSource{agent: agent, typeName: typeName}
 }
 
 func NewNotificationDiscordDataSource() datasource.DataSource {
@@ -55,11 +60,16 @@ func NewNotificationWebpushDataSource() datasource.DataSource {
 }
 
 func (d *NotificationClientDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_notification_" + d.agent
+	if d.typeName != "" {
+		resp.TypeName = req.ProviderTypeName + "_" + d.typeName
+	} else {
+		resp.TypeName = req.ProviderTypeName + "_notification_" + d.agent
+	}
 }
 
 func (d *NotificationClientDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	attributes := map[string]schema.Attribute{
+		"id":           schema.StringAttribute{Computed: true},
 		"enabled":      schema.BoolAttribute{Computed: true},
 		"embed_poster": schema.BoolAttribute{Computed: true},
 	}
@@ -103,10 +113,14 @@ func (d *NotificationClientDataSource) Read(ctx context.Context, _ datasource.Re
 		return
 	}
 
-	resourceData := NotificationAgentModel{Agent: types.StringValue(d.agent)}
+	resourceData := NotificationAgentModel{
+		ID:    types.StringValue(d.agent),
+		Agent: types.StringValue(d.agent),
+	}
 	if err := parsePayload(ctx, &resourceData, res.Body); err != nil {
 		resp.Diagnostics.AddError("Parse Failed", err.Error())
 		return
 	}
+	resourceData.ID = types.StringValue(d.agent)
 	resp.Diagnostics.Append(setNotificationClientState(ctx, &resp.State, &resourceData)...)
 }

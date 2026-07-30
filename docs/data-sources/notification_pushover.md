@@ -19,6 +19,7 @@ Read Seerr pushover notification settings via /api/v1/settings/notifications/pus
 
 - `embed_poster` (Boolean)
 - `enabled` (Boolean)
+- `id` (String) The ID of this resource.
 - `notification_types` (Set of String)
 - `pushover` (Attributes) (see [below for nested schema](#nestedatt--pushover))
 
