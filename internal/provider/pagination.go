@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/url"
 	"strconv"
 	"strings"
 )
+
+const maxInt = math.MaxInt
 
 // defaultPaginationPageSize is used when auto-fetching all pages from Seerr list endpoints.
 // Prefer a moderate size over a large hard-coded take so servers are not overloaded.
@@ -112,21 +115,21 @@ func parsePaginatedResponse(body []byte) ([]map[string]any, pageInfo, error) {
 		if err := json.Unmarshal(payload.PageInfo, &raw); err != nil {
 			return nil, pageInfo{}, fmt.Errorf("failed to parse pageInfo: %w", err)
 		}
-		if v, ok := int64ValueFromAny(raw["pages"]); ok {
+		if v, ok := int64ValueFromAny(raw["pages"]); ok && v >= 0 && v <= int64(maxInt) {
 			info.pages = int(v)
 			info.hasPages = true
 		}
-		if v, ok := int64ValueFromAny(raw["page"]); ok {
+		if v, ok := int64ValueFromAny(raw["page"]); ok && v >= 0 && v <= int64(maxInt) {
 			info.page = int(v)
 			info.hasPage = true
 		}
-		if v, ok := int64ValueFromAny(raw["pageSize"]); ok {
+		if v, ok := int64ValueFromAny(raw["pageSize"]); ok && v >= 0 && v <= int64(maxInt) {
 			info.pageSize = int(v)
 		}
-		if v, ok := int64ValueFromAny(raw["results"]); ok {
+		if v, ok := int64ValueFromAny(raw["results"]); ok && v >= 0 && v <= int64(maxInt) {
 			info.results = int(v)
 		}
-		if v, ok := int64ValueFromAny(raw["total"]); ok {
+		if v, ok := int64ValueFromAny(raw["total"]); ok && v >= 0 && v <= int64(maxInt) {
 			info.total = int(v)
 			info.hasTotal = true
 		}
