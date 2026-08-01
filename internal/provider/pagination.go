@@ -115,22 +115,22 @@ func parsePaginatedResponse(body []byte) ([]map[string]any, pageInfo, error) {
 		if err := json.Unmarshal(payload.PageInfo, &raw); err != nil {
 			return nil, pageInfo{}, fmt.Errorf("failed to parse pageInfo: %w", err)
 		}
-		if v, ok := int64ValueFromAny(raw["pages"]); ok && v >= 0 && v <= int64(maxInt) {
-			info.pages = int(v)
+		if v, ok := safeIntFromAny(raw["pages"]); ok {
+			info.pages = v
 			info.hasPages = true
 		}
-		if v, ok := int64ValueFromAny(raw["page"]); ok && v >= 0 && v <= int64(maxInt) {
-			info.page = int(v)
+		if v, ok := safeIntFromAny(raw["page"]); ok {
+			info.page = v
 			info.hasPage = true
 		}
-		if v, ok := int64ValueFromAny(raw["pageSize"]); ok && v >= 0 && v <= int64(maxInt) {
-			info.pageSize = int(v)
+		if v, ok := safeIntFromAny(raw["pageSize"]); ok {
+			info.pageSize = v
 		}
-		if v, ok := int64ValueFromAny(raw["results"]); ok && v >= 0 && v <= int64(maxInt) {
-			info.results = int(v)
+		if v, ok := safeIntFromAny(raw["results"]); ok {
+			info.results = v
 		}
-		if v, ok := int64ValueFromAny(raw["total"]); ok && v >= 0 && v <= int64(maxInt) {
-			info.total = int(v)
+		if v, ok := safeIntFromAny(raw["total"]); ok {
+			info.total = v
 			info.hasTotal = true
 		}
 	}
