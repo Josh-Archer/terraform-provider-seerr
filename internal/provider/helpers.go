@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -101,6 +102,36 @@ func setOptionalBool(payload map[string]any, key string, value types.Bool) {
 		return
 	}
 	payload[key] = value.ValueBool()
+}
+
+func safeIntFromAny(v any) (int, bool) {
+	switch val := v.(type) {
+	case float64:
+		if val >= 0 && val <= float64(math.MaxInt) {
+			return int(val), true
+		}
+	case float32:
+		if val >= 0 && val <= float32(math.MaxInt) {
+			return int(val), true
+		}
+	case int:
+		if val >= 0 {
+			return val, true
+		}
+	case int64:
+		if val >= 0 && val <= math.MaxInt {
+			return int(val), true
+		}
+	case int32:
+		if val >= 0 {
+			return int(val), true
+		}
+	case string:
+		if parsed, err := strconv.Atoi(strings.TrimSpace(val)); err == nil && parsed >= 0 {
+			return parsed, true
+		}
+	}
+	return 0, false
 }
 
 func int64ValueFromAny(v any) (int64, bool) {
