@@ -280,6 +280,9 @@ func ParseOpenAPISpec(filePath string) (*OpenAPISpec, error) {
 
 // AnalyzeCoverage checks all paths in spec against rules.
 func AnalyzeCoverage(spec *OpenAPISpec, rules []PathRule) (*CoverageReport, error) {
+	if spec == nil {
+		return nil, fmt.Errorf("spec is nil")
+	}
 	ruleMap := make(map[string]PathRule)
 	for _, r := range rules {
 		ruleMap[r.PathPattern] = r

@@ -164,7 +164,7 @@ func TestClientRetryAfterCappedAt60Seconds(t *testing.T) {
 
 func TestParseRetryAfterSeconds(t *testing.T) {
 	assert.Equal(t, 5*time.Second, parseRetryAfter("5"))
-	assert.Equal(t, time.Duration(1500*time.Millisecond), parseRetryAfter("1.5"))
+	assert.Equal(t, 1500*time.Millisecond, parseRetryAfter("1.5"))
 	assert.Equal(t, time.Duration(0), parseRetryAfter(""))
 	assert.Equal(t, time.Duration(0), parseRetryAfter("-1"))
 }
