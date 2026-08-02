@@ -4,13 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/url"
 	"strconv"
 	"strings"
 )
-
-const maxInt = math.MaxInt
 
 // defaultPaginationPageSize is used when auto-fetching all pages from Seerr list endpoints.
 // Prefer a moderate size over a large hard-coded take so servers are not overloaded.
@@ -164,10 +161,7 @@ func shouldStopPagination(info pageInfo, pageLen, pageSize, totalFetched int) bo
 
 	// 2. If server pagination metadata has page and pages (without total):
 	if info.hasPage && info.hasPages && info.page > 0 && info.pages > 0 {
-		if info.page >= info.pages {
-			return true
-		}
-		return false
+		return info.page >= info.pages
 	}
 
 	// 3. Fallback heuristic (no usable pageInfo metadata available):

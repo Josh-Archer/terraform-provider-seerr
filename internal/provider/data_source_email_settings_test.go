@@ -72,7 +72,8 @@ func TestEmailSettingsDataSourceRead(t *testing.T) {
 
 	client := NewClient(baseURL, "test-api-key", "test-agent", false, defaultRequestTimeout)
 
-	ds := newNotificationClientDataSourceWithTypeName("email", "email_settings").(*NotificationClientDataSource)
+	ds, ok := newNotificationClientDataSourceWithTypeName("email", "email_settings").(*NotificationClientDataSource)
+	require.True(t, ok)
 	ds.client = client
 
 	res, err := ds.client.Request(context.Background(), "GET", notificationPath("email"), "", nil)

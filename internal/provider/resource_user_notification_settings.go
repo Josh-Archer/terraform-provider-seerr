@@ -440,6 +440,9 @@ func populateUserNotificationSettingsFromMap(
 }
 
 func buildUserNotificationSettingsPayload(ctx context.Context, client *APIClient, userID int64, data *UserNotificationSettingsResourceModel) (map[string]any, error) {
+	if client == nil {
+		return nil, fmt.Errorf("API client is nil")
+	}
 	apiPath := userNotificationSettingsPath(userID)
 	res, err := client.Request(ctx, "GET", apiPath, "", nil)
 	var current map[string]any
