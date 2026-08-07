@@ -14,7 +14,7 @@ Manage Emby library enable/disable settings via `/api/v1/settings/emby/library`.
 
 ```terraform
 resource "seerr_emby_library_settings" "example" {
-  # Add your configuration here
+  enabled_libraries = ["<library-id>"]
 }
 ```
 

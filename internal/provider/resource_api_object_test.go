@@ -1,22 +1,22 @@
 package provider
 
-import (
-	"context"
-	"testing"
-
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-)
+import "testing"
 
 func TestAPIObjectResourceSchema(t *testing.T) {
 	t.Parallel()
-	r := NewAPIObjectResource()
-	var req resource.SchemaRequest
-	var resp resource.SchemaResponse
-	r.Schema(context.Background(), req, &resp)
-	if resp.Diagnostics.HasError() {
-		t.Fatalf("Schema() returned diagnostics errors: %v", resp.Diagnostics)
-	}
-	if resp.Schema.Attributes == nil && resp.Schema.Blocks == nil {
-		t.Fatal("Schema() returned empty attributes and blocks")
-	}
+	assertResourceSchemaContract(t, NewAPIObjectResource(), map[string]resourceAttributeContract{
+		"id":                 computedString,
+		"path":               requiredString,
+		"headers":            optionalMap,
+		"request_body_json":  optionalString,
+		"delete_body_json":   optionalString,
+		"read_method":        optionalComputedString,
+		"create_method":      optionalComputedString,
+		"update_method":      optionalComputedString,
+		"delete_method":      optionalComputedString,
+		"skip_delete":        optionalComputedBool,
+		"suppress_not_found": optionalComputedBool,
+		"response_body_json": computedString,
+		"status_code":        computedInt64,
+	}, nil)
 }

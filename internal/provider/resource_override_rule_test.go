@@ -1,22 +1,21 @@
 package provider
 
-import (
-	"context"
-	"testing"
-
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-)
+import "testing"
 
 func TestOverrideRuleResourceSchema(t *testing.T) {
 	t.Parallel()
-	r := NewOverrideRuleResource()
-	var req resource.SchemaRequest
-	var resp resource.SchemaResponse
-	r.Schema(context.Background(), req, &resp)
-	if resp.Diagnostics.HasError() {
-		t.Fatalf("Schema() returned diagnostics errors: %v", resp.Diagnostics)
-	}
-	if resp.Schema.Attributes == nil && resp.Schema.Blocks == nil {
-		t.Fatal("Schema() returned empty attributes and blocks")
-	}
+	assertResourceSchemaContract(t, NewOverrideRuleResource(), map[string]resourceAttributeContract{
+		"id":                computedString,
+		"users":             optionalComputedString,
+		"genre":             optionalComputedString,
+		"language":          optionalComputedString,
+		"keywords":          optionalComputedString,
+		"profile_id":        optionalComputedInt64,
+		"root_folder":       optionalComputedString,
+		"tags":              optionalComputedString,
+		"radarr_service_id": optionalComputedInt64,
+		"sonarr_service_id": optionalComputedInt64,
+		"created_at":        computedString,
+		"updated_at":        computedString,
+	}, nil)
 }
