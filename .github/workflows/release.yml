@@ -23,6 +23,7 @@ jobs:
     environment: release
     permissions:
       contents: write
+    timeout-minutes: 60
     env:
       RELEASE_TAG: ${{ inputs.release_tag }}
     steps:
