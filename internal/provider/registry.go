@@ -56,6 +56,7 @@ var RegisteredResources = []func() resource.Resource{
 }
 
 var RegisteredDataSources = []func() datasource.DataSource{
+	NewAboutDataSource,
 	NewAPIRequestDataSource,
 	NewPublicSettingsDataSource,
 	NewMainSettingsDataSource,
@@ -69,6 +70,7 @@ var RegisteredDataSources = []func() datasource.DataSource{
 	NewNotificationTelegramDataSource,
 	NewNotificationPushbulletDataSource,
 	NewNotificationPushoverDataSource,
+	NewPushoverSoundsDataSource,
 	NewNotificationNtfyDataSource,
 	NewNotificationWebhookDataSource,
 	NewNotificationGotifyDataSource,
@@ -111,4 +113,5 @@ var RegisteredDataSources = []func() datasource.DataSource{
 	NewEmailSettingsDataSource,
 	NewPushbulletSettingsDataSource,
 	NewUserNotificationSettingsDataSource,
+	NewPlexDevicesDataSource,
 }
