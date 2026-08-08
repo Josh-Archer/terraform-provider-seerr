@@ -6,8 +6,8 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 
 - **Total OpenAPI Paths**: 163
 - **Total Endpoints (Methods)**: 212
-- **Covered Paths**: 67 (41.1%)
-- **Intentionally Out of Scope**: 96 (58.9%)
+- **Covered Paths**: 70 (42.9%)
+- **Intentionally Out of Scope**: 93 (57.1%)
 - **Uncovered Settings/User Backlog**: 0 (0.0%)
 
 ## Classification Legend
@@ -93,7 +93,7 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/service/sonarr` | GET | `intentionally-out-of-scope` | Service health probe for Sonarr |
 | `/service/sonarr/lookup/{tmdbId}` | GET | `intentionally-out-of-scope` | Sonarr series lookup by TMDB ID |
 | `/service/sonarr/{sonarrId}` | GET | `intentionally-out-of-scope` | Service instance probe for Sonarr |
-| `/settings/about` | GET | `intentionally-out-of-scope` | System diagnostics and about endpoint |
+| `/settings/about` | GET | `covered` | `seerr_about` - System diagnostics and about data source |
 | `/settings/cache` | GET | `intentionally-out-of-scope` | Runtime cache status & flush controls |
 | `/settings/cache/dns/{dnsEntry}/flush` | POST | `intentionally-out-of-scope` | Runtime DNS cache flush endpoint |
 | `/settings/cache/{cacheId}/flush` | POST | `intentionally-out-of-scope` | Runtime cache flush endpoint |
@@ -127,7 +127,7 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/settings/notifications/pushbullet` | GET, POST | `covered` | `seerr_notification_pushbullet` - Pushbullet notification agent resource & data source |
 | `/settings/notifications/pushbullet/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/notifications/pushover` | GET, POST | `covered` | `seerr_notification_pushover` - Pushover notification agent resource & data source |
-| `/settings/notifications/pushover/sounds` | GET | `intentionally-out-of-scope` | Static sound lookup helper for Pushover |
+| `/settings/notifications/pushover/sounds` | GET | `covered` | `seerr_pushover_sounds` - Pushover notification sounds data source |
 | `/settings/notifications/pushover/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/notifications/slack` | GET, POST | `covered` | `seerr_notification_slack` - Slack notification agent resource & data source |
 | `/settings/notifications/slack/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
@@ -138,7 +138,7 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/settings/notifications/webpush` | GET, POST | `covered` | `seerr_notification_webpush` - Webpush notification agent resource & data source |
 | `/settings/notifications/webpush/test` | POST | `covered` | `seerr_notification_agent_test` - Notification agent test action resource |
 | `/settings/plex` | GET, POST | `covered` | `seerr_plex_settings` - Plex settings resource & data source |
-| `/settings/plex/devices/servers` | GET | `intentionally-out-of-scope` | Transient device discovery endpoint for Plex |
+| `/settings/plex/devices/servers` | GET | `covered` | `seerr_plex_devices` - Transient device discovery endpoint for Plex |
 | `/settings/plex/library` | GET | `covered` | `seerr_plex_library_settings` - Plex library enable/disable settings |
 | `/settings/plex/sync` | GET, POST | `covered` | `seerr_plex_library_sync` - Plex library sync trigger |
 | `/settings/plex/users` | GET | `intentionally-out-of-scope` | Transient user lookup for Plex server configuration |
