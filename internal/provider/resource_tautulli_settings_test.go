@@ -1,22 +1,19 @@
 package provider
 
-import (
-	"context"
-	"testing"
-
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-)
+import "testing"
 
 func TestTautulliSettingsResourceSchema(t *testing.T) {
 	t.Parallel()
-	r := NewTautulliSettingsResource()
-	var req resource.SchemaRequest
-	var resp resource.SchemaResponse
-	r.Schema(context.Background(), req, &resp)
-	if resp.Diagnostics.HasError() {
-		t.Fatalf("Schema() returned diagnostics errors: %v", resp.Diagnostics)
-	}
-	if resp.Schema.Attributes == nil && resp.Schema.Blocks == nil {
-		t.Fatal("Schema() returned empty attributes and blocks")
-	}
+	assertResourceSchemaContract(t, NewTautulliSettingsResource(), map[string]resourceAttributeContract{
+		"id":            computedString,
+		"hostname":      optionalComputedString,
+		"ip":            optionalComputedString,
+		"port":          optionalComputedInt64,
+		"use_ssl":       optionalComputedBool,
+		"url_base":      optionalComputedString,
+		"api_key":       optionalSensitiveString,
+		"external_url":  optionalComputedString,
+		"response_json": computedString,
+		"status_code":   computedInt64,
+	}, nil)
 }

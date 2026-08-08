@@ -14,7 +14,7 @@ Manage Jellyfin library enable/disable settings via `/api/v1/settings/jellyfin/l
 
 ```terraform
 resource "seerr_jellyfin_library_settings" "example" {
-  # Add your configuration here
+  enabled_libraries = ["<library-id>"]
 }
 ```
 

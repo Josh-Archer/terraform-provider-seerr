@@ -14,7 +14,7 @@ Manage Plex library enable/disable settings via `/api/v1/settings/plex/library`.
 
 ```terraform
 resource "seerr_plex_library_settings" "example" {
-  # Add your configuration here
+  enabled_libraries = ["<library-id>"]
 }
 ```
 

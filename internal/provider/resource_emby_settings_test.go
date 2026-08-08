@@ -1,22 +1,21 @@
 package provider
 
-import (
-	"context"
-	"testing"
-
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-)
+import "testing"
 
 func TestEmbySettingsResourceSchema(t *testing.T) {
 	t.Parallel()
-	r := NewEmbySettingsResource()
-	var req resource.SchemaRequest
-	var resp resource.SchemaResponse
-	r.Schema(context.Background(), req, &resp)
-	if resp.Diagnostics.HasError() {
-		t.Fatalf("Schema() returned diagnostics errors: %v", resp.Diagnostics)
-	}
-	if resp.Schema.Attributes == nil && resp.Schema.Blocks == nil {
-		t.Fatal("Schema() returned empty attributes and blocks")
-	}
+	assertResourceSchemaContract(t, NewEmbySettingsResource(), map[string]resourceAttributeContract{
+		"id":                       computedString,
+		"name":                     optionalComputedString,
+		"ip":                       requiredString,
+		"port":                     requiredInt64,
+		"use_ssl":                  optionalComputedBool,
+		"url_base":                 optionalComputedString,
+		"external_hostname":        optionalComputedString,
+		"emby_forgot_password_url": optionalComputedString,
+		"api_key":                  requiredSensitiveString,
+		"server_id":                computedString,
+		"response_json":            computedString,
+		"status_code":              computedInt64,
+	}, nil)
 }

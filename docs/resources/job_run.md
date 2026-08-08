@@ -14,7 +14,7 @@ Trigger an operational job execution via `/api/v1/settings/jobs/{jobId}/run`. Op
 
 ```terraform
 resource "seerr_job_run" "example" {
-  # Add your configuration here
+  job_id = "plex-sync"
 }
 ```
 

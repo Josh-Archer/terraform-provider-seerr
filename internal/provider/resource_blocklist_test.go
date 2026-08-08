@@ -1,22 +1,16 @@
 package provider
 
-import (
-	"context"
-	"testing"
-
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-)
+import "testing"
 
 func TestBlocklistResourceSchema(t *testing.T) {
 	t.Parallel()
-	r := NewBlocklistResource()
-	var req resource.SchemaRequest
-	var resp resource.SchemaResponse
-	r.Schema(context.Background(), req, &resp)
-	if resp.Diagnostics.HasError() {
-		t.Fatalf("Schema() returned diagnostics errors: %v", resp.Diagnostics)
-	}
-	if resp.Schema.Attributes == nil && resp.Schema.Blocks == nil {
-		t.Fatal("Schema() returned empty attributes and blocks")
-	}
+	assertResourceSchemaContract(t, NewBlocklistResource(), map[string]resourceAttributeContract{
+		"id":               computedString,
+		"tmdb_id":          requiredInt64,
+		"media_type":       requiredString,
+		"title":            optionalComputedString,
+		"user_id":          requiredInt64,
+		"blocklisted_tags": optionalComputedString,
+		"created_at":       computedString,
+	}, nil)
 }

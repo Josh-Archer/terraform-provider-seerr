@@ -1,22 +1,17 @@
 package provider
 
-import (
-	"context"
-	"testing"
-
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-)
+import "testing"
 
 func TestNetworkSettingsResourceSchema(t *testing.T) {
 	t.Parallel()
-	r := NewNetworkSettingsResource()
-	var req resource.SchemaRequest
-	var resp resource.SchemaResponse
-	r.Schema(context.Background(), req, &resp)
-	if resp.Diagnostics.HasError() {
-		t.Fatalf("Schema() returned diagnostics errors: %v", resp.Diagnostics)
-	}
-	if resp.Schema.Attributes == nil && resp.Schema.Blocks == nil {
-		t.Fatal("Schema() returned empty attributes and blocks")
-	}
+	assertResourceSchemaContract(t, NewNetworkSettingsResource(), map[string]resourceAttributeContract{
+		"id":                     computedString,
+		"csrf_protection":        optionalComputedBool,
+		"force_ipv4_first":       optionalComputedBool,
+		"trust_proxy":            optionalComputedBool,
+		"api_request_timeout_ms": optionalComputedInt64,
+	}, map[string][]string{
+		"proxy":     {"enabled", "hostname", "port", "use_ssl", "user", "password", "bypass_filter", "bypass_local_addresses"},
+		"dns_cache": {"enabled", "force_min_ttl", "force_max_ttl"},
+	})
 }
