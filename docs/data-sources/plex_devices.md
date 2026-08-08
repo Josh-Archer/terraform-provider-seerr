@@ -33,7 +33,7 @@ output "plex_servers" {
 
 Read-Only:
 
-- `access_token` (String) Access token for the device.
+- `access_token` (String, Sensitive) Access token for the device.
 - `client_identifier` (String) Client identifier.
 - `connection` (Attributes List) Connection details. (see [below for nested schema](#nestedatt--devices--connection))
 - `created_at` (String) Creation time.

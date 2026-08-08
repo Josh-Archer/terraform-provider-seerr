@@ -11,11 +11,17 @@ func TestAccPlexDevicesDataSource(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: `data "seerr_plex_devices" "test" {}`,
+				Config: testAccPlexDevicesDataSourceConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.seerr_plex_devices.test", "id", "plex_devices"),
 				),
 			},
 		},
 	})
+}
+
+func testAccPlexDevicesDataSourceConfig() string {
+	return providerConfig + `
+data "seerr_plex_devices" "test" {}
+`
 }

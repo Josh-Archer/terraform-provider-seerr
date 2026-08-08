@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -23,6 +24,7 @@ type PushoverSoundModel struct {
 
 type PushoverSoundsDataSourceModel struct {
 	ID     types.String         `tfsdk:"id"`
+	Token  types.String         `tfsdk:"token"`
 	Sounds []PushoverSoundModel `tfsdk:"sounds"`
 }
 
@@ -41,6 +43,11 @@ func (d *PushoverSoundsDataSource) Schema(_ context.Context, _ datasource.Schema
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Placeholder ID for the data source.",
 				Computed:            true,
+			},
+			"token": schema.StringAttribute{
+				MarkdownDescription: "The Pushover application API token. Required to query available sounds.",
+				Required:            true,
+				Sensitive:           true,
 			},
 			"sounds": schema.ListNestedAttribute{
 				MarkdownDescription: "List of available Pushover sounds.",
@@ -74,11 +81,17 @@ func (d *PushoverSoundsDataSource) Configure(_ context.Context, req datasource.C
 	d.client = c
 }
 
-func (d *PushoverSoundsDataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *PushoverSoundsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data PushoverSoundsDataSourceModel
 
-	// Make the API request
-	res, err := d.client.Request(ctx, "GET", "/api/v1/settings/notifications/pushover/sounds", "", nil)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Make the API request with the required token query parameter
+	urlPath := fmt.Sprintf("/api/v1/settings/notifications/pushover/sounds?token=%s", url.QueryEscape(data.Token.ValueString()))
+	res, err := d.client.Request(ctx, "GET", urlPath, "", nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return

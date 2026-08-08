@@ -11,9 +11,7 @@ func TestAccPushoverSoundsDataSource(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: `
-data "seerr_pushover_sounds" "test" {}
-`,
+				Config: testAccPushoverSoundsDataSourceConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.seerr_pushover_sounds.test", "id"),
 					resource.TestCheckResourceAttrSet("data.seerr_pushover_sounds.test", "sounds.#"),
@@ -21,4 +19,12 @@ data "seerr_pushover_sounds" "test" {}
 			},
 		},
 	})
+}
+
+func testAccPushoverSoundsDataSourceConfig() string {
+	return providerConfig + `
+data "seerr_pushover_sounds" "test" {
+  token = "test-token"
+}
+`
 }

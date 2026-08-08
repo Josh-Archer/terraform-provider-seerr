@@ -139,6 +139,7 @@ func (d *PlexDevicesDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 						"access_token": schema.StringAttribute{
 							MarkdownDescription: "Access token for the device.",
 							Computed:            true,
+							Sensitive:           true,
 						},
 						"public_address": schema.StringAttribute{
 							MarkdownDescription: "Public address.",
