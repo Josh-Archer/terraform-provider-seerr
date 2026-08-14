@@ -118,4 +118,7 @@ var RegisteredDataSources = []func() datasource.DataSource{
 	NewPlexUsersDataSource,
 	NewJellyfinUsersDataSource,
 	NewWatchlistDataSource,
+	NewGenresDataSource,
+	NewLanguagesDataSource,
+	NewRegionsDataSource,
 }

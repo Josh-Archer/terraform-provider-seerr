@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -9,7 +10,7 @@ import (
 func TestWatchlistDataSource_Schema(t *testing.T) {
 	ds := NewWatchlistDataSource()
 	var resp datasource.SchemaResponse
-	ds.Schema(nil, datasource.SchemaRequest{}, &resp)
+	ds.Schema(context.Background(), datasource.SchemaRequest{}, &resp)
 
 	if resp.Diagnostics.HasError() {
 		t.Fatalf("Schema diagnostics error: %v", resp.Diagnostics)
@@ -26,7 +27,7 @@ func TestWatchlistDataSource_Schema(t *testing.T) {
 func TestWatchlistDataSource_Metadata(t *testing.T) {
 	ds := NewWatchlistDataSource()
 	var metaResp datasource.MetadataResponse
-	ds.Metadata(nil, datasource.MetadataRequest{ProviderTypeName: "seerr"}, &metaResp)
+	ds.Metadata(context.Background(), datasource.MetadataRequest{ProviderTypeName: "seerr"}, &metaResp)
 	if metaResp.TypeName != "seerr_watchlist" {
 		t.Errorf("Expected type name seerr_watchlist, got %s", metaResp.TypeName)
 	}
