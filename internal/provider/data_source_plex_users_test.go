@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +14,7 @@ import (
 func TestPlexUsersDataSource_Schema(t *testing.T) {
 	ds := NewPlexUsersDataSource()
 	var resp datasource.SchemaResponse
-	ds.Schema(nil, datasource.SchemaRequest{}, &resp)
+	ds.Schema(context.Background(), datasource.SchemaRequest{}, &resp)
 
 	if resp.Diagnostics.HasError() {
 		t.Fatalf("Schema diagnostics error: %v", resp.Diagnostics)
@@ -61,7 +62,7 @@ func TestPlexUsersDataSource_Read(t *testing.T) {
 	ds := &PlexUsersDataSource{client: client}
 
 	var metaResp datasource.MetadataResponse
-	ds.Metadata(nil, datasource.MetadataRequest{ProviderTypeName: "seerr"}, &metaResp)
+	ds.Metadata(context.Background(), datasource.MetadataRequest{ProviderTypeName: "seerr"}, &metaResp)
 	if metaResp.TypeName != "seerr_plex_users" {
 		t.Errorf("Expected type name seerr_plex_users, got %s", metaResp.TypeName)
 	}

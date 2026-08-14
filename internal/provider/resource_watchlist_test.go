@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -9,7 +10,7 @@ import (
 func TestWatchlistResource_Schema(t *testing.T) {
 	r := NewWatchlistResource()
 	var resp resource.SchemaResponse
-	r.Schema(nil, resource.SchemaRequest{}, &resp)
+	r.Schema(context.Background(), resource.SchemaRequest{}, &resp)
 
 	if resp.Diagnostics.HasError() {
 		t.Fatalf("Schema diagnostics error: %v", resp.Diagnostics)
@@ -26,7 +27,7 @@ func TestWatchlistResource_Schema(t *testing.T) {
 func TestWatchlistResource_Metadata(t *testing.T) {
 	r := NewWatchlistResource()
 	var metaResp resource.MetadataResponse
-	r.Metadata(nil, resource.MetadataRequest{ProviderTypeName: "seerr"}, &metaResp)
+	r.Metadata(context.Background(), resource.MetadataRequest{ProviderTypeName: "seerr"}, &metaResp)
 	if metaResp.TypeName != "seerr_watchlist" {
 		t.Errorf("Expected type name seerr_watchlist, got %s", metaResp.TypeName)
 	}

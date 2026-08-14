@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +14,7 @@ import (
 func TestJellyfinUsersDataSource_Schema(t *testing.T) {
 	ds := NewJellyfinUsersDataSource()
 	var resp datasource.SchemaResponse
-	ds.Schema(nil, datasource.SchemaRequest{}, &resp)
+	ds.Schema(context.Background(), datasource.SchemaRequest{}, &resp)
 
 	if resp.Diagnostics.HasError() {
 		t.Fatalf("Schema diagnostics error: %v", resp.Diagnostics)
@@ -51,7 +52,7 @@ func TestJellyfinUsersDataSource_Read(t *testing.T) {
 	ds := &JellyfinUsersDataSource{client: client}
 
 	var metaResp datasource.MetadataResponse
-	ds.Metadata(nil, datasource.MetadataRequest{ProviderTypeName: "seerr"}, &metaResp)
+	ds.Metadata(context.Background(), datasource.MetadataRequest{ProviderTypeName: "seerr"}, &metaResp)
 	if metaResp.TypeName != "seerr_jellyfin_users" {
 		t.Errorf("Expected type name seerr_jellyfin_users, got %s", metaResp.TypeName)
 	}
