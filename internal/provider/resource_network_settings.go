@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -87,7 +89,7 @@ func networkSettingsResourceSchema() schema.Schema {
 				Attributes: map[string]schema.Attribute{
 					"enabled":                schema.BoolAttribute{Optional: true, Computed: true},
 					"hostname":               schema.StringAttribute{Optional: true, Computed: true},
-					"port":                   schema.Int64Attribute{Optional: true, Computed: true},
+					"port":                   schema.Int64Attribute{Optional: true, Computed: true, Validators: []validator.Int64{int64validator.Between(1, 65535)}},
 					"use_ssl":                schema.BoolAttribute{Optional: true, Computed: true},
 					"user":                   schema.StringAttribute{Optional: true, Computed: true},
 					"password":               schema.StringAttribute{Optional: true, Computed: true, Sensitive: true},

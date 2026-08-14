@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 
 	boolvalidator "github.com/hashicorp/terraform-plugin-framework-validators/boolvalidator"
 	stringvalidator "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -76,6 +77,9 @@ func (r *MainSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 				MarkdownDescription: "The application URL.",
 				Optional:            true,
 				Computed:            true,
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(regexp.MustCompile(`^(https?://[^/](.*[^/])?)?$`), "must be a valid HTTP or HTTPS URL without a trailing slash (e.g., https://seerr.example.com)"),
+				},
 			},
 			"trust_proxy": schema.BoolAttribute{
 				MarkdownDescription: "Whether to trust the proxy.",

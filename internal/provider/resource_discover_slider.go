@@ -7,12 +7,17 @@ import (
 	"slices"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var _ resource.Resource = &DiscoverSliderResource{}
+var _ resource.ResourceWithImportState = &DiscoverSliderResource{}
 
 type DiscoverSliderResource struct {
 	client *APIClient
@@ -44,6 +49,9 @@ func (r *DiscoverSliderResource) Schema(_ context.Context, _ resource.SchemaRequ
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 		Blocks: map[string]schema.Block{
@@ -54,10 +62,16 @@ func (r *DiscoverSliderResource) Schema(_ context.Context, _ resource.SchemaRequ
 						"id": schema.Int64Attribute{
 							Computed:            true,
 							MarkdownDescription: "The internal ID of the slider.",
+							PlanModifiers: []planmodifier.Int64{
+								int64planmodifier.UseStateForUnknown(),
+							},
 						},
 						"type": schema.Int64Attribute{
 							Required:            true,
 							MarkdownDescription: "The type of the slider (e.g., 1 for TV, 2 for Movie).",
+							PlanModifiers: []planmodifier.Int64{
+								int64planmodifier.RequiresReplace(),
+							},
 						},
 						"is_built_in": schema.BoolAttribute{
 							Computed:            true,
@@ -190,6 +204,10 @@ func (r *DiscoverSliderResource) Delete(ctx context.Context, req resource.Delete
 		resp.Diagnostics.AddError("Delete Failed", err.Error())
 		return
 	}
+}
+
+func (r *DiscoverSliderResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 func (r *DiscoverSliderResource) updateSliders(ctx context.Context, sliders []DiscoverSliderItemModel) error {
