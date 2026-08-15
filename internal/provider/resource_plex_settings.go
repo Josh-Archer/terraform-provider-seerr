@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -60,11 +63,15 @@ func (r *PlexSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 			"port": schema.Int64Attribute{
 				MarkdownDescription: "The port of the Plex server.",
 				Required:            true,
+				Validators: []validator.Int64{
+					int64validator.Between(1, 65535),
+				},
 			},
 			"use_ssl": schema.BoolAttribute{
 				MarkdownDescription: "Whether to use SSL for the connection.",
 				Optional:            true,
 				Computed:            true,
+				Default:             booldefault.StaticBool(false),
 			},
 			"response_json": schema.StringAttribute{
 				MarkdownDescription: "Raw JSON response body from the latest operation.",

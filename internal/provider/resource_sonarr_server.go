@@ -88,6 +88,7 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.MatchRoot("hostname")),
 					stringvalidator.ConflictsWith(path.MatchRoot("port")),
+					stringvalidator.RegexMatches(urlRegex(), "must be a valid HTTP or HTTPS URL (e.g., http://localhost:8989)"),
 				},
 			},
 			"hostname": schema.StringAttribute{
@@ -108,6 +109,7 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 				},
 				Validators: []validator.Int64{
 					int64validator.ConflictsWith(path.MatchRoot("url")),
+					int64validator.Between(1, 65535),
 				},
 			},
 			"api_key": schema.StringAttribute{

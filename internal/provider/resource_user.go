@@ -7,13 +7,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -118,8 +122,12 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				MarkdownDescription: "Permissions bitmask.",
 				Optional:            true,
 				Computed:            true,
+				Default:             int64default.StaticInt64(0),
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.Int64{
+					int64validator.AtLeast(0),
 				},
 			},
 			"locale": schema.StringAttribute{
@@ -182,45 +190,47 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				MarkdownDescription: "Enable watchlist sync for movies.",
 				Optional:            true,
 				Computed:            true,
+				Default:             booldefault.StaticBool(false),
 			},
 			"watchlist_sync_tv": schema.BoolAttribute{
 				MarkdownDescription: "Enable watchlist sync for TV shows.",
 				Optional:            true,
 				Computed:            true,
+				Default:             booldefault.StaticBool(false),
 			},
 		},
 		Blocks: map[string]schema.Block{
 			"notification_settings": schema.SingleNestedBlock{
 				MarkdownDescription: "User-specific notification settings.",
 				Attributes: map[string]schema.Attribute{
-					"email_enabled":              schema.BoolAttribute{Optional: true, Computed: true},
+					"email_enabled":              schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 					"pgp_key":                    schema.StringAttribute{Optional: true},
-					"discord_enabled":            schema.BoolAttribute{Optional: true, Computed: true},
+					"discord_enabled":            schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 					"discord_id":                 schema.StringAttribute{Optional: true},
 					"pushbullet_access_token":    schema.StringAttribute{Optional: true, Sensitive: true},
 					"pushover_application_token": schema.StringAttribute{Optional: true, Sensitive: true},
 					"pushover_user_key":          schema.StringAttribute{Optional: true, Sensitive: true},
 					"pushover_sound":             schema.StringAttribute{Optional: true},
-					"telegram_enabled":           schema.BoolAttribute{Optional: true, Computed: true},
+					"telegram_enabled":           schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 					"telegram_bot_username":      schema.StringAttribute{Optional: true},
 					"telegram_chat_id":           schema.StringAttribute{Optional: true},
 					"telegram_message_thread_id": schema.StringAttribute{Optional: true},
-					"telegram_send_silently":     schema.BoolAttribute{Optional: true, Computed: true},
+					"telegram_send_silently":     schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 					"webpush_enabled":            schema.BoolAttribute{Computed: true},
 				},
 				Blocks: map[string]schema.Block{
 					"notification_types": schema.SingleNestedBlock{
 						Attributes: map[string]schema.Attribute{
-							"discord":    schema.Int64Attribute{Optional: true, Computed: true},
-							"email":      schema.Int64Attribute{Optional: true, Computed: true},
-							"pushbullet": schema.Int64Attribute{Optional: true, Computed: true},
-							"pushover":   schema.Int64Attribute{Optional: true, Computed: true},
-							"slack":      schema.Int64Attribute{Optional: true, Computed: true},
-							"telegram":   schema.Int64Attribute{Optional: true, Computed: true},
-							"webhook":    schema.Int64Attribute{Optional: true, Computed: true},
-							"webpush":    schema.Int64Attribute{Optional: true, Computed: true},
-							"gotify":     schema.Int64Attribute{Optional: true, Computed: true},
-							"ntfy":       schema.Int64Attribute{Optional: true, Computed: true},
+							"discord":    schema.Int64Attribute{Optional: true, Computed: true, Default: int64default.StaticInt64(0)},
+							"email":      schema.Int64Attribute{Optional: true, Computed: true, Default: int64default.StaticInt64(0)},
+							"pushbullet": schema.Int64Attribute{Optional: true, Computed: true, Default: int64default.StaticInt64(0)},
+							"pushover":   schema.Int64Attribute{Optional: true, Computed: true, Default: int64default.StaticInt64(0)},
+							"slack":      schema.Int64Attribute{Optional: true, Computed: true, Default: int64default.StaticInt64(0)},
+							"telegram":   schema.Int64Attribute{Optional: true, Computed: true, Default: int64default.StaticInt64(0)},
+							"webhook":    schema.Int64Attribute{Optional: true, Computed: true, Default: int64default.StaticInt64(0)},
+							"webpush":    schema.Int64Attribute{Optional: true, Computed: true, Default: int64default.StaticInt64(0)},
+							"gotify":     schema.Int64Attribute{Optional: true, Computed: true, Default: int64default.StaticInt64(0)},
+							"ntfy":       schema.Int64Attribute{Optional: true, Computed: true, Default: int64default.StaticInt64(0)},
 						},
 					},
 				},
