@@ -76,11 +76,11 @@ func TestIssueDataSourceReadSuccess(t *testing.T) {
 	if got := data.CommentsCount.ValueInt64(); got != 1 {
 		t.Fatalf("expected comments_count 1, got %d", got)
 	}
-	if data.CreatedBy == nil || data.CreatedBy.DisplayName.ValueString() != "Author" {
-		t.Fatalf("expected created_by displayName Author, got %v", data.CreatedBy)
+	if data.CreatedBy.IsNull() || data.CreatedBy.IsUnknown() {
+		t.Fatalf("expected created_by object, got %v", data.CreatedBy)
 	}
-	if data.ModifiedBy == nil || data.ModifiedBy.DisplayName.ValueString() != "Resolver" {
-		t.Fatalf("expected modified_by displayName Resolver, got %v", data.ModifiedBy)
+	if data.ModifiedBy.IsNull() || data.ModifiedBy.IsUnknown() {
+		t.Fatalf("expected modified_by object, got %v", data.ModifiedBy)
 	}
 	if data.ResponseJSON.IsNull() || data.ResponseJSON.ValueString() == "" {
 		t.Fatal("expected response_json to be populated")

@@ -17,17 +17,17 @@ type IssueDataSource struct {
 }
 
 type IssueDataSourceModel struct {
-	ID            types.String    `tfsdk:"id"`
-	IssueType     types.Int64     `tfsdk:"issue_type"`
-	Status        types.Int64     `tfsdk:"status"`
-	MediaID       types.Int64     `tfsdk:"media_id"`
-	CreatedByID   types.Int64     `tfsdk:"created_by_id"`
-	CreatedAt     types.String    `tfsdk:"created_at"`
-	UpdatedAt     types.String    `tfsdk:"updated_at"`
-	CommentsCount types.Int64     `tfsdk:"comments_count"`
-	CreatedBy     *IssueUserModel `tfsdk:"created_by"`
-	ModifiedBy    *IssueUserModel `tfsdk:"modified_by"`
-	ResponseJSON  types.String    `tfsdk:"response_json"`
+	ID            types.String `tfsdk:"id"`
+	IssueType     types.Int64  `tfsdk:"issue_type"`
+	Status        types.Int64  `tfsdk:"status"`
+	MediaID       types.Int64  `tfsdk:"media_id"`
+	CreatedByID   types.Int64  `tfsdk:"created_by_id"`
+	CreatedAt     types.String `tfsdk:"created_at"`
+	UpdatedAt     types.String `tfsdk:"updated_at"`
+	CommentsCount types.Int64  `tfsdk:"comments_count"`
+	CreatedBy     types.Object `tfsdk:"created_by"`
+	ModifiedBy    types.Object `tfsdk:"modified_by"`
+	ResponseJSON  types.String `tfsdk:"response_json"`
 }
 
 func NewIssueDataSource() datasource.DataSource {
@@ -207,8 +207,8 @@ func (d *IssueDataSource) refreshIssue(ctx context.Context, data *IssueDataSourc
 		data.CommentsCount = types.Int64Value(0)
 	}
 
-	data.CreatedBy = parseIssueUserModel(m["createdBy"])
-	data.ModifiedBy = parseIssueUserModel(m["modifiedBy"])
+	data.CreatedBy = parseIssueUserObject(m["createdBy"])
+	data.ModifiedBy = parseIssueUserObject(m["modifiedBy"])
 
 	return nil
 }

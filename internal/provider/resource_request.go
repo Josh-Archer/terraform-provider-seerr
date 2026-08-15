@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -29,32 +30,25 @@ type RequestResource struct {
 	client *APIClient
 }
 
-type RequestUserModel struct {
-	ID          types.Int64  `tfsdk:"id"`
-	Email       types.String `tfsdk:"email"`
-	DisplayName types.String `tfsdk:"display_name"`
-	Avatar      types.String `tfsdk:"avatar"`
-}
-
 type RequestModel struct {
-	ID                        types.String      `tfsdk:"id"`
-	MediaType                 types.String      `tfsdk:"media_type"`
-	MediaID                   types.Int64       `tfsdk:"media_id"`
-	SeerrMediaID              types.Int64       `tfsdk:"seerr_media_id"`
-	Seasons                   types.List        `tfsdk:"seasons"`
-	Is4K                      types.Bool        `tfsdk:"is_4k"`
-	ServerID                  types.Int64       `tfsdk:"server_id"`
-	ProfileID                 types.Int64       `tfsdk:"profile_id"`
-	RootFolder                types.String      `tfsdk:"root_folder"`
-	UserID                    types.Int64       `tfsdk:"user_id"`
-	Status                    types.Int64       `tfsdk:"status"`
-	StatusWaitTimeoutSeconds  types.Int64       `tfsdk:"status_wait_timeout_seconds"`
-	StatusWaitIntervalSeconds types.Int64       `tfsdk:"status_wait_interval_seconds"`
-	CreatedAt                 types.String      `tfsdk:"created_at"`
-	UpdatedAt                 types.String      `tfsdk:"updated_at"`
-	SeasonCount               types.Int64       `tfsdk:"season_count"`
-	RequestedBy               *RequestUserModel `tfsdk:"requested_by"`
-	ModifiedBy                *RequestUserModel `tfsdk:"modified_by"`
+	ID                        types.String `tfsdk:"id"`
+	MediaType                 types.String `tfsdk:"media_type"`
+	MediaID                   types.Int64  `tfsdk:"media_id"`
+	SeerrMediaID              types.Int64  `tfsdk:"seerr_media_id"`
+	Seasons                   types.List   `tfsdk:"seasons"`
+	Is4K                      types.Bool   `tfsdk:"is_4k"`
+	ServerID                  types.Int64  `tfsdk:"server_id"`
+	ProfileID                 types.Int64  `tfsdk:"profile_id"`
+	RootFolder                types.String `tfsdk:"root_folder"`
+	UserID                    types.Int64  `tfsdk:"user_id"`
+	Status                    types.Int64  `tfsdk:"status"`
+	StatusWaitTimeoutSeconds  types.Int64  `tfsdk:"status_wait_timeout_seconds"`
+	StatusWaitIntervalSeconds types.Int64  `tfsdk:"status_wait_interval_seconds"`
+	CreatedAt                 types.String `tfsdk:"created_at"`
+	UpdatedAt                 types.String `tfsdk:"updated_at"`
+	SeasonCount               types.Int64  `tfsdk:"season_count"`
+	RequestedBy               types.Object `tfsdk:"requested_by"`
+	ModifiedBy                types.Object `tfsdk:"modified_by"`
 }
 
 func NewRequestResource() resource.Resource {
@@ -325,32 +319,43 @@ func (r *RequestResource) Read(ctx context.Context, req resource.ReadRequest, re
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func parseRequestUserModel(v any) *RequestUserModel {
+var requestUserAttrTypes = map[string]attr.Type{
+	"id":           types.Int64Type,
+	"email":        types.StringType,
+	"display_name": types.StringType,
+	"avatar":       types.StringType,
+}
+
+func parseRequestUserObject(v any) types.Object {
 	m, ok := v.(map[string]any)
 	if !ok || m == nil {
-		return nil
+		return types.ObjectNull(requestUserAttrTypes)
 	}
-	user := &RequestUserModel{
-		ID:          types.Int64Null(),
-		Email:       types.StringNull(),
-		DisplayName: types.StringNull(),
-		Avatar:      types.StringNull(),
+	id := types.Int64Null()
+	if idVal, ok := int64ValueFromAny(m["id"]); ok {
+		id = types.Int64Value(idVal)
 	}
-	if id, ok := int64ValueFromAny(m["id"]); ok {
-		user.ID = types.Int64Value(id)
+	email := types.StringNull()
+	if emailVal, ok := stringValueFromAny(m["email"]); ok {
+		email = types.StringValue(emailVal)
 	}
-	if email, ok := stringValueFromAny(m["email"]); ok {
-		user.Email = types.StringValue(email)
-	}
+	displayName := types.StringNull()
 	if dn, ok := stringValueFromAny(m["displayName"]); ok {
-		user.DisplayName = types.StringValue(dn)
+		displayName = types.StringValue(dn)
 	} else if un, ok := stringValueFromAny(m["username"]); ok {
-		user.DisplayName = types.StringValue(un)
+		displayName = types.StringValue(un)
 	}
-	if avatar, ok := stringValueFromAny(m["avatar"]); ok {
-		user.Avatar = types.StringValue(avatar)
+	avatar := types.StringNull()
+	if av, ok := stringValueFromAny(m["avatar"]); ok {
+		avatar = types.StringValue(av)
 	}
-	return user
+	obj, _ := types.ObjectValue(requestUserAttrTypes, map[string]attr.Value{
+		"id":           id,
+		"email":        email,
+		"display_name": displayName,
+		"avatar":       avatar,
+	})
+	return obj
 }
 
 func (r *RequestResource) readRequest(ctx context.Context, requestID string, data *RequestModel) diag.Diagnostics {
@@ -418,8 +423,8 @@ func (r *RequestResource) readRequest(ctx context.Context, requestID string, dat
 		data.SeasonCount = types.Int64Value(0)
 	}
 
-	data.RequestedBy = parseRequestUserModel(m["requestedBy"])
-	data.ModifiedBy = parseRequestUserModel(m["modifiedBy"])
+	data.RequestedBy = parseRequestUserObject(m["requestedBy"])
+	data.ModifiedBy = parseRequestUserObject(m["modifiedBy"])
 
 	return diags
 }

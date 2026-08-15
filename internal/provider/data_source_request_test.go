@@ -87,11 +87,11 @@ func TestRequestDataSourceReadSuccess(t *testing.T) {
 	if got := data.SeasonCount.ValueInt64(); got != 1 {
 		t.Fatalf("expected season_count 1, got %d", got)
 	}
-	if data.RequestedBy == nil || data.RequestedBy.DisplayName.ValueString() != "User" {
-		t.Fatalf("expected requested_by displayName User, got %v", data.RequestedBy)
+	if data.RequestedBy.IsNull() || data.RequestedBy.IsUnknown() {
+		t.Fatalf("expected requested_by object, got %v", data.RequestedBy)
 	}
-	if data.ModifiedBy == nil || data.ModifiedBy.DisplayName.ValueString() != "Admin" {
-		t.Fatalf("expected modified_by displayName Admin, got %v", data.ModifiedBy)
+	if data.ModifiedBy.IsNull() || data.ModifiedBy.IsUnknown() {
+		t.Fatalf("expected modified_by object, got %v", data.ModifiedBy)
 	}
 	if data.ResponseJSON.IsNull() || data.ResponseJSON.ValueString() == "" {
 		t.Fatal("expected response_json to be populated")

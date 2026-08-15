@@ -17,19 +17,19 @@ type RequestDataSource struct {
 }
 
 type RequestDataSourceModel struct {
-	ID           types.String      `tfsdk:"id"`
-	Status       types.Int64       `tfsdk:"status"`
-	MediaID      types.Int64       `tfsdk:"media_id"`
-	TMDBID       types.Int64       `tfsdk:"tmdb_id"`
-	MediaType    types.String      `tfsdk:"media_type"`
-	Is4K         types.Bool        `tfsdk:"is_4k"`
-	UserID       types.Int64       `tfsdk:"user_id"`
-	CreatedAt    types.String      `tfsdk:"created_at"`
-	UpdatedAt    types.String      `tfsdk:"updated_at"`
-	SeasonCount  types.Int64       `tfsdk:"season_count"`
-	RequestedBy  *RequestUserModel `tfsdk:"requested_by"`
-	ModifiedBy   *RequestUserModel `tfsdk:"modified_by"`
-	ResponseJSON types.String      `tfsdk:"response_json"`
+	ID           types.String `tfsdk:"id"`
+	Status       types.Int64  `tfsdk:"status"`
+	MediaID      types.Int64  `tfsdk:"media_id"`
+	TMDBID       types.Int64  `tfsdk:"tmdb_id"`
+	MediaType    types.String `tfsdk:"media_type"`
+	Is4K         types.Bool   `tfsdk:"is_4k"`
+	UserID       types.Int64  `tfsdk:"user_id"`
+	CreatedAt    types.String `tfsdk:"created_at"`
+	UpdatedAt    types.String `tfsdk:"updated_at"`
+	SeasonCount  types.Int64  `tfsdk:"season_count"`
+	RequestedBy  types.Object `tfsdk:"requested_by"`
+	ModifiedBy   types.Object `tfsdk:"modified_by"`
+	ResponseJSON types.String `tfsdk:"response_json"`
 }
 
 func NewRequestDataSource() datasource.DataSource {
@@ -225,8 +225,8 @@ func (d *RequestDataSource) refreshRequest(ctx context.Context, data *RequestDat
 		data.SeasonCount = types.Int64Value(0)
 	}
 
-	data.RequestedBy = parseRequestUserModel(m["requestedBy"])
-	data.ModifiedBy = parseRequestUserModel(m["modifiedBy"])
+	data.RequestedBy = parseRequestUserObject(m["requestedBy"])
+	data.ModifiedBy = parseRequestUserObject(m["modifiedBy"])
 
 	return nil
 }

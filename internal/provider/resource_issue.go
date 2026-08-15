@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -22,24 +23,17 @@ type IssueResource struct {
 	client *APIClient
 }
 
-type IssueUserModel struct {
-	ID          types.Int64  `tfsdk:"id"`
-	Email       types.String `tfsdk:"email"`
-	DisplayName types.String `tfsdk:"display_name"`
-	Avatar      types.String `tfsdk:"avatar"`
-}
-
 type IssueModel struct {
-	ID            types.String    `tfsdk:"id"`
-	IssueType     types.Int64     `tfsdk:"issue_type"`
-	Message       types.String    `tfsdk:"message"`
-	MediaID       types.Int64     `tfsdk:"media_id"`
-	Status        types.Int64     `tfsdk:"status"`
-	CreatedAt     types.String    `tfsdk:"created_at"`
-	UpdatedAt     types.String    `tfsdk:"updated_at"`
-	CommentsCount types.Int64     `tfsdk:"comments_count"`
-	CreatedBy     *IssueUserModel `tfsdk:"created_by"`
-	ModifiedBy    *IssueUserModel `tfsdk:"modified_by"`
+	ID            types.String `tfsdk:"id"`
+	IssueType     types.Int64  `tfsdk:"issue_type"`
+	Message       types.String `tfsdk:"message"`
+	MediaID       types.Int64  `tfsdk:"media_id"`
+	Status        types.Int64  `tfsdk:"status"`
+	CreatedAt     types.String `tfsdk:"created_at"`
+	UpdatedAt     types.String `tfsdk:"updated_at"`
+	CommentsCount types.Int64  `tfsdk:"comments_count"`
+	CreatedBy     types.Object `tfsdk:"created_by"`
+	ModifiedBy    types.Object `tfsdk:"modified_by"`
 }
 
 func NewIssueResource() resource.Resource {
@@ -225,32 +219,43 @@ func (r *IssueResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func parseIssueUserModel(v any) *IssueUserModel {
+var issueUserAttrTypes = map[string]attr.Type{
+	"id":           types.Int64Type,
+	"email":        types.StringType,
+	"display_name": types.StringType,
+	"avatar":       types.StringType,
+}
+
+func parseIssueUserObject(v any) types.Object {
 	m, ok := v.(map[string]any)
 	if !ok || m == nil {
-		return nil
+		return types.ObjectNull(issueUserAttrTypes)
 	}
-	user := &IssueUserModel{
-		ID:          types.Int64Null(),
-		Email:       types.StringNull(),
-		DisplayName: types.StringNull(),
-		Avatar:      types.StringNull(),
+	id := types.Int64Null()
+	if idVal, ok := int64ValueFromAny(m["id"]); ok {
+		id = types.Int64Value(idVal)
 	}
-	if id, ok := int64ValueFromAny(m["id"]); ok {
-		user.ID = types.Int64Value(id)
+	email := types.StringNull()
+	if emailVal, ok := stringValueFromAny(m["email"]); ok {
+		email = types.StringValue(emailVal)
 	}
-	if email, ok := stringValueFromAny(m["email"]); ok {
-		user.Email = types.StringValue(email)
-	}
+	displayName := types.StringNull()
 	if dn, ok := stringValueFromAny(m["displayName"]); ok {
-		user.DisplayName = types.StringValue(dn)
+		displayName = types.StringValue(dn)
 	} else if un, ok := stringValueFromAny(m["username"]); ok {
-		user.DisplayName = types.StringValue(un)
+		displayName = types.StringValue(un)
 	}
-	if avatar, ok := stringValueFromAny(m["avatar"]); ok {
-		user.Avatar = types.StringValue(avatar)
+	avatar := types.StringNull()
+	if av, ok := stringValueFromAny(m["avatar"]); ok {
+		avatar = types.StringValue(av)
 	}
-	return user
+	obj, _ := types.ObjectValue(issueUserAttrTypes, map[string]attr.Value{
+		"id":           id,
+		"email":        email,
+		"display_name": displayName,
+		"avatar":       avatar,
+	})
+	return obj
 }
 
 func (r *IssueResource) readIssue(ctx context.Context, issueID string, data *IssueModel) diag.Diagnostics {
@@ -304,8 +309,8 @@ func (r *IssueResource) readIssue(ctx context.Context, issueID string, data *Iss
 		data.CommentsCount = types.Int64Value(0)
 	}
 
-	data.CreatedBy = parseIssueUserModel(m["createdBy"])
-	data.ModifiedBy = parseIssueUserModel(m["modifiedBy"])
+	data.CreatedBy = parseIssueUserObject(m["createdBy"])
+	data.ModifiedBy = parseIssueUserObject(m["modifiedBy"])
 
 	return diags
 }
