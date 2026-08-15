@@ -54,6 +54,8 @@ var RegisteredResources = []func() resource.Resource{
 	NewNotificationAgentTestResource,
 	NewUserNotificationSettingsResource,
 	NewWatchlistResource,
+	NewRequestApprovalResource,
+	NewIssueCommentResource,
 }
 
 var RegisteredDataSources = []func() datasource.DataSource{

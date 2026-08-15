@@ -6,8 +6,8 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 
 - **Total OpenAPI Paths**: 163
 - **Total Endpoints (Methods)**: 212
-- **Covered Paths**: 70 (42.9%)
-- **Intentionally Out of Scope**: 93 (57.1%)
+- **Covered Paths**: 73 (44.8%)
+- **Intentionally Out of Scope**: 90 (55.2%)
 - **Uncovered Settings/User Backlog**: 0 (0.0%)
 
 ## Classification Legend
@@ -59,9 +59,9 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/issue` | GET, POST | `covered` | `seerr_issue` - Issue resource & data source |
 | `/issue/count` | GET | `covered` | `seerr_issues` - Issue counts data source |
 | `/issue/{issueId}` | DELETE, GET | `covered` | `seerr_issue` - Issue item resource |
-| `/issue/{issueId}/comment` | POST | `intentionally-out-of-scope` | Issue comment action |
+| `/issue/{issueId}/comment` | POST | `covered` | `seerr_issue_comment` - Issue comment creation |
 | `/issue/{issueId}/{status}` | POST | `intentionally-out-of-scope` | Issue status update action |
-| `/issueComment/{commentId}` | DELETE, GET, PUT | `intentionally-out-of-scope` | Issue comment management |
+| `/issueComment/{commentId}` | DELETE, GET, PUT | `covered` | `seerr_issue_comment` - Issue comment item resource |
 | `/keyword/{keywordId}` | GET | `intentionally-out-of-scope` | TMDB keyword details |
 | `/languages` | GET | `intentionally-out-of-scope` | TMDB languages list |
 | `/media` | GET | `covered` | `seerr_media` - Media list data source |
@@ -84,7 +84,7 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/request/count` | GET | `covered` | `seerr_requests` - Media request counts data source |
 | `/request/{requestId}` | DELETE, GET, PUT | `covered` | `seerr_request` - Media request item resource |
 | `/request/{requestId}/retry` | POST | `covered` | `seerr_request_retry` - Request retry resource |
-| `/request/{requestId}/{status}` | POST | `intentionally-out-of-scope` | Request workflow status change (approve/decline/autoApprove) |
+| `/request/{requestId}/{status}` | POST | `covered` | `seerr_request_approval` - Request approval resource |
 | `/search` | GET | `intentionally-out-of-scope` | Interactive search endpoint |
 | `/search/company` | GET | `intentionally-out-of-scope` | Interactive TMDB company search |
 | `/search/keyword` | GET | `intentionally-out-of-scope` | Interactive TMDB keyword search |

@@ -46,7 +46,25 @@ func TestIssueReadPopulatesMediaID(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"id":12,"issueType":4,"status":1,"media":{"id":550}}`))
+		_, _ = w.Write([]byte(`{
+			"id": 12,
+			"issueType": 4,
+			"status": 1,
+			"createdAt": "2026-01-01T00:00:00.000Z",
+			"updatedAt": "2026-01-02T00:00:00.000Z",
+			"comments": [{"id": 1, "message": "comment 1"}],
+			"media": {"id": 550},
+			"createdBy": {
+				"id": 1,
+				"email": "user@example.com",
+				"displayName": "User"
+			},
+			"modifiedBy": {
+				"id": 2,
+				"email": "admin@example.com",
+				"displayName": "Admin"
+			}
+		}`))
 	}))
 	defer srv.Close()
 
@@ -66,6 +84,18 @@ func TestIssueReadPopulatesMediaID(t *testing.T) {
 	}
 	if got := data.MediaID.ValueInt64(); got != 550 {
 		t.Fatalf("expected media_id 550, got %d", got)
+	}
+	if got := data.CreatedAt.ValueString(); got != "2026-01-01T00:00:00.000Z" {
+		t.Fatalf("expected created_at timestamp, got %q", got)
+	}
+	if got := data.CommentsCount.ValueInt64(); got != 1 {
+		t.Fatalf("expected comments_count 1, got %d", got)
+	}
+	if data.CreatedBy == nil || data.CreatedBy.Email.ValueString() != "user@example.com" {
+		t.Fatalf("expected created_by email user@example.com, got %v", data.CreatedBy)
+	}
+	if data.ModifiedBy == nil || data.ModifiedBy.DisplayName.ValueString() != "Admin" {
+		t.Fatalf("expected modified_by displayName Admin, got %v", data.ModifiedBy)
 	}
 }
 

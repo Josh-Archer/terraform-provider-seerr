@@ -17,14 +17,19 @@ type RequestDataSource struct {
 }
 
 type RequestDataSourceModel struct {
-	ID           types.String `tfsdk:"id"`
-	Status       types.Int64  `tfsdk:"status"`
-	MediaID      types.Int64  `tfsdk:"media_id"`
-	TMDBID       types.Int64  `tfsdk:"tmdb_id"`
-	MediaType    types.String `tfsdk:"media_type"`
-	Is4K         types.Bool   `tfsdk:"is_4k"`
-	UserID       types.Int64  `tfsdk:"user_id"`
-	ResponseJSON types.String `tfsdk:"response_json"`
+	ID           types.String      `tfsdk:"id"`
+	Status       types.Int64       `tfsdk:"status"`
+	MediaID      types.Int64       `tfsdk:"media_id"`
+	TMDBID       types.Int64       `tfsdk:"tmdb_id"`
+	MediaType    types.String      `tfsdk:"media_type"`
+	Is4K         types.Bool        `tfsdk:"is_4k"`
+	UserID       types.Int64       `tfsdk:"user_id"`
+	CreatedAt    types.String      `tfsdk:"created_at"`
+	UpdatedAt    types.String      `tfsdk:"updated_at"`
+	SeasonCount  types.Int64       `tfsdk:"season_count"`
+	RequestedBy  *RequestUserModel `tfsdk:"requested_by"`
+	ModifiedBy   *RequestUserModel `tfsdk:"modified_by"`
+	ResponseJSON types.String      `tfsdk:"response_json"`
 }
 
 func NewRequestDataSource() datasource.DataSource {
@@ -66,6 +71,62 @@ func (d *RequestDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 			"user_id": schema.Int64Attribute{
 				MarkdownDescription: "The ID of the user who made the request.",
 				Computed:            true,
+			},
+			"created_at": schema.StringAttribute{
+				MarkdownDescription: "Date and time the request was created in ISO 8601 format.",
+				Computed:            true,
+			},
+			"updated_at": schema.StringAttribute{
+				MarkdownDescription: "Date and time the request was last updated in ISO 8601 format.",
+				Computed:            true,
+			},
+			"season_count": schema.Int64Attribute{
+				MarkdownDescription: "The number of seasons requested for TV requests.",
+				Computed:            true,
+			},
+			"requested_by": schema.SingleNestedAttribute{
+				MarkdownDescription: "The user who submitted the request.",
+				Computed:            true,
+				Attributes: map[string]schema.Attribute{
+					"id": schema.Int64Attribute{
+						MarkdownDescription: "User ID.",
+						Computed:            true,
+					},
+					"email": schema.StringAttribute{
+						MarkdownDescription: "User email.",
+						Computed:            true,
+					},
+					"display_name": schema.StringAttribute{
+						MarkdownDescription: "User display name.",
+						Computed:            true,
+					},
+					"avatar": schema.StringAttribute{
+						MarkdownDescription: "User avatar URL.",
+						Computed:            true,
+					},
+				},
+			},
+			"modified_by": schema.SingleNestedAttribute{
+				MarkdownDescription: "The user who last modified the request.",
+				Computed:            true,
+				Attributes: map[string]schema.Attribute{
+					"id": schema.Int64Attribute{
+						MarkdownDescription: "User ID.",
+						Computed:            true,
+					},
+					"email": schema.StringAttribute{
+						MarkdownDescription: "User email.",
+						Computed:            true,
+					},
+					"display_name": schema.StringAttribute{
+						MarkdownDescription: "User display name.",
+						Computed:            true,
+					},
+					"avatar": schema.StringAttribute{
+						MarkdownDescription: "User avatar URL.",
+						Computed:            true,
+					},
+				},
 			},
 			"response_json": schema.StringAttribute{
 				MarkdownDescription: "Raw JSON response body from the API.",
@@ -146,6 +207,26 @@ func (d *RequestDataSource) refreshRequest(ctx context.Context, data *RequestDat
 			data.UserID = types.Int64Value(userID)
 		}
 	}
+
+	if createdAt, ok := stringValueFromAny(m["createdAt"]); ok {
+		data.CreatedAt = types.StringValue(createdAt)
+	} else {
+		data.CreatedAt = types.StringNull()
+	}
+	if updatedAt, ok := stringValueFromAny(m["updatedAt"]); ok {
+		data.UpdatedAt = types.StringValue(updatedAt)
+	} else {
+		data.UpdatedAt = types.StringNull()
+	}
+
+	if seasons, ok := m["seasons"].([]any); ok {
+		data.SeasonCount = types.Int64Value(int64(len(seasons)))
+	} else {
+		data.SeasonCount = types.Int64Value(0)
+	}
+
+	data.RequestedBy = parseRequestUserModel(m["requestedBy"])
+	data.ModifiedBy = parseRequestUserModel(m["modifiedBy"])
 
 	return nil
 }

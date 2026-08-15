@@ -17,12 +17,17 @@ type IssueDataSource struct {
 }
 
 type IssueDataSourceModel struct {
-	ID           types.String `tfsdk:"id"`
-	IssueType    types.Int64  `tfsdk:"issue_type"`
-	Status       types.Int64  `tfsdk:"status"`
-	MediaID      types.Int64  `tfsdk:"media_id"`
-	CreatedByID  types.Int64  `tfsdk:"created_by_id"`
-	ResponseJSON types.String `tfsdk:"response_json"`
+	ID            types.String    `tfsdk:"id"`
+	IssueType     types.Int64     `tfsdk:"issue_type"`
+	Status        types.Int64     `tfsdk:"status"`
+	MediaID       types.Int64     `tfsdk:"media_id"`
+	CreatedByID   types.Int64     `tfsdk:"created_by_id"`
+	CreatedAt     types.String    `tfsdk:"created_at"`
+	UpdatedAt     types.String    `tfsdk:"updated_at"`
+	CommentsCount types.Int64     `tfsdk:"comments_count"`
+	CreatedBy     *IssueUserModel `tfsdk:"created_by"`
+	ModifiedBy    *IssueUserModel `tfsdk:"modified_by"`
+	ResponseJSON  types.String    `tfsdk:"response_json"`
 }
 
 func NewIssueDataSource() datasource.DataSource {
@@ -56,6 +61,62 @@ func (d *IssueDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 			"created_by_id": schema.Int64Attribute{
 				MarkdownDescription: "The ID of the user who created the issue.",
 				Computed:            true,
+			},
+			"created_at": schema.StringAttribute{
+				MarkdownDescription: "Date and time the issue was created in ISO 8601 format.",
+				Computed:            true,
+			},
+			"updated_at": schema.StringAttribute{
+				MarkdownDescription: "Date and time the issue was last updated in ISO 8601 format.",
+				Computed:            true,
+			},
+			"comments_count": schema.Int64Attribute{
+				MarkdownDescription: "The number of comments on this issue.",
+				Computed:            true,
+			},
+			"created_by": schema.SingleNestedAttribute{
+				MarkdownDescription: "The user who created the issue.",
+				Computed:            true,
+				Attributes: map[string]schema.Attribute{
+					"id": schema.Int64Attribute{
+						MarkdownDescription: "User ID.",
+						Computed:            true,
+					},
+					"email": schema.StringAttribute{
+						MarkdownDescription: "User email.",
+						Computed:            true,
+					},
+					"display_name": schema.StringAttribute{
+						MarkdownDescription: "User display name.",
+						Computed:            true,
+					},
+					"avatar": schema.StringAttribute{
+						MarkdownDescription: "User avatar URL.",
+						Computed:            true,
+					},
+				},
+			},
+			"modified_by": schema.SingleNestedAttribute{
+				MarkdownDescription: "The user who last modified the issue.",
+				Computed:            true,
+				Attributes: map[string]schema.Attribute{
+					"id": schema.Int64Attribute{
+						MarkdownDescription: "User ID.",
+						Computed:            true,
+					},
+					"email": schema.StringAttribute{
+						MarkdownDescription: "User email.",
+						Computed:            true,
+					},
+					"display_name": schema.StringAttribute{
+						MarkdownDescription: "User display name.",
+						Computed:            true,
+					},
+					"avatar": schema.StringAttribute{
+						MarkdownDescription: "User avatar URL.",
+						Computed:            true,
+					},
+				},
 			},
 			"response_json": schema.StringAttribute{
 				MarkdownDescription: "Raw JSON response body from the API.",
@@ -128,6 +189,26 @@ func (d *IssueDataSource) refreshIssue(ctx context.Context, data *IssueDataSourc
 			data.CreatedByID = types.Int64Value(createdByID)
 		}
 	}
+
+	if createdAt, ok := stringValueFromAny(m["createdAt"]); ok {
+		data.CreatedAt = types.StringValue(createdAt)
+	} else {
+		data.CreatedAt = types.StringNull()
+	}
+	if updatedAt, ok := stringValueFromAny(m["updatedAt"]); ok {
+		data.UpdatedAt = types.StringValue(updatedAt)
+	} else {
+		data.UpdatedAt = types.StringNull()
+	}
+
+	if comments, ok := m["comments"].([]any); ok {
+		data.CommentsCount = types.Int64Value(int64(len(comments)))
+	} else {
+		data.CommentsCount = types.Int64Value(0)
+	}
+
+	data.CreatedBy = parseIssueUserModel(m["createdBy"])
+	data.ModifiedBy = parseIssueUserModel(m["modifiedBy"])
 
 	return nil
 }

@@ -31,13 +31,19 @@ resource "seerr_override_rule" "example" {
 ### Optional
 
 - `genre` (String)
+- `genres` (List of Number)
 - `keywords` (String)
 - `language` (String)
+- `languages` (List of String)
+- `original_language` (String)
 - `profile_id` (Number)
 - `radarr_service_id` (Number)
+- `roles` (String)
 - `root_folder` (String)
 - `sonarr_service_id` (Number)
+- `tag_ids` (List of Number)
 - `tags` (String)
+- `user_roles` (List of String)
 - `users` (String)
 
 ### Read-Only

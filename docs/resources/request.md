@@ -41,8 +41,34 @@ resource "seerr_request" "example" {
 
 ### Read-Only
 
+- `created_at` (String) Date and time the request was created in ISO 8601 format.
 - `id` (String) The ID of this resource.
+- `modified_by` (Attributes) The user who last modified the request. (see [below for nested schema](#nestedatt--modified_by))
+- `requested_by` (Attributes) The user who submitted the request. (see [below for nested schema](#nestedatt--requested_by))
+- `season_count` (Number) The number of seasons requested for TV requests.
 - `seerr_media_id` (Number) The Seerr-internal media ID created or associated with the request.
+- `updated_at` (String) Date and time the request was last updated in ISO 8601 format.
+
+<a id="nestedatt--modified_by"></a>
+### Nested Schema for `modified_by`
+
+Read-Only:
+
+- `avatar` (String) User avatar URL.
+- `display_name` (String) User display name.
+- `email` (String) User email.
+- `id` (Number) User ID.
+
+
+<a id="nestedatt--requested_by"></a>
+### Nested Schema for `requested_by`
+
+Read-Only:
+
+- `avatar` (String) User avatar URL.
+- `display_name` (String) User display name.
+- `email` (String) User email.
+- `id` (Number) User ID.
 
 ## Import
 
