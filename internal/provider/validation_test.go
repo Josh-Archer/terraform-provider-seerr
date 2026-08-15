@@ -68,8 +68,8 @@ func TestDefaultsAndPlanModifiersOnHardenedResources(t *testing.T) {
 	t.Run("plex_settings use_ssl default", func(t *testing.T) {
 		var resp resource.SchemaResponse
 		NewPlexSettingsResource().Schema(context.Background(), resource.SchemaRequest{}, &resp)
-		attr := resp.Schema.Attributes["use_ssl"].(schema.BoolAttribute)
-		if attr.Default == nil {
+		attr, ok := resp.Schema.Attributes["use_ssl"].(schema.BoolAttribute)
+		if !ok || attr.Default == nil {
 			t.Fatal("expected plex_settings.use_ssl to have a default value")
 		}
 	})
@@ -77,8 +77,8 @@ func TestDefaultsAndPlanModifiersOnHardenedResources(t *testing.T) {
 	t.Run("api_key plan modifiers", func(t *testing.T) {
 		var resp resource.SchemaResponse
 		NewAPIKeyResource().Schema(context.Background(), resource.SchemaRequest{}, &resp)
-		attr := resp.Schema.Attributes["api_key"].(schema.StringAttribute)
-		if len(attr.PlanModifiers) == 0 {
+		attr, ok := resp.Schema.Attributes["api_key"].(schema.StringAttribute)
+		if !ok || len(attr.PlanModifiers) == 0 {
 			t.Fatal("expected api_key.api_key to have plan modifiers")
 		}
 	})
@@ -86,8 +86,8 @@ func TestDefaultsAndPlanModifiersOnHardenedResources(t *testing.T) {
 	t.Run("discover_slider plan modifiers", func(t *testing.T) {
 		var resp resource.SchemaResponse
 		NewDiscoverSliderResource().Schema(context.Background(), resource.SchemaRequest{}, &resp)
-		idAttr := resp.Schema.Attributes["id"].(schema.StringAttribute)
-		if len(idAttr.PlanModifiers) == 0 {
+		idAttr, ok := resp.Schema.Attributes["id"].(schema.StringAttribute)
+		if !ok || len(idAttr.PlanModifiers) == 0 {
 			t.Fatal("expected discover_slider.id to have plan modifiers")
 		}
 	})
@@ -95,19 +95,19 @@ func TestDefaultsAndPlanModifiersOnHardenedResources(t *testing.T) {
 	t.Run("user permissions validator and defaults", func(t *testing.T) {
 		var resp resource.SchemaResponse
 		NewUserResource().Schema(context.Background(), resource.SchemaRequest{}, &resp)
-		permAttr := resp.Schema.Attributes["permissions"].(schema.Int64Attribute)
-		if permAttr.Default == nil {
+		permAttr, ok := resp.Schema.Attributes["permissions"].(schema.Int64Attribute)
+		if !ok || permAttr.Default == nil {
 			t.Fatal("expected user.permissions to have default")
 		}
 		if len(permAttr.Validators) == 0 {
 			t.Fatal("expected user.permissions to have validator")
 		}
-		syncMovies := resp.Schema.Attributes["watchlist_sync_movies"].(schema.BoolAttribute)
-		if syncMovies.Default == nil {
+		syncMovies, ok := resp.Schema.Attributes["watchlist_sync_movies"].(schema.BoolAttribute)
+		if !ok || syncMovies.Default == nil {
 			t.Fatal("expected user.watchlist_sync_movies to have default")
 		}
-		syncTv := resp.Schema.Attributes["watchlist_sync_tv"].(schema.BoolAttribute)
-		if syncTv.Default == nil {
+		syncTv, ok := resp.Schema.Attributes["watchlist_sync_tv"].(schema.BoolAttribute)
+		if !ok || syncTv.Default == nil {
 			t.Fatal("expected user.watchlist_sync_tv to have default")
 		}
 	})
