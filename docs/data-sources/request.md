@@ -27,10 +27,36 @@ data "seerr_request" "example" {
 
 ### Read-Only
 
+- `created_at` (String) Date and time the request was created in ISO 8601 format.
 - `is_4k` (Boolean) Whether the request is for 4K media.
 - `media_id` (Number) The Seerr-internal media ID associated with the request (matches `seerr_requests.media_id`).
 - `media_type` (String) The media type (`movie` or `tv`).
+- `modified_by` (Attributes) The user who last modified the request. (see [below for nested schema](#nestedatt--modified_by))
+- `requested_by` (Attributes) The user who submitted the request. (see [below for nested schema](#nestedatt--requested_by))
 - `response_json` (String) Raw JSON response body from the API.
+- `season_count` (Number) The number of seasons requested for TV requests.
 - `status` (Number) The status of the request (1: Pending, 2: Approved, 3: Declined).
 - `tmdb_id` (Number) The TMDB ID of the media associated with the request.
+- `updated_at` (String) Date and time the request was last updated in ISO 8601 format.
 - `user_id` (Number) The ID of the user who made the request.
+
+<a id="nestedatt--modified_by"></a>
+### Nested Schema for `modified_by`
+
+Read-Only:
+
+- `avatar` (String) User avatar URL.
+- `display_name` (String) User display name.
+- `email` (String) User email.
+- `id` (Number) User ID.
+
+
+<a id="nestedatt--requested_by"></a>
+### Nested Schema for `requested_by`
+
+Read-Only:
+
+- `avatar` (String) User avatar URL.
+- `display_name` (String) User display name.
+- `email` (String) User email.
+- `id` (Number) User ID.

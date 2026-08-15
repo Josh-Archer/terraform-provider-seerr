@@ -29,8 +29,18 @@ func TestIssueDataSourceReadSuccess(t *testing.T) {
 			"id": 12,
 			"issueType": 4,
 			"status": 1,
+			"createdAt": "2026-01-01T00:00:00.000Z",
+			"updatedAt": "2026-01-02T00:00:00.000Z",
+			"comments": [{"id": 1, "message": "hello"}],
 			"media": {"id": 550},
-			"createdBy": {"id": 3}
+			"createdBy": {
+				"id": 3,
+				"displayName": "Author"
+			},
+			"modifiedBy": {
+				"id": 4,
+				"displayName": "Resolver"
+			}
 		}`))
 	}))
 	defer srv.Close()
@@ -59,6 +69,18 @@ func TestIssueDataSourceReadSuccess(t *testing.T) {
 	}
 	if got := data.CreatedByID.ValueInt64(); got != 3 {
 		t.Fatalf("expected created_by_id 3, got %d", got)
+	}
+	if got := data.CreatedAt.ValueString(); got != "2026-01-01T00:00:00.000Z" {
+		t.Fatalf("expected created_at timestamp, got %q", got)
+	}
+	if got := data.CommentsCount.ValueInt64(); got != 1 {
+		t.Fatalf("expected comments_count 1, got %d", got)
+	}
+	if data.CreatedBy.IsNull() || data.CreatedBy.IsUnknown() {
+		t.Fatalf("expected created_by object, got %v", data.CreatedBy)
+	}
+	if data.ModifiedBy.IsNull() || data.ModifiedBy.IsUnknown() {
+		t.Fatalf("expected modified_by object, got %v", data.ModifiedBy)
 	}
 	if data.ResponseJSON.IsNull() || data.ResponseJSON.ValueString() == "" {
 		t.Fatal("expected response_json to be populated")
