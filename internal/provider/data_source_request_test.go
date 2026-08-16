@@ -29,13 +29,22 @@ func TestRequestDataSourceReadSuccess(t *testing.T) {
 			"id": 42,
 			"status": 2,
 			"is4k": true,
+			"createdAt": "2026-01-01T00:00:00.000Z",
+			"updatedAt": "2026-01-02T00:00:00.000Z",
+			"seasons": [{"seasonNumber": 1}],
 			"media": {
 				"id": 7,
 				"mediaType": "movie",
 				"tmdbId": 550
 			},
 			"requestedBy": {
-				"id": 1
+				"id": 1,
+				"email": "user@example.com",
+				"displayName": "User"
+			},
+			"modifiedBy": {
+				"id": 2,
+				"displayName": "Admin"
 			}
 		}`))
 	}))
@@ -71,6 +80,18 @@ func TestRequestDataSourceReadSuccess(t *testing.T) {
 	}
 	if got := data.UserID.ValueInt64(); got != 1 {
 		t.Fatalf("expected user_id 1, got %d", got)
+	}
+	if got := data.CreatedAt.ValueString(); got != "2026-01-01T00:00:00.000Z" {
+		t.Fatalf("expected created_at, got %q", got)
+	}
+	if got := data.SeasonCount.ValueInt64(); got != 1 {
+		t.Fatalf("expected season_count 1, got %d", got)
+	}
+	if data.RequestedBy.IsNull() || data.RequestedBy.IsUnknown() {
+		t.Fatalf("expected requested_by object, got %v", data.RequestedBy)
+	}
+	if data.ModifiedBy.IsNull() || data.ModifiedBy.IsUnknown() {
+		t.Fatalf("expected modified_by object, got %v", data.ModifiedBy)
 	}
 	if data.ResponseJSON.IsNull() || data.ResponseJSON.ValueString() == "" {
 		t.Fatal("expected response_json to be populated")

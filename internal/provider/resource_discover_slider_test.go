@@ -228,3 +228,37 @@ func TestNotificationAgentMissingReturnsTrueFor404(t *testing.T) {
 		t.Fatal("expected notificationAgentMissing to return true for missing agent")
 	}
 }
+
+func TestDiscoverSliderResourceImportState(t *testing.T) {
+	r := &DiscoverSliderResource{}
+	var schemaResp resource.SchemaResponse
+	r.Schema(context.Background(), resource.SchemaRequest{}, &schemaResp)
+
+	state := tfsdk.State{
+		Schema: schemaResp.Schema,
+	}
+	if diags := state.Set(context.Background(), &DiscoverSliderModel{}); diags.HasError() {
+		t.Fatalf("failed to initialize state: %v", diags)
+	}
+
+	req := resource.ImportStateRequest{
+		ID: "settings",
+	}
+	resp := resource.ImportStateResponse{
+		State: state,
+	}
+
+	r.ImportState(context.Background(), req, &resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+	}
+
+	var data DiscoverSliderModel
+	diags := resp.State.Get(context.Background(), &data)
+	if diags.HasError() {
+		t.Fatalf("unexpected diagnostics getting state: %v", diags)
+	}
+	if got := data.ID.ValueString(); got != "settings" {
+		t.Fatalf("expected id %q, got %q", "settings", got)
+	}
+}

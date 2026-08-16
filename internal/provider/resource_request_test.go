@@ -51,15 +51,26 @@ func TestRequestReadPopulatesComputedIDs(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"status": 1,
-			"is4k":   false,
+			"status":    1,
+			"is4k":      false,
+			"createdAt": "2026-01-01T00:00:00.000Z",
+			"updatedAt": "2026-01-02T00:00:00.000Z",
+			"seasons":   []any{map[string]any{"seasonNumber": 1}, map[string]any{"seasonNumber": 2}},
 			"media": map[string]any{
 				"id":        7,
 				"mediaType": "movie",
 				"tmdbId":    550,
 			},
 			"requestedBy": map[string]any{
-				"id": 1,
+				"id":          1,
+				"email":       "user@example.com",
+				"displayName": "User",
+				"avatar":      "https://example.com/avatar.png",
+			},
+			"modifiedBy": map[string]any{
+				"id":          2,
+				"email":       "admin@example.com",
+				"displayName": "Admin",
 			},
 		})
 	}))
@@ -84,6 +95,18 @@ func TestRequestReadPopulatesComputedIDs(t *testing.T) {
 	}
 	if got := data.UserID.ValueInt64(); got != 1 {
 		t.Fatalf("expected user_id 1, got %d", got)
+	}
+	if got := data.CreatedAt.ValueString(); got != "2026-01-01T00:00:00.000Z" {
+		t.Fatalf("expected created_at timestamp, got %q", got)
+	}
+	if got := data.SeasonCount.ValueInt64(); got != 2 {
+		t.Fatalf("expected season_count 2, got %d", got)
+	}
+	if data.RequestedBy.IsNull() || data.RequestedBy.IsUnknown() {
+		t.Fatalf("expected requested_by object, got %v", data.RequestedBy)
+	}
+	if data.ModifiedBy.IsNull() || data.ModifiedBy.IsUnknown() {
+		t.Fatalf("expected modified_by object, got %v", data.ModifiedBy)
 	}
 }
 

@@ -6,12 +6,17 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var _ resource.Resource = &APIKeyResource{}
+var _ resource.ResourceWithImportState = &APIKeyResource{}
 
 type APIKeyResource struct {
 	client *APIClient
@@ -36,10 +41,16 @@ func (r *APIKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				MarkdownDescription: "The current Seerr API key.",
 				Computed:            true,
 				Sensitive:           true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"status_code": schema.Int64Attribute{
 				MarkdownDescription: "HTTP status code.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -156,4 +167,8 @@ func (r *APIKeyResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 func (r *APIKeyResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
 	// Delete does nothing.
+}
+
+func (r *APIKeyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("api_key"), req, resp)
 }

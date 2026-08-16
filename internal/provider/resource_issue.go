@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -23,11 +24,16 @@ type IssueResource struct {
 }
 
 type IssueModel struct {
-	ID        types.String `tfsdk:"id"`
-	IssueType types.Int64  `tfsdk:"issue_type"`
-	Message   types.String `tfsdk:"message"`
-	MediaID   types.Int64  `tfsdk:"media_id"`
-	Status    types.Int64  `tfsdk:"status"`
+	ID            types.String `tfsdk:"id"`
+	IssueType     types.Int64  `tfsdk:"issue_type"`
+	Message       types.String `tfsdk:"message"`
+	MediaID       types.Int64  `tfsdk:"media_id"`
+	Status        types.Int64  `tfsdk:"status"`
+	CreatedAt     types.String `tfsdk:"created_at"`
+	UpdatedAt     types.String `tfsdk:"updated_at"`
+	CommentsCount types.Int64  `tfsdk:"comments_count"`
+	CreatedBy     types.Object `tfsdk:"created_by"`
+	ModifiedBy    types.Object `tfsdk:"modified_by"`
 }
 
 func NewIssueResource() resource.Resource {
@@ -73,6 +79,62 @@ func (r *IssueResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				MarkdownDescription: "The status of the issue (1: Open, 2: Resolved).",
 				Optional:            true,
 				Computed:            true,
+			},
+			"created_at": schema.StringAttribute{
+				MarkdownDescription: "Date and time the issue was created in ISO 8601 format.",
+				Computed:            true,
+			},
+			"updated_at": schema.StringAttribute{
+				MarkdownDescription: "Date and time the issue was last updated in ISO 8601 format.",
+				Computed:            true,
+			},
+			"comments_count": schema.Int64Attribute{
+				MarkdownDescription: "The number of comments on this issue.",
+				Computed:            true,
+			},
+			"created_by": schema.SingleNestedAttribute{
+				MarkdownDescription: "The user who created the issue.",
+				Computed:            true,
+				Attributes: map[string]schema.Attribute{
+					"id": schema.Int64Attribute{
+						MarkdownDescription: "User ID.",
+						Computed:            true,
+					},
+					"email": schema.StringAttribute{
+						MarkdownDescription: "User email.",
+						Computed:            true,
+					},
+					"display_name": schema.StringAttribute{
+						MarkdownDescription: "User display name.",
+						Computed:            true,
+					},
+					"avatar": schema.StringAttribute{
+						MarkdownDescription: "User avatar URL.",
+						Computed:            true,
+					},
+				},
+			},
+			"modified_by": schema.SingleNestedAttribute{
+				MarkdownDescription: "The user who last modified the issue.",
+				Computed:            true,
+				Attributes: map[string]schema.Attribute{
+					"id": schema.Int64Attribute{
+						MarkdownDescription: "User ID.",
+						Computed:            true,
+					},
+					"email": schema.StringAttribute{
+						MarkdownDescription: "User email.",
+						Computed:            true,
+					},
+					"display_name": schema.StringAttribute{
+						MarkdownDescription: "User display name.",
+						Computed:            true,
+					},
+					"avatar": schema.StringAttribute{
+						MarkdownDescription: "User avatar URL.",
+						Computed:            true,
+					},
+				},
 			},
 		},
 	}
@@ -157,6 +219,45 @@ func (r *IssueResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
+var issueUserAttrTypes = map[string]attr.Type{
+	"id":           types.Int64Type,
+	"email":        types.StringType,
+	"display_name": types.StringType,
+	"avatar":       types.StringType,
+}
+
+func parseIssueUserObject(v any) types.Object {
+	m, ok := v.(map[string]any)
+	if !ok || m == nil {
+		return types.ObjectNull(issueUserAttrTypes)
+	}
+	id := types.Int64Null()
+	if idVal, ok := int64ValueFromAny(m["id"]); ok {
+		id = types.Int64Value(idVal)
+	}
+	email := types.StringNull()
+	if emailVal, ok := stringValueFromAny(m["email"]); ok {
+		email = types.StringValue(emailVal)
+	}
+	displayName := types.StringNull()
+	if dn, ok := stringValueFromAny(m["displayName"]); ok {
+		displayName = types.StringValue(dn)
+	} else if un, ok := stringValueFromAny(m["username"]); ok {
+		displayName = types.StringValue(un)
+	}
+	avatar := types.StringNull()
+	if av, ok := stringValueFromAny(m["avatar"]); ok {
+		avatar = types.StringValue(av)
+	}
+	obj, _ := types.ObjectValue(issueUserAttrTypes, map[string]attr.Value{
+		"id":           id,
+		"email":        email,
+		"display_name": displayName,
+		"avatar":       avatar,
+	})
+	return obj
+}
+
 func (r *IssueResource) readIssue(ctx context.Context, issueID string, data *IssueModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -190,6 +291,26 @@ func (r *IssueResource) readIssue(ctx context.Context, issueID string, data *Iss
 			data.MediaID = types.Int64Value(int64(mediaID))
 		}
 	}
+
+	if createdAt, ok := stringValueFromAny(m["createdAt"]); ok {
+		data.CreatedAt = types.StringValue(createdAt)
+	} else {
+		data.CreatedAt = types.StringNull()
+	}
+	if updatedAt, ok := stringValueFromAny(m["updatedAt"]); ok {
+		data.UpdatedAt = types.StringValue(updatedAt)
+	} else {
+		data.UpdatedAt = types.StringNull()
+	}
+
+	if comments, ok := m["comments"].([]any); ok {
+		data.CommentsCount = types.Int64Value(int64(len(comments)))
+	} else {
+		data.CommentsCount = types.Int64Value(0)
+	}
+
+	data.CreatedBy = parseIssueUserObject(m["createdBy"])
+	data.ModifiedBy = parseIssueUserObject(m["modifiedBy"])
 
 	return diags
 }

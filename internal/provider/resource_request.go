@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -43,6 +44,11 @@ type RequestModel struct {
 	Status                    types.Int64  `tfsdk:"status"`
 	StatusWaitTimeoutSeconds  types.Int64  `tfsdk:"status_wait_timeout_seconds"`
 	StatusWaitIntervalSeconds types.Int64  `tfsdk:"status_wait_interval_seconds"`
+	CreatedAt                 types.String `tfsdk:"created_at"`
+	UpdatedAt                 types.String `tfsdk:"updated_at"`
+	SeasonCount               types.Int64  `tfsdk:"season_count"`
+	RequestedBy               types.Object `tfsdk:"requested_by"`
+	ModifiedBy                types.Object `tfsdk:"modified_by"`
 }
 
 func NewRequestResource() resource.Resource {
@@ -145,6 +151,62 @@ func (r *RequestResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Default:             int64default.StaticInt64(2),
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
+				},
+			},
+			"created_at": schema.StringAttribute{
+				MarkdownDescription: "Date and time the request was created in ISO 8601 format.",
+				Computed:            true,
+			},
+			"updated_at": schema.StringAttribute{
+				MarkdownDescription: "Date and time the request was last updated in ISO 8601 format.",
+				Computed:            true,
+			},
+			"season_count": schema.Int64Attribute{
+				MarkdownDescription: "The number of seasons requested for TV requests.",
+				Computed:            true,
+			},
+			"requested_by": schema.SingleNestedAttribute{
+				MarkdownDescription: "The user who submitted the request.",
+				Computed:            true,
+				Attributes: map[string]schema.Attribute{
+					"id": schema.Int64Attribute{
+						MarkdownDescription: "User ID.",
+						Computed:            true,
+					},
+					"email": schema.StringAttribute{
+						MarkdownDescription: "User email.",
+						Computed:            true,
+					},
+					"display_name": schema.StringAttribute{
+						MarkdownDescription: "User display name.",
+						Computed:            true,
+					},
+					"avatar": schema.StringAttribute{
+						MarkdownDescription: "User avatar URL.",
+						Computed:            true,
+					},
+				},
+			},
+			"modified_by": schema.SingleNestedAttribute{
+				MarkdownDescription: "The user who last modified the request.",
+				Computed:            true,
+				Attributes: map[string]schema.Attribute{
+					"id": schema.Int64Attribute{
+						MarkdownDescription: "User ID.",
+						Computed:            true,
+					},
+					"email": schema.StringAttribute{
+						MarkdownDescription: "User email.",
+						Computed:            true,
+					},
+					"display_name": schema.StringAttribute{
+						MarkdownDescription: "User display name.",
+						Computed:            true,
+					},
+					"avatar": schema.StringAttribute{
+						MarkdownDescription: "User avatar URL.",
+						Computed:            true,
+					},
 				},
 			},
 		},
@@ -257,6 +319,45 @@ func (r *RequestResource) Read(ctx context.Context, req resource.ReadRequest, re
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
+var requestUserAttrTypes = map[string]attr.Type{
+	"id":           types.Int64Type,
+	"email":        types.StringType,
+	"display_name": types.StringType,
+	"avatar":       types.StringType,
+}
+
+func parseRequestUserObject(v any) types.Object {
+	m, ok := v.(map[string]any)
+	if !ok || m == nil {
+		return types.ObjectNull(requestUserAttrTypes)
+	}
+	id := types.Int64Null()
+	if idVal, ok := int64ValueFromAny(m["id"]); ok {
+		id = types.Int64Value(idVal)
+	}
+	email := types.StringNull()
+	if emailVal, ok := stringValueFromAny(m["email"]); ok {
+		email = types.StringValue(emailVal)
+	}
+	displayName := types.StringNull()
+	if dn, ok := stringValueFromAny(m["displayName"]); ok {
+		displayName = types.StringValue(dn)
+	} else if un, ok := stringValueFromAny(m["username"]); ok {
+		displayName = types.StringValue(un)
+	}
+	avatar := types.StringNull()
+	if av, ok := stringValueFromAny(m["avatar"]); ok {
+		avatar = types.StringValue(av)
+	}
+	obj, _ := types.ObjectValue(requestUserAttrTypes, map[string]attr.Value{
+		"id":           id,
+		"email":        email,
+		"display_name": displayName,
+		"avatar":       avatar,
+	})
+	return obj
+}
+
 func (r *RequestResource) readRequest(ctx context.Context, requestID string, data *RequestModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -304,6 +405,26 @@ func (r *RequestResource) readRequest(ctx context.Context, requestID string, dat
 			data.UserID = types.Int64Value(int64(userId))
 		}
 	}
+
+	if createdAt, ok := stringValueFromAny(m["createdAt"]); ok {
+		data.CreatedAt = types.StringValue(createdAt)
+	} else {
+		data.CreatedAt = types.StringNull()
+	}
+	if updatedAt, ok := stringValueFromAny(m["updatedAt"]); ok {
+		data.UpdatedAt = types.StringValue(updatedAt)
+	} else {
+		data.UpdatedAt = types.StringNull()
+	}
+
+	if seasons, ok := m["seasons"].([]any); ok {
+		data.SeasonCount = types.Int64Value(int64(len(seasons)))
+	} else {
+		data.SeasonCount = types.Int64Value(0)
+	}
+
+	data.RequestedBy = parseRequestUserObject(m["requestedBy"])
+	data.ModifiedBy = parseRequestUserObject(m["modifiedBy"])
 
 	return diags
 }

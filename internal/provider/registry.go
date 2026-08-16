@@ -54,6 +54,8 @@ var RegisteredResources = []func() resource.Resource{
 	NewNotificationAgentTestResource,
 	NewUserNotificationSettingsResource,
 	NewWatchlistResource,
+	NewRequestApprovalResource,
+	NewIssueCommentResource,
 }
 
 var RegisteredDataSources = []func() datasource.DataSource{
@@ -118,4 +120,7 @@ var RegisteredDataSources = []func() datasource.DataSource{
 	NewPlexUsersDataSource,
 	NewJellyfinUsersDataSource,
 	NewWatchlistDataSource,
+	NewGenresDataSource,
+	NewLanguagesDataSource,
+	NewRegionsDataSource,
 }

@@ -35,7 +35,33 @@ resource "seerr_issue" "example" {
 
 ### Read-Only
 
+- `comments_count` (Number) The number of comments on this issue.
+- `created_at` (String) Date and time the issue was created in ISO 8601 format.
+- `created_by` (Attributes) The user who created the issue. (see [below for nested schema](#nestedatt--created_by))
 - `id` (String) The ID of this resource.
+- `modified_by` (Attributes) The user who last modified the issue. (see [below for nested schema](#nestedatt--modified_by))
+- `updated_at` (String) Date and time the issue was last updated in ISO 8601 format.
+
+<a id="nestedatt--created_by"></a>
+### Nested Schema for `created_by`
+
+Read-Only:
+
+- `avatar` (String) User avatar URL.
+- `display_name` (String) User display name.
+- `email` (String) User email.
+- `id` (Number) User ID.
+
+
+<a id="nestedatt--modified_by"></a>
+### Nested Schema for `modified_by`
+
+Read-Only:
+
+- `avatar` (String) User avatar URL.
+- `display_name` (String) User display name.
+- `email` (String) User email.
+- `id` (Number) User ID.
 
 ## Import
 

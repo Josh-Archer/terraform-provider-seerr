@@ -27,6 +27,7 @@ var (
 	optionalComputedString  = resourceAttributeContract{kind: "string", optional: true, computed: true}
 	optionalComputedInt64   = resourceAttributeContract{kind: "int64", optional: true, computed: true}
 	optionalComputedBool    = resourceAttributeContract{kind: "bool", optional: true, computed: true}
+	optionalComputedList    = resourceAttributeContract{kind: "list", optional: true, computed: true}
 	computedString          = resourceAttributeContract{kind: "string", computed: true}
 	computedInt64           = resourceAttributeContract{kind: "int64", computed: true}
 )
@@ -104,6 +105,8 @@ func resourceAttributeKind(attribute schema.Attribute) string {
 		return "bool"
 	case schema.Int64Attribute:
 		return "int64"
+	case schema.ListAttribute:
+		return "list"
 	case schema.MapAttribute:
 		return "map"
 	case schema.StringAttribute:
