@@ -120,7 +120,6 @@ func (d *SonarrLanguageProfilesDataSource) Read(ctx context.Context, req datasou
 		useSSL,
 		baseURL,
 		data.APIKey.ValueString(),
-		defaultRequestTimeout,
 		"/api/v3/languageprofile",
 	)
 	if err != nil {

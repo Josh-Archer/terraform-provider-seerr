@@ -20,7 +20,7 @@ func TestSonarrRootFoldersDataSourceRead(t *testing.T) {
 			t.Errorf("expected api key test-key")
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`[
+		_, _ = w.Write([]byte(`[
 			{"id": 1, "path": "/tv", "accessible": true, "freeSpace": 123456789},
 			{"id": 2, "path": "/anime", "accessible": false, "freeSpace": 987654321}
 		]`))

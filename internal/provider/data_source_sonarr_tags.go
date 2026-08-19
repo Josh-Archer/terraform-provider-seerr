@@ -120,7 +120,6 @@ func (d *SonarrTagsDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		useSSL,
 		baseURL,
 		data.APIKey.ValueString(),
-		defaultRequestTimeout,
 		"/api/v3/tag",
 	)
 	if err != nil {

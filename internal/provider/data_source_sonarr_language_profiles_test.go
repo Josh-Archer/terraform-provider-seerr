@@ -17,7 +17,7 @@ func TestSonarrLanguageProfilesDataSourceRead(t *testing.T) {
 			t.Errorf("expected path /api/v3/languageprofile, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`[
+		_, _ = w.Write([]byte(`[
 			{"id": 1, "name": "English"},
 			{"id": 2, "name": "Any"}
 		]`))

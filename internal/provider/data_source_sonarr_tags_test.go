@@ -17,7 +17,7 @@ func TestSonarrTagsDataSourceRead(t *testing.T) {
 			t.Errorf("expected path /api/v3/tag, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`[
+		_, _ = w.Write([]byte(`[
 			{"id": 1, "label": "anime"},
 			{"id": 2, "label": "english"}
 		]`))

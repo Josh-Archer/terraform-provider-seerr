@@ -304,7 +304,7 @@ func fetchArrProfiles(ctx context.Context, rawURL, hostname string, port int64, 
 	return profiles, profilesURL, nil
 }
 
-func fetchArrEndpoint(ctx context.Context, rawURL, hostname string, port int64, useSSL bool, baseURL, apiKey string, timeout time.Duration, apiPath string) ([]map[string]any, error) {
+func fetchArrEndpoint(ctx context.Context, rawURL, hostname string, port int64, useSSL bool, baseURL, apiKey, apiPath string) ([]map[string]any, error) {
 	base, err := buildArrBaseURL(rawURL, hostname, port, useSSL, baseURL)
 	if err != nil {
 		return nil, err
@@ -317,7 +317,7 @@ func fetchArrEndpoint(ctx context.Context, rawURL, hostname string, port int64, 
 	}
 	req.Header.Set("X-Api-Key", apiKey)
 
-	client := &http.Client{Timeout: normalizeRequestTimeout(timeout)}
+	client := &http.Client{Timeout: defaultRequestTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

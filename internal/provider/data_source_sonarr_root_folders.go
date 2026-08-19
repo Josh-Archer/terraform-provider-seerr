@@ -130,7 +130,6 @@ func (d *SonarrRootFoldersDataSource) Read(ctx context.Context, req datasource.R
 		useSSL,
 		baseURL,
 		data.APIKey.ValueString(),
-		defaultRequestTimeout,
 		"/api/v3/rootfolder",
 	)
 	if err != nil {
