@@ -562,7 +562,7 @@ func testPaginationClient(t *testing.T, rawURL string) *APIClient {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout)
+	return NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0)
 }
 
 func intFromAny(v any) int {

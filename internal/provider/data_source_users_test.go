@@ -20,6 +20,17 @@ data "seerr_users" "all" {}
 					resource.TestCheckResourceAttrSet("data.seerr_users.all", "users.#"),
 				),
 			},
+			{
+				Config: `
+data "seerr_users" "filtered" {
+  filter_user_type = 1
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.seerr_users.filtered", "id"),
+					resource.TestCheckResourceAttrSet("data.seerr_users.filtered", "users.#"),
+				),
+			},
 		},
 	})
 }

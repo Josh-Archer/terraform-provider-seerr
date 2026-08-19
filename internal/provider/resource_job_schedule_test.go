@@ -27,7 +27,7 @@ func TestJobScheduleRefreshSetsPreviousScheduleOnFirstRead(t *testing.T) {
 	}
 
 	resource := &JobScheduleResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := JobScheduleModel{
 		ID:    types.StringValue("plex-sync"),
@@ -66,7 +66,7 @@ func TestRestorePreviousSchedulePostsOriginalValue(t *testing.T) {
 	}
 
 	resource := &JobScheduleResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := JobScheduleModel{
 		JobID:            types.StringValue("plex-sync"),

@@ -38,7 +38,7 @@ func TestTautulliSettingsDataSourceRead(t *testing.T) {
 	}
 
 	d := &TautulliSettingsDataSource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 
 	res, err := d.client.Request(context.Background(), "GET", "/api/v1/settings/tautulli", "", nil)

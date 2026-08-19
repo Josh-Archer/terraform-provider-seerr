@@ -36,7 +36,7 @@ func TestNotificationAgentsDataSourceReadsPerAgentEndpoints(t *testing.T) {
 	}
 
 	d := &NotificationAgentsDataSource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	agents, err := d.readNotificationAgentSummaries(context.Background())
 	if err != nil {

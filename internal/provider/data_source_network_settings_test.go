@@ -51,7 +51,7 @@ func TestNetworkSettingsDataSourceRead(t *testing.T) {
 	}
 
 	d := &NetworkSettingsDataSource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 
 	var data NetworkSettingsModel

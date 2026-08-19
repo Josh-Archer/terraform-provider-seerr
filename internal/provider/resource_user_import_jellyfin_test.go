@@ -28,7 +28,7 @@ func TestJellyfinUserImportPerformImport(t *testing.T) {
 	u, err := url.Parse(mockServer.URL)
 	require.NoError(t, err)
 
-	client := NewClient(u, "test-api-key", "test-agent", false, defaultRequestTimeout)
+	client := NewClient(u, "test-api-key", "test-agent", false, defaultRequestTimeout, 0, 0)
 	res := &UserImportJellyfinResource{client: client}
 
 	data := UserImportJellyfinModel{}

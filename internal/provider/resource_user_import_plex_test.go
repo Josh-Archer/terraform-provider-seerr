@@ -28,7 +28,7 @@ func TestPlexUserImportPerformImport(t *testing.T) {
 	u, err := url.Parse(mockServer.URL)
 	require.NoError(t, err)
 
-	client := NewClient(u, "test-api-key", "test-agent", false, defaultRequestTimeout)
+	client := NewClient(u, "test-api-key", "test-agent", false, defaultRequestTimeout, 0, 0)
 	res := &UserImportPlexResource{client: client}
 
 	data := UserImportPlexModel{}

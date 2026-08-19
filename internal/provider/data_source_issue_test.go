@@ -51,7 +51,7 @@ func TestIssueDataSourceReadSuccess(t *testing.T) {
 	}
 
 	d := &IssueDataSource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := IssueDataSourceModel{ID: types.StringValue("12")}
 
@@ -105,7 +105,7 @@ func TestIssueDataSourceRead404(t *testing.T) {
 	}
 
 	d := &IssueDataSource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := IssueDataSourceModel{ID: types.StringValue("999")}
 

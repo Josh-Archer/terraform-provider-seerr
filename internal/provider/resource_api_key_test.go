@@ -30,7 +30,7 @@ func TestAPIKeyRegenerateFailure(t *testing.T) {
 	}
 
 	resource := &APIKeyResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 
 	data := APIKeyModel{}

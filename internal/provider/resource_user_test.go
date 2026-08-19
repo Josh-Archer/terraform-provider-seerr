@@ -205,7 +205,7 @@ func TestBuildNotificationSettingsPayloadPreservesExistingRemoteValues(t *testin
 	}
 
 	resource := &UserResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	payload, err := resource.buildNotificationSettingsPayload(context.Background(), "12", &UserNotificationSettingsModel{
 		DiscordID: types.StringValue("discord-user"),
@@ -275,7 +275,7 @@ func TestUserReadMapsQuotaFieldsAndWebpushEnabled(t *testing.T) {
 	}
 
 	resource := &UserResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := UserModel{
 		ID:                   types.StringValue("7"),

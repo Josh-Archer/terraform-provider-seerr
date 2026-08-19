@@ -45,7 +45,7 @@ func TestRequestApprovalApproveEndpoint(t *testing.T) {
 	}
 
 	resource := &RequestApprovalResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 
 	data := RequestApprovalModel{
@@ -88,7 +88,7 @@ func TestRequestApprovalDeclineEndpoint(t *testing.T) {
 	}
 
 	resource := &RequestApprovalResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 
 	data := RequestApprovalModel{
@@ -135,7 +135,7 @@ func TestRequestApprovalRead404MarksStateMissing(t *testing.T) {
 	}
 
 	resource := &RequestApprovalResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 
 	data := RequestApprovalModel{

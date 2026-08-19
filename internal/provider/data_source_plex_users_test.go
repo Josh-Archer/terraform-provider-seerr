@@ -57,7 +57,7 @@ func TestPlexUsersDataSource_Read(t *testing.T) {
 	defer ts.Close()
 
 	u, _ := url.Parse(ts.URL)
-	client := NewClient(u, "test-key", "test-agent", true, defaultRequestTimeout)
+	client := NewClient(u, "test-key", "test-agent", true, defaultRequestTimeout, 0, 0)
 
 	ds := &PlexUsersDataSource{client: client}
 

@@ -18,10 +18,12 @@ import (
 )
 
 type APIClient struct {
-	baseURL   *url.URL
-	userAgent string
-	client    *http.Client
-	transport *authTransport
+	baseURL      *url.URL
+	userAgent    string
+	client       *http.Client
+	transport    *authTransport
+	maxRetries   int
+	retryBackoff time.Duration
 }
 
 type authTransport struct {
@@ -52,12 +54,12 @@ type APIResponse struct {
 }
 
 const (
-	maxRequestAttempts = 3
-	requestRetryDelay  = 250 * time.Millisecond
-	maxRetryAfter      = 60 * time.Second
+	defaultMaxRetries   = 3
+	defaultRetryBackoff = 1 * time.Second
+	maxRetryAfter       = 60 * time.Second
 )
 
-func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bool, timeout time.Duration) *APIClient {
+func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bool, timeout time.Duration, maxRetries int, retryBackoff time.Duration) *APIClient {
 	baseTransport, ok := http.DefaultTransport.(*http.Transport)
 	if !ok {
 		baseTransport = &http.Transport{}
@@ -74,10 +76,19 @@ func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bo
 		next:      transport,
 	}
 
+	if maxRetries <= 0 {
+		maxRetries = defaultMaxRetries
+	}
+	if retryBackoff <= 0 {
+		retryBackoff = defaultRetryBackoff
+	}
+
 	return &APIClient{
-		baseURL:   baseURL,
-		userAgent: userAgent,
-		transport: at,
+		baseURL:      baseURL,
+		userAgent:    userAgent,
+		transport:    at,
+		maxRetries:   maxRetries,
+		retryBackoff: retryBackoff,
 		client: &http.Client{
 			Transport: at,
 			Timeout:   normalizeRequestTimeout(timeout),
@@ -118,9 +129,14 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 	bodyBytes := []byte(body)
 	var lastErr error
 
-	for attempt := 1; attempt <= maxRequestAttempts; attempt++ {
+	maxAttempts := c.maxRetries + 1
+	if maxAttempts < 1 {
+		maxAttempts = 1
+	}
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		if attempt > 1 {
-			if err := sleepWithContext(ctx, requestRetryDelay*time.Duration(attempt-1)); err != nil {
+			if err := sleepWithContext(ctx, c.retryBackoff*time.Duration(attempt-1)); err != nil {
 				if lastErr != nil {
 					return nil, lastErr
 				}
@@ -148,7 +164,7 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 		res, err := c.client.Do(req)
 		if err != nil {
 			lastErr = err
-			if retryableMethod && attempt < maxRequestAttempts && isRetryableRequestError(ctx, err) {
+			if retryableMethod && attempt < maxAttempts && isRetryableRequestError(ctx, err) {
 				continue
 			}
 			return nil, err
@@ -160,8 +176,8 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 			return nil, err
 		}
 
-		if retryableMethod && attempt < maxRequestAttempts && isRetryableStatusCode(res.StatusCode) {
-			delay := retryDelayForResponse(res, attempt)
+		if retryableMethod && attempt < maxAttempts && isRetryableStatusCode(res.StatusCode) {
+			delay := retryDelayForResponse(res, attempt, c.retryBackoff)
 			if err := sleepWithContext(ctx, delay); err != nil {
 				return &APIResponse{StatusCode: res.StatusCode, Body: respBody, Headers: res.Header}, nil
 			}
@@ -196,7 +212,7 @@ func isRetryableStatusCode(code int) bool {
 	}
 }
 
-func retryDelayForResponse(res *http.Response, attempt int) time.Duration {
+func retryDelayForResponse(res *http.Response, attempt int, backoff time.Duration) time.Duration {
 	if res.StatusCode == http.StatusTooManyRequests {
 		if delay := parseRetryAfter(res.Header.Get("Retry-After")); delay > 0 {
 			if delay > maxRetryAfter {
@@ -205,7 +221,7 @@ func retryDelayForResponse(res *http.Response, attempt int) time.Duration {
 			return delay
 		}
 	}
-	return requestRetryDelay * time.Duration(attempt)
+	return backoff * time.Duration(attempt)
 }
 
 func parseRetryAfter(value string) time.Duration {

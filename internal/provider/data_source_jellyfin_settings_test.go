@@ -38,7 +38,7 @@ func TestJellyfinSettingsDataSourceRead(t *testing.T) {
 	require.NoError(t, err)
 
 	d := &JellyfinSettingsDataSource{
-		client: NewClient(baseURL, "test-api-key", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "test-api-key", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 
 	res, err := d.client.Request(context.Background(), "GET", "/api/v1/settings/jellyfin", "", nil)

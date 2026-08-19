@@ -304,6 +304,42 @@ func fetchArrProfiles(ctx context.Context, rawURL, hostname string, port int64, 
 	return profiles, profilesURL, nil
 }
 
+func fetchArrEndpoint(ctx context.Context, rawURL, hostname string, port int64, useSSL bool, baseURL, apiKey, apiPath string) ([]map[string]any, error) {
+	base, err := buildArrBaseURL(rawURL, hostname, port, useSSL, baseURL)
+	if err != nil {
+		return nil, err
+	}
+	endpointURL := strings.TrimRight(base, "/") + apiPath
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpointURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-Api-Key", apiKey)
+
+	client := &http.Client{Timeout: defaultRequestTimeout}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("status %d from %s", resp.StatusCode, endpointURL)
+	}
+
+	var data []map[string]any
+	if err := json.Unmarshal(body, &data); err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 type arrProfileMatch struct {
 	ID   int64
 	Name string

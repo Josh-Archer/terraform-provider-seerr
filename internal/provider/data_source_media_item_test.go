@@ -42,7 +42,7 @@ func TestMediaItemDataSourceReadSuccess(t *testing.T) {
 	}
 
 	d := &MediaItemDataSource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := MediaItemDataSourceModel{ID: types.StringValue("7")}
 
@@ -87,7 +87,7 @@ func TestMediaItemDataSourceRead404(t *testing.T) {
 	}
 
 	d := &MediaItemDataSource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := MediaItemDataSourceModel{ID: types.StringValue("999")}
 

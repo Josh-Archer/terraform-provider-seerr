@@ -29,7 +29,7 @@ func TestRequestReadMarksStateMissingOn404(t *testing.T) {
 	}
 
 	resource := &RequestResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := RequestModel{ID: types.StringValue("42")}
 
@@ -82,7 +82,7 @@ func TestRequestReadPopulatesComputedIDs(t *testing.T) {
 	}
 
 	resource := &RequestResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := RequestModel{ID: types.StringValue("42")}
 
@@ -127,7 +127,7 @@ func TestRequestApplyStatusPostsWorkflowEndpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	resource := &RequestResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	if err := resource.applyRequestStatus(context.Background(), "42", types.Int64Value(2)); err != nil {
 		t.Fatal(err)
@@ -175,7 +175,7 @@ func TestWaitForRequestStatusSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout)
+	client := NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0)
 
 	sleepCalls := 0
 	err = waitForRequestStatus(
@@ -213,7 +213,7 @@ func TestWaitForRequestStatusTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout)
+	client := NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0)
 
 	// No-op sleep: deadline uses wall clock with a short timeout so the test stays fast.
 	err = waitForRequestStatus(
@@ -247,7 +247,7 @@ func TestWaitForRequestStatusContextCancel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout)
+	client := NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	// Cancel during the first sleep so the helper must honor ctx.Done().

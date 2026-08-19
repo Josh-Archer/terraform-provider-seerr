@@ -26,7 +26,7 @@ func TestIssueReadMarksStateMissingOn404(t *testing.T) {
 	}
 
 	resource := &IssueResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := IssueModel{ID: types.StringValue("11")}
 
@@ -74,7 +74,7 @@ func TestIssueReadPopulatesMediaID(t *testing.T) {
 	}
 
 	resource := &IssueResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := IssueModel{ID: types.StringValue("12")}
 
@@ -117,7 +117,7 @@ func TestApplyIssueStatusResolvedHTTP400(t *testing.T) {
 		t.Fatal(err)
 	}
 	resource := &IssueResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 
 	err = resource.applyIssueStatus(context.Background(), "11", 2)
@@ -154,7 +154,7 @@ func TestApplyIssueStatusResolvedHTTP500(t *testing.T) {
 		t.Fatal(err)
 	}
 	resource := &IssueResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 
 	err = resource.applyIssueStatus(context.Background(), "42", 2)
@@ -186,7 +186,7 @@ func TestApplyIssueStatusOpenHTTPError(t *testing.T) {
 		t.Fatal(err)
 	}
 	resource := &IssueResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 
 	err = resource.applyIssueStatus(context.Background(), "7", 1)
@@ -218,7 +218,7 @@ func TestApplyIssueStatusOK(t *testing.T) {
 		t.Fatal(err)
 	}
 	resource := &IssueResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	if err := resource.applyIssueStatus(context.Background(), "9", 2); err != nil {
 		t.Fatal(err)

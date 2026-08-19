@@ -41,8 +41,10 @@ variable "plex_token" {
 ### Optional
 
 - `api_key` (String, Sensitive) Seerr API key used as the `X-Api-Key` header. Required if `plex_token` is not set. Can also be configured via the `SEERR_API_KEY` environment variable.
-- `insecure_skip_verify` (Boolean) Skip TLS certificate verification.
+- `insecure_skip_verify` (Boolean) Skip TLS certificate verification. Can also be configured via the `SEERR_INSECURE_SKIP_VERIFY` environment variable.
+- `max_retries` (Number) Maximum number of retry attempts for failed API requests (retryable errors and HTTP 429/502/503/504). Defaults to 3. Can also be configured via the `SEERR_MAX_RETRIES` environment variable.
 - `plex_token` (String, Sensitive) Plex token used to authenticate with Seerr and fetch the API key. This token must belong to a server admin user in order to be used for the setup flow. Required if `api_key` is not set. Can also be configured via the `SEERR_PLEX_TOKEN` environment variable.
 - `request_timeout_seconds` (Number) HTTP request timeout in seconds for Seerr API calls and ARR quality-profile lookups. Defaults to 120 seconds. Can also be configured via the `SEERR_REQUEST_TIMEOUT_SECONDS` environment variable.
+- `retry_backoff_seconds` (Number) Base backoff delay in seconds between retries. Each subsequent retry multiplies this by the attempt number. Defaults to 1 second. Can also be configured via the `SEERR_RETRY_BACKOFF_SECONDS` environment variable.
 - `url` (String) Base URL for Seerr, for example `https://seerr.example.com`. Can also be configured via the `SEERR_URL` environment variable.
 - `user_agent` (String) Optional custom User-Agent header.

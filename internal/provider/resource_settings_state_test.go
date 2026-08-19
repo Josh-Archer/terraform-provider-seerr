@@ -127,7 +127,7 @@ func TestUserSettingsPermissionsReadPermissionsPreservesMissingValues(t *testing
 	}
 
 	r := &UserSettingsPermissionsResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := UserSettingsPermissionsModel{
 		UserID:              types.Int64Value(7),

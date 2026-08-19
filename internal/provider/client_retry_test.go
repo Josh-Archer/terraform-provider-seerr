@@ -35,7 +35,7 @@ func TestClientRetries429WithRetryAfterSeconds(t *testing.T) {
 	baseURL, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second)
+	client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second, 0, 0)
 	resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -62,7 +62,7 @@ func TestClientRetries429WithRetryAfterHTTPDate(t *testing.T) {
 	baseURL, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second)
+	client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second, 0, 0)
 	resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -89,7 +89,7 @@ func TestClientRetries502503504(t *testing.T) {
 			baseURL, err := url.Parse(srv.URL)
 			require.NoError(t, err)
 
-			client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second)
+			client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second, 0, 0)
 			resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
 			require.NoError(t, err)
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -112,7 +112,7 @@ func TestClientDoesNotRetry429ForPostMethod(t *testing.T) {
 	baseURL, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second)
+	client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second, 0, 0)
 	resp, err := client.Request(context.Background(), "POST", "/api/v1/request", `{"x":1}`, nil)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusTooManyRequests, resp.StatusCode)
@@ -123,7 +123,9 @@ func TestClientRetryAfterCappedAt60Seconds(t *testing.T) {
 	var attempts int32
 
 	client := &APIClient{
-		baseURL: mustParseURL(t, "http://example.com"),
+		baseURL:      mustParseURL(t, "http://example.com"),
+		maxRetries:   defaultMaxRetries,
+		retryBackoff: defaultRetryBackoff,
 		client: &http.Client{
 			Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 				n := atomic.AddInt32(&attempts, 1)

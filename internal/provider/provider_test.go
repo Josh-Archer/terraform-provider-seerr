@@ -42,7 +42,7 @@ func testAccClient() (*APIClient, error) {
 		return nil, err
 	}
 
-	return NewClient(parsed, apiKey, "terraform-provider-seerr-sweeper", false, 0), nil
+	return NewClient(parsed, apiKey, "terraform-provider-seerr-sweeper", false, 0, 0, 0), nil
 }
 
 func TestProviderMetadata(t *testing.T) {
@@ -131,7 +131,7 @@ func TestBootstrapAPIKeyFromPlexToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	client := NewClient(baseURL, "", "test-agent", false, defaultRequestTimeout)
+	client := NewClient(baseURL, "", "test-agent", false, defaultRequestTimeout, 0, 0)
 	apiKey, err := bootstrapAPIKeyFromPlexToken(context.Background(), client, "plex-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -162,5 +162,119 @@ func TestResolveProviderConfigValuesPrefersConfigValues(t *testing.T) {
 	}
 	if config.RequestTimeout != 90*time.Second {
 		t.Fatalf("expected 90s timeout, got %s", config.RequestTimeout)
+	}
+}
+
+func TestResolveProviderConfigValuesInsecureSkipVerifyEnvVar(t *testing.T) {
+	config, err := resolveProviderConfigValues(SeerrProviderModel{}, "test", func(key string) string {
+		if key == "SEERR_INSECURE_SKIP_VERIFY" {
+			return "true"
+		}
+		return ""
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !config.Insecure {
+		t.Fatal("expected insecure=true from env var")
+	}
+}
+
+func TestResolveProviderConfigValuesInsecureSkipVerifyConfigOverridesEnv(t *testing.T) {
+	config, err := resolveProviderConfigValues(SeerrProviderModel{
+		InsecureSkipVerify: types.BoolValue(false),
+	}, "test", func(key string) string {
+		if key == "SEERR_INSECURE_SKIP_VERIFY" {
+			return "true"
+		}
+		return ""
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if config.Insecure {
+		t.Fatal("expected config false to override env true")
+	}
+}
+
+func TestResolveProviderConfigValuesRetryEnvVars(t *testing.T) {
+	config, err := resolveProviderConfigValues(SeerrProviderModel{}, "test", func(key string) string {
+		switch key {
+		case "SEERR_MAX_RETRIES":
+			return "5"
+		case "SEERR_RETRY_BACKOFF_SECONDS":
+			return "3"
+		default:
+			return ""
+		}
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if config.MaxRetries != 5 {
+		t.Fatalf("expected max_retries=5, got %d", config.MaxRetries)
+	}
+	if config.RetryBackoff != 3*time.Second {
+		t.Fatalf("expected retry_backoff=3s, got %s", config.RetryBackoff)
+	}
+}
+
+func TestResolveProviderConfigValuesRetryConfigOverridesEnv(t *testing.T) {
+	config, err := resolveProviderConfigValues(SeerrProviderModel{
+		MaxRetries:   types.Int64Value(10),
+		RetryBackoff: types.Int64Value(5),
+	}, "test", func(key string) string {
+		switch key {
+		case "SEERR_MAX_RETRIES":
+			return "2"
+		case "SEERR_RETRY_BACKOFF_SECONDS":
+			return "1"
+		default:
+			return ""
+		}
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if config.MaxRetries != 10 {
+		t.Fatalf("expected max_retries=10 from config, got %d", config.MaxRetries)
+	}
+	if config.RetryBackoff != 5*time.Second {
+		t.Fatalf("expected retry_backoff=5s from config, got %s", config.RetryBackoff)
+	}
+}
+
+func TestResolveProviderConfigValuesRetryDefaults(t *testing.T) {
+	config, err := resolveProviderConfigValues(SeerrProviderModel{}, "test", func(string) string { return "" })
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if config.MaxRetries != defaultMaxRetries {
+		t.Fatalf("expected default max_retries=%d, got %d", defaultMaxRetries, config.MaxRetries)
+	}
+	if config.RetryBackoff != defaultRetryBackoff {
+		t.Fatalf("expected default retry_backoff=%s, got %s", defaultRetryBackoff, config.RetryBackoff)
+	}
+}
+
+func TestResolveProviderConfigValuesRejectsInvalidRetryEnvVars(t *testing.T) {
+	_, err := resolveProviderConfigValues(SeerrProviderModel{}, "test", func(key string) string {
+		if key == "SEERR_MAX_RETRIES" {
+			return "invalid"
+		}
+		return ""
+	})
+	if err == nil {
+		t.Fatal("expected invalid max_retries error")
+	}
+
+	_, err = resolveProviderConfigValues(SeerrProviderModel{}, "test", func(key string) string {
+		if key == "SEERR_RETRY_BACKOFF_SECONDS" {
+			return "invalid"
+		}
+		return ""
+	})
+	if err == nil {
+		t.Fatal("expected invalid retry_backoff error")
 	}
 }

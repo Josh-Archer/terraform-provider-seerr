@@ -174,7 +174,7 @@ func TestMainSettingsRefreshStateReadsCanonicalValues(t *testing.T) {
 	}
 
 	r := &MainSettingsResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := MainSettingsModel{
 		AppTitle:        types.StringValue("stale"),
