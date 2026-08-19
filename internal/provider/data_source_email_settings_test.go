@@ -70,7 +70,7 @@ func TestEmailSettingsDataSourceRead(t *testing.T) {
 	baseURL, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	client := NewClient(baseURL, "test-api-key", "test-agent", false, defaultRequestTimeout)
+	client := NewClient(baseURL, "test-api-key", "test-agent", false, defaultRequestTimeout, 0, 0)
 
 	ds, ok := newNotificationClientDataSourceWithTypeName("email", "email_settings").(*NotificationClientDataSource)
 	require.True(t, ok)

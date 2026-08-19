@@ -31,7 +31,7 @@ func TestBuildNetworkPayloadPreservesExistingNestedValues(t *testing.T) {
 	}
 
 	resource := &NetworkSettingsResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	payload, err := resource.buildNetworkPayload(context.Background(), &NetworkSettingsModel{
 		ForceIPv4First:      types.BoolValue(true),
@@ -96,7 +96,7 @@ func TestRefreshNetworkSettingsLeavesOmittedNestedBlocksUnmanaged(t *testing.T) 
 	}
 
 	resource := &NetworkSettingsResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := &NetworkSettingsModel{
 		TrustProxy:          types.BoolValue(true),
@@ -153,7 +153,7 @@ func TestRefreshNetworkSettingsPreservesManagedNestedBlocksAndProxyPassword(t *t
 	}
 
 	resource := &NetworkSettingsResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := &NetworkSettingsModel{
 		Proxy: &NetworkProxyModel{

@@ -32,7 +32,7 @@ func TestClientRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second)
+	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second, 0, 0)
 	resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -126,7 +126,7 @@ func TestClientRequestPreservesBaseSubpath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second)
+	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second, 0, 0)
 	resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -150,7 +150,7 @@ func TestClientRequestAllowsSameOriginAbsoluteURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second)
+	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second, 0, 0)
 	if _, err := client.Request(context.Background(), "GET", srv.URL+"/api/v1/settings/main", "", nil); err != nil {
 		t.Fatalf("expected same-origin absolute URL to succeed: %v", err)
 	}
@@ -161,7 +161,7 @@ func TestClientRequestRejectsCrossOriginAbsoluteURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second)
+	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second, 0, 0)
 	_, err = client.Request(context.Background(), "GET", "https://example.invalid/api/v1/settings/main", "", nil)
 	if err == nil {
 		t.Fatal("expected cross-origin absolute URL to be rejected")
@@ -189,7 +189,7 @@ func TestClientSessionCookieRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	client := NewClient(base, "", "test-agent", false, 45*time.Second)
+	client := NewClient(base, "", "test-agent", false, 45*time.Second, 0, 0)
 	client.SetSessionCookie("connect.sid=session-xyz")
 	resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
 	if err != nil {
@@ -206,7 +206,7 @@ func TestClientTimeoutUsesConfiguredValue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	client := NewClient(base, "abc123", "test-agent", false, 90*time.Second)
+	client := NewClient(base, "abc123", "test-agent", false, 90*time.Second, 0, 0)
 	if got, want := client.Timeout(), 90*time.Second; got != want {
 		t.Fatalf("expected timeout %s, got %s", want, got)
 	}
@@ -223,7 +223,9 @@ func TestClientRequestRetriesConnectionRefusedAndEventuallySucceeds(t *testing.T
 	attempts := 0
 
 	client := &APIClient{
-		baseURL: mustParseURL(t, "http://example.com"),
+		baseURL:      mustParseURL(t, "http://example.com"),
+		maxRetries:   defaultMaxRetries,
+		retryBackoff: defaultRetryBackoff,
 		transport: &authTransport{
 			apiKey: "abc123",
 		},
@@ -265,7 +267,9 @@ func TestClientRequestRetriesConnectionRefusedAndEventuallySucceeds(t *testing.T
 func TestClientRequestDoesNotRetryUnsafeMethods(t *testing.T) {
 	attempts := 0
 	client := &APIClient{
-		baseURL: mustParseURL(t, "http://example.com"),
+		baseURL:      mustParseURL(t, "http://example.com"),
+		maxRetries:   defaultMaxRetries,
+		retryBackoff: defaultRetryBackoff,
 		client: &http.Client{
 			Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 				attempts++

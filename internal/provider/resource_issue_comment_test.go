@@ -51,7 +51,7 @@ func TestIssueCommentReadPopulatesFields(t *testing.T) {
 	}
 
 	resource := &IssueCommentResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 
 	data := IssueCommentModel{
@@ -92,7 +92,7 @@ func TestIssueCommentReadMarksMissingOn404(t *testing.T) {
 	}
 
 	resource := &IssueCommentResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 
 	data := IssueCommentModel{

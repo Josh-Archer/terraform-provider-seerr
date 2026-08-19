@@ -123,4 +123,9 @@ var RegisteredDataSources = []func() datasource.DataSource{
 	NewGenresDataSource,
 	NewLanguagesDataSource,
 	NewRegionsDataSource,
+	NewSonarrRootFoldersDataSource,
+	NewRadarrRootFoldersDataSource,
+	NewSonarrTagsDataSource,
+	NewRadarrTagsDataSource,
+	NewSonarrLanguageProfilesDataSource,
 }

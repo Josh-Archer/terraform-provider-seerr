@@ -35,7 +35,7 @@ func TestJobRunExecuteAndCancel(t *testing.T) {
 	baseURL, err := url.Parse(mockServer.URL)
 	require.NoError(t, err)
 
-	client := NewClient(baseURL, "test-api-key", "test-agent", false, defaultRequestTimeout)
+	client := NewClient(baseURL, "test-api-key", "test-agent", false, defaultRequestTimeout, 0, 0)
 	res := &JobRunResource{client: client}
 
 	ctx := context.Background()

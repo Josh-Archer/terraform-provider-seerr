@@ -31,7 +31,7 @@ func TestNotificationDeleteConvergedWhenDisabled(t *testing.T) {
 	}
 
 	r := &NotificationClientResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 		agent:  "pushover",
 	}
 
@@ -67,7 +67,7 @@ func TestNotificationDeleteIgnoresTimeoutWhenAgentAlreadyDisabled(t *testing.T) 
 	}
 
 	r := &NotificationClientResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, 25*time.Millisecond),
+		client: NewClient(baseURL, "abc123", "test-agent", false, 25*time.Millisecond, 0, 0),
 		agent:  "pushover",
 	}
 

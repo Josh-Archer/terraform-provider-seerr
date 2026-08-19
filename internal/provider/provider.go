@@ -33,6 +33,8 @@ type providerConfigValues struct {
 	UserAgent      string
 	Insecure       bool
 	RequestTimeout time.Duration
+	MaxRetries     int
+	RetryBackoff   time.Duration
 }
 
 type SeerrProviderModel struct {
@@ -42,6 +44,8 @@ type SeerrProviderModel struct {
 	InsecureSkipVerify types.Bool   `tfsdk:"insecure_skip_verify"`
 	UserAgent          types.String `tfsdk:"user_agent"`
 	RequestTimeout     types.Int64  `tfsdk:"request_timeout_seconds"`
+	MaxRetries         types.Int64  `tfsdk:"max_retries"`
+	RetryBackoff       types.Int64  `tfsdk:"retry_backoff_seconds"`
 }
 
 func (p *SeerrProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -74,7 +78,7 @@ func (p *SeerrProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 				Sensitive:           true,
 			},
 			"insecure_skip_verify": schema.BoolAttribute{
-				MarkdownDescription: "Skip TLS certificate verification.",
+				MarkdownDescription: "Skip TLS certificate verification. Can also be configured via the `SEERR_INSECURE_SKIP_VERIFY` environment variable.",
 				Optional:            true,
 			},
 			"user_agent": schema.StringAttribute{
@@ -83,6 +87,14 @@ func (p *SeerrProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 			},
 			"request_timeout_seconds": schema.Int64Attribute{
 				MarkdownDescription: "HTTP request timeout in seconds for Seerr API calls and ARR quality-profile lookups. Defaults to 120 seconds. Can also be configured via the `SEERR_REQUEST_TIMEOUT_SECONDS` environment variable.",
+				Optional:            true,
+			},
+			"max_retries": schema.Int64Attribute{
+				MarkdownDescription: "Maximum number of retry attempts for failed API requests (retryable errors and HTTP 429/502/503/504). Defaults to 3. Can also be configured via the `SEERR_MAX_RETRIES` environment variable.",
+				Optional:            true,
+			},
+			"retry_backoff_seconds": schema.Int64Attribute{
+				MarkdownDescription: "Base backoff delay in seconds between retries. Each subsequent retry multiplies this by the attempt number. Defaults to 1 second. Can also be configured via the `SEERR_RETRY_BACKOFF_SECONDS` environment variable.",
 				Optional:            true,
 			},
 		},
@@ -122,7 +134,7 @@ func (p *SeerrProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		return
 	}
 
-	client := NewClient(parsed, config.APIKey, config.UserAgent, config.Insecure, config.RequestTimeout)
+	client := NewClient(parsed, config.APIKey, config.UserAgent, config.Insecure, config.RequestTimeout, config.MaxRetries, config.RetryBackoff)
 
 	// Authentication flow logic
 	if config.APIKey == "" && config.PlexToken != "" {
@@ -166,6 +178,8 @@ func resolveProviderConfigValues(data SeerrProviderModel, version string, getenv
 		PlexToken:      strings.TrimSpace(data.PlexToken.ValueString()),
 		UserAgent:      "terraform-provider-seerr/" + version,
 		RequestTimeout: defaultRequestTimeout,
+		MaxRetries:     defaultMaxRetries,
+		RetryBackoff:   defaultRetryBackoff,
 	}
 
 	if config.BaseURL == "" {
@@ -182,18 +196,46 @@ func resolveProviderConfigValues(data SeerrProviderModel, version string, getenv
 	}
 	if !data.InsecureSkipVerify.IsNull() && !data.InsecureSkipVerify.IsUnknown() {
 		config.Insecure = data.InsecureSkipVerify.ValueBool()
+	} else if envInsecure := strings.TrimSpace(getenv("SEERR_INSECURE_SKIP_VERIFY")); envInsecure != "" {
+		if parsed, err := strconv.ParseBool(envInsecure); err == nil {
+			config.Insecure = parsed
+		}
 	}
 	if !data.RequestTimeout.IsNull() && !data.RequestTimeout.IsUnknown() {
 		config.RequestTimeout = normalizeRequestTimeout(time.Duration(data.RequestTimeout.ValueInt64()) * time.Second)
-		return config, nil
-	}
-
-	if rawTimeout := strings.TrimSpace(getenv("SEERR_REQUEST_TIMEOUT_SECONDS")); rawTimeout != "" {
+	} else if rawTimeout := strings.TrimSpace(getenv("SEERR_REQUEST_TIMEOUT_SECONDS")); rawTimeout != "" {
 		timeoutSeconds, err := strconv.ParseInt(rawTimeout, 10, 64)
 		if err != nil {
 			return providerConfigValues{}, fmt.Errorf("cannot parse SEERR_REQUEST_TIMEOUT_SECONDS %q: %s", rawTimeout, err)
 		}
 		config.RequestTimeout = normalizeRequestTimeout(time.Duration(timeoutSeconds) * time.Second)
+	}
+
+	// Retry configuration
+	if !data.MaxRetries.IsNull() && !data.MaxRetries.IsUnknown() {
+		config.MaxRetries = int(data.MaxRetries.ValueInt64())
+	} else if rawRetries := strings.TrimSpace(getenv("SEERR_MAX_RETRIES")); rawRetries != "" {
+		retries, err := strconv.ParseInt(rawRetries, 10, 64)
+		if err != nil {
+			return providerConfigValues{}, fmt.Errorf("cannot parse SEERR_MAX_RETRIES %q: %s", rawRetries, err)
+		}
+		config.MaxRetries = int(retries)
+	}
+	if config.MaxRetries < 0 {
+		config.MaxRetries = 0
+	}
+
+	if !data.RetryBackoff.IsNull() && !data.RetryBackoff.IsUnknown() {
+		config.RetryBackoff = time.Duration(data.RetryBackoff.ValueInt64()) * time.Second
+	} else if rawBackoff := strings.TrimSpace(getenv("SEERR_RETRY_BACKOFF_SECONDS")); rawBackoff != "" {
+		backoffSeconds, err := strconv.ParseInt(rawBackoff, 10, 64)
+		if err != nil {
+			return providerConfigValues{}, fmt.Errorf("cannot parse SEERR_RETRY_BACKOFF_SECONDS %q: %s", rawBackoff, err)
+		}
+		config.RetryBackoff = time.Duration(backoffSeconds) * time.Second
+	}
+	if config.RetryBackoff <= 0 {
+		config.RetryBackoff = defaultRetryBackoff
 	}
 
 	return config, nil

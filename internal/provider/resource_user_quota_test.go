@@ -139,7 +139,7 @@ func TestUserQuotaApplyQuotaPreservesNonQuotaFields(t *testing.T) {
 	_ = srv
 
 	baseURL, _ := url.Parse(srvCapture.URL)
-	res := &UserQuotaResource{client: NewClient(baseURL, "tok", "agent", false, defaultRequestTimeout)}
+	res := &UserQuotaResource{client: NewClient(baseURL, "tok", "agent", false, defaultRequestTimeout, 0, 0)}
 
 	data := &UserQuotaModel{
 		UserID:          types.Int64Value(5),

@@ -105,7 +105,7 @@ func TestDiscoverSliderReadNormalizesBlankOptionalFields(t *testing.T) {
 	}
 
 	r := &DiscoverSliderResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := DiscoverSliderModel{}
 
@@ -161,7 +161,7 @@ func TestDiscoverSliderReadKeepsEmptyManagedList(t *testing.T) {
 			}
 
 			r := &DiscoverSliderResource{
-				client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+				client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 			}
 
 			var schemaResp resource.SchemaResponse
@@ -221,7 +221,7 @@ func TestNotificationAgentMissingReturnsTrueFor404(t *testing.T) {
 
 	resource := &NotificationClientResource{
 		agent:  "pushover",
-		client: NewClient(base, "abc123", "test-agent", false, 5*time.Second),
+		client: NewClient(base, "abc123", "test-agent", false, 5*time.Second, 0, 0),
 	}
 
 	if !resource.notificationAgentMissing(context.Background()) {

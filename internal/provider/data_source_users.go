@@ -20,12 +20,16 @@ type UserSummaryModel struct {
 	ID          types.String `tfsdk:"id"`
 	Email       types.String `tfsdk:"email"`
 	Username    types.String `tfsdk:"username"`
+	DisplayName types.String `tfsdk:"display_name"`
+	UserType    types.Int64  `tfsdk:"user_type"`
 	Permissions types.Int64  `tfsdk:"permissions"`
 }
 
 type UsersDataSourceModel struct {
-	ID    types.String       `tfsdk:"id"`
-	Users []UserSummaryModel `tfsdk:"users"`
+	ID                   types.String       `tfsdk:"id"`
+	FilterUserType       types.Int64        `tfsdk:"filter_user_type"`
+	FilterPermissionsHas types.Int64        `tfsdk:"filter_permissions_has"`
+	Users                []UserSummaryModel `tfsdk:"users"`
 }
 
 func NewUsersDataSource() datasource.DataSource {
@@ -44,6 +48,14 @@ func (d *UsersDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 				MarkdownDescription: "Placeholder ID for the data source.",
 				Computed:            true,
 			},
+			"filter_user_type": schema.Int64Attribute{
+				MarkdownDescription: "Filter by user type (1=Plex, 2=Local, 3=Jellyfin, 4=Emby).",
+				Optional:            true,
+			},
+			"filter_permissions_has": schema.Int64Attribute{
+				MarkdownDescription: "Filter to users who have ALL bits in this bitmask set.",
+				Optional:            true,
+			},
 			"users": schema.ListNestedAttribute{
 				MarkdownDescription: "List of users.",
 				Computed:            true,
@@ -59,6 +71,14 @@ func (d *UsersDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 						},
 						"username": schema.StringAttribute{
 							MarkdownDescription: "The username of the user.",
+							Computed:            true,
+						},
+						"display_name": schema.StringAttribute{
+							MarkdownDescription: "The display name of the user.",
+							Computed:            true,
+						},
+						"user_type": schema.Int64Attribute{
+							MarkdownDescription: "The type of user (1=Plex, 2=Local, 3=Jellyfin, 4=Emby).",
 							Computed:            true,
 						},
 						"permissions": schema.Int64Attribute{
@@ -84,17 +104,49 @@ func (d *UsersDataSource) Configure(_ context.Context, req datasource.ConfigureR
 	d.client = c
 }
 
-func (d *UsersDataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *UsersDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data UsersDataSourceModel
 
-	users, err := d.fetchUsers(ctx)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	allUsers, err := d.fetchUsers(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
 
-	data.Users = users
-	data.ID = types.StringValue("all_users")
+	var filteredUsers []UserSummaryModel
+	for _, u := range allUsers {
+		if !data.FilterUserType.IsNull() && !data.FilterUserType.IsUnknown() {
+			if u.UserType.ValueInt64() != data.FilterUserType.ValueInt64() {
+				continue
+			}
+		}
+		if !data.FilterPermissionsHas.IsNull() && !data.FilterPermissionsHas.IsUnknown() {
+			filterPerm := data.FilterPermissionsHas.ValueInt64()
+			if (u.Permissions.ValueInt64() & filterPerm) != filterPerm {
+				continue
+			}
+		}
+		filteredUsers = append(filteredUsers, u)
+	}
+
+	if filteredUsers == nil {
+		filteredUsers = []UserSummaryModel{}
+	}
+	data.Users = filteredUsers
+
+	idStr := "all_users"
+	if !data.FilterUserType.IsNull() {
+		idStr += fmt.Sprintf("_type_%d", data.FilterUserType.ValueInt64())
+	}
+	if !data.FilterPermissionsHas.IsNull() {
+		idStr += fmt.Sprintf("_perms_%d", data.FilterPermissionsHas.ValueInt64())
+	}
+	data.ID = types.StringValue(idStr)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -123,6 +175,12 @@ func (d *UsersDataSource) fetchUsers(ctx context.Context) ([]UserSummaryModel, e
 		}
 		if un, ok := u["username"].(string); ok {
 			user.Username = types.StringValue(un)
+		}
+		if dn, ok := u["displayName"].(string); ok {
+			user.DisplayName = types.StringValue(dn)
+		}
+		if ut, ok := u["userType"].(float64); ok {
+			user.UserType = types.Int64Value(int64(ut))
 		}
 		if p, ok := u["permissions"].(float64); ok {
 			user.Permissions = types.Int64Value(int64(p))

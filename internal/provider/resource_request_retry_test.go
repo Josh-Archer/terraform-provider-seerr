@@ -27,7 +27,7 @@ func TestRequestRetryPostsRetryEndpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	resource := &RequestRetryResource{
-		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout),
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
 	}
 	data := RequestRetryModel{RequestID: types.Int64Value(42)}
 	if err := resource.retryRequest(context.Background(), &data); err != nil {
