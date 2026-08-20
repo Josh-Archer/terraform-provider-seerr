@@ -24,7 +24,7 @@ variable "is_4k" {
 
 variable "status" {
   type    = number
-  default = 1
+  default = 2
 }
 
 resource "seerr_request" "test" {

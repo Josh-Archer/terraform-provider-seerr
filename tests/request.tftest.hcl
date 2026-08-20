@@ -5,7 +5,7 @@ run "request_lifecycle" {
     media_type = "movie"
     media_id   = 550
     is_4k      = false
-    status     = 1
+    status     = 2
   }
 
   module {
