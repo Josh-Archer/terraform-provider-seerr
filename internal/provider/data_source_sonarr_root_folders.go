@@ -137,7 +137,7 @@ func (d *SonarrRootFoldersDataSource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	var rootFolders []SonarrRootFolderModel
+	rootFolders := make([]SonarrRootFolderModel, 0, len(results))
 	for _, item := range results {
 		folder := SonarrRootFolderModel{}
 		if id, ok := int64ValueFromAny(item["id"]); ok {

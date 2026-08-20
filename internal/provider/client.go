@@ -76,7 +76,7 @@ func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bo
 		next:      transport,
 	}
 
-	if maxRetries <= 0 {
+	if maxRetries < 0 {
 		maxRetries = defaultMaxRetries
 	}
 	if retryBackoff <= 0 {
