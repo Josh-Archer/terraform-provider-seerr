@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "package-name": "terraform-provider-seerr",
+      "release-type": "terraform-module",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": false,
+      "extra-files": [
+        "examples/modules/full-media-stack/README.md"
+      ]
+    }
+  },
+  "changelog-sections": [
+    {"type": "feat", "section": "Features", "hidden": false},
+    {"type": "fix", "section": "Bug Fixes", "hidden": false},
+    {"type": "perf", "section": "Performance Improvements", "hidden": false},
+    {"type": "revert", "section": "Reverts", "hidden": false},
+    {"type": "docs", "section": "Documentation", "hidden": false},
+    {"type": "style", "section": "Styles", "hidden": true},
+    {"type": "chore", "section": "Miscellaneous Chores", "hidden": false},
+    {"type": "refactor", "section": "Code Refactoring", "hidden": false},
+    {"type": "test", "section": "Tests", "hidden": false},
+    {"type": "build", "section": "Build System", "hidden": false},
+    {"type": "ci", "section": "Continuous Integration", "hidden": false}
+  ]
+}
