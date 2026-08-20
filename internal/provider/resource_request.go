@@ -500,7 +500,7 @@ func (r *RequestResource) ImportState(ctx context.Context, req resource.ImportSt
 }
 
 func (r *RequestResource) applyRequestStatus(ctx context.Context, requestID string, status types.Int64) error {
-	if status.IsNull() || status.IsUnknown() {
+	if status.IsNull() || status.IsUnknown() || status.ValueInt64() == 1 {
 		return nil
 	}
 	statusPath, ok := requestStatusPath(status.ValueInt64())

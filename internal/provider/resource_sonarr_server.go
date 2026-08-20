@@ -148,10 +148,12 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 			},
 			"tags": schema.ListAttribute{
 				Optional:    true,
+				Computed:    true,
 				ElementType: types.Int64Type,
 			},
 			"anime_tags": schema.ListAttribute{
 				Optional:    true,
+				Computed:    true,
 				ElementType: types.Int64Type,
 			},
 			"is_4k": schema.BoolAttribute{

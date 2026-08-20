@@ -153,6 +153,7 @@ func (r *RadarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 			},
 			"tags": schema.ListAttribute{
 				Optional:    true,
+				Computed:    true,
 				ElementType: types.Int64Type,
 			},
 			"is_default": schema.BoolAttribute{
