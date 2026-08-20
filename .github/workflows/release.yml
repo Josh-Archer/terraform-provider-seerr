@@ -134,3 +134,33 @@ jobs:
           args: release --clean --skip=sign --config ../release-control/.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify OpenTofu registry indexing
+        if: steps.release_state.outputs.published != 'true'
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          echo "Checking OpenTofu registry indexing for version ${version}..."
+          registry_url="https://registry.opentofu.org/v1/providers/${GITHUB_REPOSITORY}/versions"
+          deadline=$((SECONDS + 600))
+          indexed="false"
+
+          while (( SECONDS < deadline )); do
+            if response="$(curl -fsSL "${registry_url}" 2>/dev/null)"; then
+              if echo "${response}" | grep -q "\"version\": \"${version}\""; then
+                echo "OpenTofu registry has successfully indexed ${RELEASE_TAG}."
+                indexed="true"
+                break
+              fi
+            fi
+            echo "Waiting for OpenTofu registry indexer to pick up ${RELEASE_TAG}... (${SECONDS}s elapsed)"
+            sleep 15
+          done
+
+          if [[ "${indexed}" != "true" ]]; then
+            echo "Note: OpenTofu registry indexing is still pending for ${RELEASE_TAG}. It usually finishes within 10-15 minutes."
+          fi
+
