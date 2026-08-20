@@ -567,6 +567,64 @@ func readRadarrStateFromJSON(ctx context.Context, item []byte, data *RadarrServe
 		}
 	}
 
+	if data.Name.IsUnknown() {
+		data.Name = types.StringNull()
+	}
+	if data.Hostname.IsUnknown() {
+		data.Hostname = types.StringNull()
+	}
+	if data.Port.IsUnknown() {
+		data.Port = types.Int64Null()
+	}
+	if data.UseSSL.IsUnknown() {
+		data.UseSSL = types.BoolNull()
+	}
+	if data.BaseURL.IsUnknown() {
+		data.BaseURL = types.StringNull()
+	}
+	if data.QualityProfileID.IsUnknown() {
+		data.QualityProfileID = types.Int64Null()
+	}
+	if data.QualityProfileName.IsUnknown() {
+		data.QualityProfileName = types.StringNull()
+	}
+	if data.ActiveDirectory.IsUnknown() {
+		data.ActiveDirectory = types.StringNull()
+	}
+	if data.Is4K.IsUnknown() {
+		data.Is4K = types.BoolNull()
+	}
+	if data.MinimumAvailability.IsUnknown() {
+		data.MinimumAvailability = types.StringNull()
+	}
+	if data.IsDefault.IsUnknown() {
+		data.IsDefault = types.BoolNull()
+	}
+	if data.EnableScan.IsUnknown() {
+		data.EnableScan = types.BoolNull()
+	}
+	if data.SyncEnabled.IsUnknown() {
+		data.SyncEnabled = types.BoolNull()
+	}
+	if data.PreventSearch.IsUnknown() {
+		data.PreventSearch = types.BoolNull()
+	}
+	if data.TagRequestsWithUser.IsUnknown() {
+		data.TagRequestsWithUser = types.BoolNull()
+	}
+	if data.APIKey.IsUnknown() {
+		data.APIKey = types.StringNull()
+	}
+	if data.Tags.IsUnknown() {
+		data.Tags = types.ListNull(types.Int64Type)
+	}
+	if data.URL.IsUnknown() {
+		data.URL = types.StringNull()
+	}
+	if data.ExtraPayloadJSON.IsUnknown() {
+		data.ExtraPayloadJSON = types.StringNull()
+	}
+
 	return nil
 }
 

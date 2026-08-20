@@ -14,7 +14,7 @@ variable "media_type" {
 
 variable "media_id" {
   type    = number
-  default = 438631
+  default = 550
 }
 
 variable "is_4k" {

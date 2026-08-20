@@ -3,7 +3,7 @@ run "request_lifecycle" {
 
   variables {
     media_type = "movie"
-    media_id   = 438631
+    media_id   = 550
     is_4k      = false
     status     = 1
   }
