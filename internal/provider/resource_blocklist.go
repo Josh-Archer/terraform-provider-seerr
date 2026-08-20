@@ -178,6 +178,12 @@ func (r *BlocklistResource) Delete(ctx context.Context, req resource.DeleteReque
 		resp.Diagnostics.AddError("Delete Failed", err.Error())
 		return
 	}
+	if res.StatusCode == 400 {
+		fallbackEndpoint := fmt.Sprintf("/api/v1/blocklist/%d", data.TMDBID.ValueInt64())
+		if fallbackRes, fallbackErr := r.client.Request(ctx, "DELETE", fallbackEndpoint, "", nil); fallbackErr == nil {
+			res = fallbackRes
+		}
+	}
 	if res.StatusCode != 404 && res.StatusCode != 204 && !StatusIsOK(res.StatusCode) {
 		resp.Diagnostics.AddError("Delete Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 	}
@@ -254,6 +260,12 @@ func (r *BlocklistResource) refreshBlocklist(ctx context.Context, data *Blocklis
 	res, err := r.client.Request(ctx, "GET", endpoint, "", nil)
 	if err != nil {
 		return err
+	}
+	if res.StatusCode == 400 {
+		fallbackEndpoint := fmt.Sprintf("/api/v1/blocklist/%d", data.TMDBID.ValueInt64())
+		if fallbackRes, fallbackErr := r.client.Request(ctx, "GET", fallbackEndpoint, "", nil); fallbackErr == nil {
+			res = fallbackRes
+		}
 	}
 	if !StatusIsOK(res.StatusCode) {
 		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))

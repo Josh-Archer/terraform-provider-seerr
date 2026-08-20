@@ -1,4 +1,4 @@
-﻿data "seerr_permission_set" "power_user" {
+data "seerr_permission_set" "power_user" {
   request       = true
   request_movie = true
   request_tv    = true

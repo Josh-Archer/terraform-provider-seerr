@@ -47,8 +47,8 @@ variable "sonarr_api_key" {
 }
 
 variable "sonarr_use_ssl" {
-  type        = bool
-  default     = false
+  type    = bool
+  default = false
 }
 
 variable "sonarr_quality_profile_id" {
@@ -83,8 +83,8 @@ variable "radarr_api_key" {
 }
 
 variable "radarr_use_ssl" {
-  type        = bool
-  default     = false
+  type    = bool
+  default = false
 }
 
 variable "radarr_quality_profile_id" {
@@ -101,8 +101,8 @@ variable "radarr_root_folder" {
 
 # Notification Settings
 variable "enable_discord_notifications" {
-  type        = bool
-  default     = true
+  type    = bool
+  default = true
 }
 
 variable "discord_webhook_url" {
@@ -113,18 +113,18 @@ variable "discord_webhook_url" {
 }
 
 variable "enable_pushover_notifications" {
-  type        = bool
-  default     = false
+  type    = bool
+  default = false
 }
 
 variable "pushover_user_key" {
-  type        = string
-  default     = ""
-  sensitive   = true
+  type      = string
+  default   = ""
+  sensitive = true
 }
 
 variable "pushover_app_token" {
-  type        = string
-  default     = ""
-  sensitive   = true
+  type      = string
+  default   = ""
+  sensitive = true
 }

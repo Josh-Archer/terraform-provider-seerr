@@ -163,11 +163,18 @@ if [[ -n "${SEERR_TOFU_FILTERS:-}" ]]; then
 elif [[ "${test_suite}" == "stable" ]]; then
   stable_filters=(
     "api_objects.tftest.hcl"
+    "backup_settings.tftest.hcl"
+    "blocklist.tftest.hcl"
     "current_user.tftest.hcl"
     "data_sources.tftest.hcl"
     "discover.tftest.hcl"
     "discover_slider_data_source.tftest.hcl"
     "features.tftest.hcl"
+    "issue.tftest.hcl"
+    "job_schedule.tftest.hcl"
+    "override_rule.tftest.hcl"
+    "request.tftest.hcl"
+    "servers.tftest.hcl"
     "settings.tftest.hcl"
     "user.tftest.hcl"
     "user_permissions.tftest.hcl"

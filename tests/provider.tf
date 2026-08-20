@@ -17,12 +17,12 @@ variable "api_key" {
 }
 
 variable "username" {
-  type = string
+  type    = string
   default = "ci-admin"
 }
 
 variable "email" {
-  type = string
+  type    = string
   default = "ci-admin@example.invalid"
 }
 

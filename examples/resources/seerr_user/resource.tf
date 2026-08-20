@@ -6,7 +6,7 @@ resource "seerr_user" "example" {
 
   notification_settings {
     email_enabled = true
-    
+
     notification_types {
       email = 1
     }
