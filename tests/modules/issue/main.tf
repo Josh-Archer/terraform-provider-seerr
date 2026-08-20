@@ -19,7 +19,7 @@ variable "message" {
 
 variable "media_id" {
   type    = number
-  default = 1
+  default = null
 }
 
 variable "status" {
@@ -27,10 +27,17 @@ variable "status" {
   default = 1
 }
 
+resource "seerr_request" "media_item" {
+  count      = var.media_id == null ? 1 : 0
+  media_type = "movie"
+  media_id   = 550
+  status     = 2
+}
+
 resource "seerr_issue" "test" {
   issue_type = var.issue_type
   message    = var.message
-  media_id   = var.media_id
+  media_id   = coalesce(var.media_id, try(seerr_request.media_item[0].media_id, null))
   status     = var.status
 }
 
