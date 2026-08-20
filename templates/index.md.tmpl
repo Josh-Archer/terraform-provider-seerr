@@ -1,0 +1,24 @@
+---
+page_title: "Provider: Seerr"
+description: |-
+  OpenTofu and Terraform provider for managing Overseerr and Jellyseerr instances via API.
+---
+
+# Seerr Provider
+
+The `seerr` provider enables you to configure, manage, and automate [Overseerr](https://overseerr.dev) and [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) media request and discovery platforms via Infrastructure as Code with OpenTofu and Terraform.
+
+## Features
+
+- **Full Resource & Data Source Coverage**: Manage application settings, users, media, requests, issues, discovery sliders, override rules, and job schedules.
+- **Typed Notification Integrations**: First-class support for 11 notification agents (Discord, Email, Gotify, LunaSea, Ntfy, Pushbullet, Pushover, Slack, Telegram, Webhook, Webpush) with live test triggers.
+- **Dynamic Servarr Resolvers**: Direct lookups for Radarr and Sonarr quality profiles, root folders, tags, and language profiles.
+- **Media Server Integrations**: Plex, Jellyfin, and Emby settings, library synchronization, and user import workflows.
+- **Granular Permissions & Quotas**: Bitmask permission sets, user request quotas, and watchlist sync management.
+- **Drift Protection & Schema Fidelity**: Double-apply drift protection and generic fallback primitives (`seerr_api_object`, `seerr_api_request`).
+
+## Example Usage
+
+{{tffile "examples/provider/provider.tf"}}
+
+{{ .SchemaMarkdown | trimspace }}

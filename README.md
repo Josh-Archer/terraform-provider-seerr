@@ -1,218 +1,203 @@
-# OpenTofu Provider for Seerr
+# OpenTofu & Terraform Provider for Seerr
 
-`seerr` is a community OpenTofu provider that manages Seerr via its API.
+[![CI](https://github.com/Josh-Archer/terraform-provider-seerr/actions/workflows/test.yml/badge.svg)](https://github.com/Josh-Archer/terraform-provider-seerr/actions/workflows/test.yml)
+[![OpenTofu Registry](https://img.shields.io/badge/OpenTofu-Registry-FF5722?logo=opentofu&logoColor=white)](https://registry.opentofu.org/providers/josh-archer/seerr/latest)
+[![Terraform Registry](https://img.shields.io/badge/Terraform-Registry-844FBA?logo=terraform&logoColor=white)](https://registry.terraform.io/providers/josh-archer/seerr/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-The provider supports two usage styles:
-- Generic API primitives (`seerr_api_object` resource and `seerr_api_request` data source).
-- Typed Seerr primitives for common integrations and settings.
+`seerr` is a feature-complete OpenTofu and Terraform provider for managing [Overseerr](https://overseerr.dev) and [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) instances via their REST APIs as Infrastructure as Code.
 
-## Typed resources
+---
 
-- `seerr_main_settings`
-- `seerr_plex_settings`
-- `seerr_notification_discord`, `seerr_notification_email`, `seerr_notification_gotify`, `seerr_notification_lunasea`, `seerr_notification_ntfy`, `seerr_notification_pushbullet`, `seerr_notification_pushover`, `seerr_notification_slack`, `seerr_notification_telegram`, `seerr_notification_webhook`, `seerr_notification_webpush`
-- `seerr_radarr_server`
-- `seerr_sonarr_server`
-- `seerr_jellyfin_settings`
-- `seerr_emby_settings`
-- `seerr_tautulli_settings`
-- `seerr_network_settings`
-- `seerr_backup_settings`
-- `seerr_job_schedule`
-- `seerr_request`
-- `seerr_issue`
-- `seerr_blocklist`
-- `seerr_override_rule`
-- `seerr_user`
-- `seerr_user_invitation`
-- `seerr_user_permissions`
-- `seerr_user_settings_permissions`
-- `seerr_user_watchlist_settings`
+## Capabilities & Highlights
 
-## Reusable modules
+- **Complete API Coverage**: 50 managed resources and 69 data sources covering 100% of applicable Seerr OpenAPI configuration endpoints (see [OpenAPI Coverage](docs/openapi-coverage.md)).
+- **Typed Notification Integrations**: First-class support for 11 notification agents (Discord, Email, Gotify, LunaSea, Ntfy, Pushbullet, Pushover, Slack, Telegram, Webhook, Webpush) with live test triggers (`seerr_notification_agent_test`).
+- **Dynamic Servarr Resolvers**: Real-time lookups for Radarr & Sonarr quality profiles, root folders, tags, and language profiles (`seerr_radarr_quality_profile`, `seerr_sonarr_quality_profile`, `seerr_radarr_root_folders`, etc.) eliminating hardcoded IDs.
+- **Media Server Integrations**: Plex, Jellyfin, and Emby server configuration, library scan triggers (`seerr_plex_library_sync`, etc.), and batch user import workflows.
+- **Filterable Queries & Bulk Data Sources**: Query and filter requests, media items, issues, user lists, invitations, and background job schedules.
+- **Granular Permissions & Quotas**: Bitmask permission generator (`seerr_permission_set`), user quotas (`seerr_user_quota`), watchlist sync settings, and request override rules.
+- **Drift Protection & Schema Fidelity**: Double-apply drift protection, schema normalization, and generic fallback primitives (`seerr_api_object`, `seerr_api_request`) for arbitrary endpoints.
 
-- `modules/main_settings`
-- `modules/plex_settings`
-- `modules/radarr_server`
-- `modules/sonarr_server`
+---
 
-## Object reference
+## Quick Start
 
-Resources:
-- `seerr_api_key`: regenerate and read the current Seerr API key.
-- `seerr_api_object`: manage arbitrary Seerr endpoints with explicit HTTP methods.
-- `seerr_backup_settings`: manage Seerr backup scheduling and retention settings.
-- `seerr_blocklist`: manage manual Seerr blocklist entries.
-- `seerr_discover_slider`: manage Seerr discover slider configuration.
-- `seerr_emby_settings`: manage Emby integration settings.
-- `seerr_issue`: manage Seerr issue records.
-- `seerr_jellyfin_settings`: manage Jellyfin integration settings.
-- `seerr_job_schedule`: manage Seerr background job schedules.
-- `seerr_main_settings`: manage core Seerr application settings.
-- `seerr_network_settings`: manage Seerr network settings.
-- `seerr_notification_discord`, `seerr_notification_email`, `seerr_notification_gotify`, `seerr_notification_lunasea`, `seerr_notification_ntfy`, `seerr_notification_pushbullet`, `seerr_notification_pushover`, `seerr_notification_slack`, `seerr_notification_telegram`, `seerr_notification_webhook`, `seerr_notification_webpush`: manage typed notification integrations.
-- `seerr_override_rule`: manage request override rules.
-- `seerr_plex_settings`: manage Plex integration settings.
-- `seerr_radarr_server`: manage a Radarr server integration in Seerr.
-- `seerr_request`: manage Seerr media requests.
-- `seerr_sonarr_server`: manage a Sonarr server integration in Seerr.
-- `seerr_tautulli_settings`: manage Tautulli integration settings.
-- `seerr_user`: manage Seerr users plus user-scoped settings and notification preferences.
-- `seerr_user_invitation`: manage pending user invitations.
-- `seerr_user_permissions`: manage a user's Seerr permissions bitmask.
-- `seerr_user_settings_permissions`: manage the per-user settings permissions endpoint.
-- `seerr_user_watchlist_settings`: manage a user's Plex watchlist sync flags.
+### Provider Installation
 
-Data sources:
-- `seerr_api_key`: read the current Seerr API key.
-- `seerr_api_request`: issue an arbitrary read request to the Seerr API.
-- `seerr_backup_settings`: read current backup settings.
-- `seerr_blocklist`: read a blocklist entry by TMDB ID and media type.
-- `seerr_main_settings`: read current main settings.
-- `seerr_current_user`: read the current authenticated Seerr user.
-- `seerr_discover_slider`: read current discover slider settings.
-- `seerr_emby_settings`: read current Emby settings.
-- `seerr_issue`: look up a single issue by ID.
-- `seerr_issues`: read issue lists.
-- `seerr_jellyfin_settings`: read current Jellyfin settings.
-- `seerr_jobs`: read background job status and schedules.
-- `seerr_media`: read media lists.
-- `seerr_media_item`: look up a single media record by ID.
-- `seerr_network_settings`: read current network settings.
-- `seerr_notification_agents`: read the configured notification integrations summary.
-- `seerr_notification_discord`, `seerr_notification_email`, `seerr_notification_gotify`, `seerr_notification_lunasea`, `seerr_notification_ntfy`, `seerr_notification_pushbullet`, `seerr_notification_pushover`, `seerr_notification_slack`, `seerr_notification_telegram`, `seerr_notification_webhook`, `seerr_notification_webpush`: read typed notification integrations.
-- `seerr_override_rule`: read an override rule by ID.
-- `seerr_plex_settings`: read current Plex settings.
-- `seerr_public_settings`: read current public settings.
-- `seerr_radarr_quality_profile`: resolve a Radarr quality profile name to its numeric ID.
-- `seerr_radarr_server`: read a configured Radarr server by Seerr server ID.
-- `seerr_request`: look up a single media request by ID.
-- `seerr_requests`: read request lists.
-- `seerr_service_status`: read Seerr service status.
-- `seerr_sonarr_quality_profile`: resolve a Sonarr quality profile name to its numeric ID.
-- `seerr_sonarr_server`: read a configured Sonarr server by Seerr server ID.
-- `seerr_tautulli_settings`: read current Tautulli settings.
-- `seerr_user`: read a user by ID, username, or email.
-- `seerr_user_invitations`: read pending user invitations.
-- `seerr_user_permissions`: read a user's permissions bitmask.
-- `seerr_users`: read paged user lists.
-- `seerr_user_watchlist_settings`: read a user's watchlist sync settings.
+#### OpenTofu
+```hcl
+terraform {
+  required_providers {
+    seerr = {
+      source  = "registry.opentofu.org/josh-archer/seerr"
+      version = "~> 0.38.0"
+    }
+  }
+}
+```
 
-Each resource and data source has a dedicated page under [`docs/resources`](./docs/resources)
-or [`docs/data-sources`](./docs/data-sources) with at least one example usage block.
+#### Terraform
+```hcl
+terraform {
+  required_providers {
+    seerr = {
+      source  = "josh-archer/seerr"
+      version = "~> 0.38.0"
+    }
+  }
+}
+```
 
-## Requirements
-
-- Go `1.25+`
-- OpenTofu `1.8.x+`
-
-## Provider configuration
+### Provider Configuration
 
 ```hcl
+# Standard setup using an API key
 provider "seerr" {
   url                  = "https://seerr.example.com"
   api_key              = var.seerr_api_key
   insecure_skip_verify = false
 }
+
+# Optional: Initial setup bootstrap using a Plex admin token
+# provider "seerr" {
+#   url        = "https://seerr.example.com"
+#   plex_token = var.plex_token
+# }
 ```
 
-## Cross-provider references (Radarr/Sonarr)
+| Attribute | Type | Default | Environment Variable | Description |
+|---|---|---|---|---|
+| `url` | String | *Required* | `SEERR_URL` | Base URL of Seerr instance (e.g. `https://seerr.example.com`). |
+| `api_key` | String (Sensitive) | Optional* | `SEERR_API_KEY` | Seerr API Key for `X-Api-Key` header authentication. |
+| `plex_token` | String (Sensitive) | Optional* | `SEERR_PLEX_TOKEN` | Plex admin token to bootstrap the initial API key on first run. |
+| `insecure_skip_verify` | Boolean | `false` | `SEERR_INSECURE_SKIP_VERIFY` | Skip TLS certificate verification. |
+| `max_retries` | Number | `3` | `SEERR_MAX_RETRIES` | Max retries for transient errors and rate limits (429/502/503/504). |
+| `retry_backoff_seconds` | Number | `1` | `SEERR_RETRY_BACKOFF_SECONDS` | Base backoff delay in seconds between retries. |
+| `request_timeout_seconds` | Number | `120` | `SEERR_REQUEST_TIMEOUT_SECONDS` | HTTP timeout in seconds for API calls and ARR lookups. |
+| `user_agent` | String | Auto | — | Custom `User-Agent` header. |
 
-You cannot pass another provider "object" directly. Terraform/OpenTofu providers exchange values through normal expression references. That means you pass URL, API key, and other attributes/outputs from Radarr/Sonarr resources or modules.
+*\*Either `api_key` or `plex_token` is required.*
+
+---
+
+## Usage Examples
+
+### 1. Servarr Integrations with Dynamic Resolvers
+
+Automatically resolve quality profile IDs by name directly from Radarr and Sonarr:
 
 ```hcl
-# Example values from other providers/modules.
-# Replace resource names with your actual radarr/sonarr resources.
-data "seerr_radarr_quality_profile" "movies" {
-  url     = radarr_system.this.url
-  api_key = radarr_system.this.api_key
+# Query Radarr for quality profile ID
+data "seerr_radarr_quality_profile" "hd_1080p" {
+  url     = "http://radarr.media.svc.cluster.local:7878"
+  api_key = var.radarr_api_key
   name    = "HD-1080p"
 }
 
 resource "seerr_radarr_server" "movies" {
-  url                    = radarr_system.this.url
-  api_key                = radarr_system.this.api_key
-  quality_profile_id     = data.seerr_radarr_quality_profile.movies.quality_profile_id
+  name                   = "Radarr Movies"
+  hostname               = "radarr.media.svc.cluster.local"
+  port                   = 7878
+  api_key                = var.radarr_api_key
+  use_ssl                = false
+  quality_profile_id     = data.seerr_radarr_quality_profile.hd_1080p.quality_profile_id
   active_directory       = "/media/movies"
+  is_default             = true
   enable_scan            = true
   tag_requests_with_user = true
 }
 
-data "seerr_sonarr_quality_profile" "shows" {
-  url     = sonarr_system.this.url
-  api_key = sonarr_system.this.api_key
+# Query Sonarr for quality profile ID
+data "seerr_sonarr_quality_profile" "hd_1080p" {
+  url     = "http://sonarr.media.svc.cluster.local:8989"
+  api_key = var.sonarr_api_key
   name    = "HD-1080p"
 }
 
-resource "seerr_sonarr_server" "shows" {
-  url                    = sonarr_system.this.url
-  api_key                = sonarr_system.this.api_key
-  quality_profile_id     = data.seerr_sonarr_quality_profile.shows.quality_profile_id
+resource "seerr_sonarr_server" "tv" {
+  name                   = "Sonarr Shows"
+  hostname               = "sonarr.media.svc.cluster.local"
+  port                   = 8989
+  api_key                = var.sonarr_api_key
+  use_ssl                = false
+  quality_profile_id     = data.seerr_sonarr_quality_profile.hd_1080p.quality_profile_id
   active_directory       = "/media/tv"
   active_anime_directory = "/media/anime"
+  is_default             = true
   enable_scan            = true
   tag_requests_with_user = true
 }
 ```
 
-### Quality profile resolution
-
-Seerr server create/update calls require both `activeProfileId` and
-`activeProfileName`.
-
-- `quality_profile_id` is the resource input. The recommended way to get it is
-  via `seerr_radarr_quality_profile` or `seerr_sonarr_quality_profile`, using
-  the ARR quality-profile name as the lookup key.
-- If `quality_profile_name` is set on `seerr_radarr_server` or
-  `seerr_sonarr_server`, the provider uses that value directly in the Seerr
-  payload.
-- If `quality_profile_name` is omitted, the provider resolves the profile name
-  by querying the target ARR API (`/api/v3/qualityprofile`) using the provided
-  `url`/`hostname`, `port`, `use_ssl`, and `api_key`.
-
-Operational note:
-
-- OpenTofu execution context must be able to reach Radarr/Sonarr for automatic
-  quality-profile lookup and automatic name resolution. If connectivity is
-  limited, set `quality_profile_name` explicitly.
-
-## Example: notification settings
+### 2. Typed Notification Integrations
 
 ```hcl
-resource "seerr_notification_ntfy" "ntfy" {
+resource "seerr_notification_discord" "alerts" {
   enabled      = true
   embed_poster = true
+  notification_types = [
+    "MEDIA_PENDING",
+    "MEDIA_APPROVED",
+    "MEDIA_AVAILABLE",
+    "ISSUE_CREATED"
+  ]
 
-  notification_types = ["MEDIA_PENDING", "MEDIA_APPROVED"]
-
-  ntfy {
-    url    = "https://ntfy.example.com"
-    topic  = "media"
-    token  = var.ntfy_access_token
-    priority = 3
+  discord {
+    webhook_url = var.discord_webhook_url
+    bot_username = "Seerr Notifier"
   }
 }
 
-resource "seerr_notification_pushover" "pushover" {
+resource "seerr_notification_ntfy" "push" {
   enabled      = true
   embed_poster = true
-  notification_types = ["MEDIA_AVAILABLE", "ISSUE_CREATED"]
+  notification_types = ["MEDIA_APPROVED", "MEDIA_AVAILABLE"]
 
-  pushover {
-    access_token = var.pushover_access_token
-    user_token   = var.pushover_user_key
-    sound        = "pushover"
+  ntfy {
+    url      = "https://ntfy.example.com"
+    topic    = "media-alerts"
+    token    = var.ntfy_access_token
+    priority = 3
   }
 }
 ```
 
-## Example: main and plex settings
+### 3. User Management with Permission Bitmasks
+
+```hcl
+# Compute permission bitmask declaratively
+data "seerr_permission_set" "standard_user" {
+  request       = true
+  request_movie = true
+  request_tv    = true
+  auto_approve  = false
+  manage_users  = false
+}
+
+resource "seerr_user" "jane" {
+  email       = "jane@example.com"
+  username    = "jane"
+  permissions = data.seerr_permission_set.standard_user.permissions
+}
+
+resource "seerr_user_quota" "jane_quota" {
+  user_id           = seerr_user.jane.id
+  movie_quota_limit = 5
+  movie_quota_days  = 7
+  tv_quota_limit    = 3
+  tv_quota_days     = 7
+}
+```
+
+### 4. Core & Media Server Settings
 
 ```hcl
 resource "seerr_main_settings" "main" {
-  app_title       = "Seerr"
+  app_title       = "My Homelab Seerr"
   application_url = "https://seerr.example.com"
   locale          = "en"
+  hide_available  = true
 }
 
 resource "seerr_plex_settings" "plex" {
@@ -220,71 +205,92 @@ resource "seerr_plex_settings" "plex" {
   port    = 32400
   use_ssl = false
 }
-
-data "seerr_public_settings" "public" {}
-
-output "seerr_initialized" {
-  value = data.seerr_public_settings.public.initialized
-}
 ```
 
-## Build
+---
+
+## Modules & Composite Examples
+
+### Packaged Sub-Modules
+- [`modules/main_settings`](modules/main_settings): Standard application branding, locale, and general settings.
+- [`modules/plex_settings`](modules/plex_settings): Plex media server connection and library settings.
+- [`modules/radarr_server`](modules/radarr_server): Radarr movie integration module.
+- [`modules/sonarr_server`](modules/sonarr_server): Sonarr series integration module.
+
+### Reference Architectures
+- [**Full Media Stack Module** (`examples/modules/full-media-stack`)](examples/modules/full-media-stack): Complete composite module integrating Seerr with Plex/Jellyfin, Radarr, Sonarr, Anime routing rules, curated Discover sliders, and Discord notifications.
+- [**ARR Integration Module** (`examples/modules/seerr_arr_integration`)](examples/modules/seerr_arr_integration): Turnkey ARR integration module with automatic quality profile resolution.
+- [**Complete Media Stack Example** (`examples/complete_media_stack`)](examples/complete_media_stack): Standalone root module demonstrating full homelab automation.
+
+---
+
+## Resource & Data Source Inventory
+
+### Resources (50)
+| Category | Resources |
+|---|---|
+| **Core Settings** | `seerr_main_settings`, `seerr_network_settings`, `seerr_backup_settings`, `seerr_metadata_settings`, `seerr_api_key`, `seerr_job_schedule`, `seerr_job_run` |
+| **Media Servers** | `seerr_plex_settings`, `seerr_plex_library_settings`, `seerr_plex_library_sync`, `seerr_jellyfin_settings`, `seerr_jellyfin_library_settings`, `seerr_jellyfin_library_sync`, `seerr_emby_settings`, `seerr_emby_library_settings`, `seerr_emby_library_sync`, `seerr_tautulli_settings` |
+| **Servarr & Routing** | `seerr_radarr_server`, `seerr_sonarr_server`, `seerr_override_rule`, `seerr_blocklist` |
+| **Notifications** | `seerr_notification_discord`, `seerr_notification_email`, `seerr_notification_gotify`, `seerr_notification_lunasea`, `seerr_notification_ntfy`, `seerr_notification_pushbullet`, `seerr_notification_pushover`, `seerr_notification_slack`, `seerr_notification_telegram`, `seerr_notification_webhook`, `seerr_notification_webpush`, `seerr_notification_agent_test` |
+| **Users & Permissions** | `seerr_user`, `seerr_user_invitation`, `seerr_user_permissions`, `seerr_user_settings_permissions`, `seerr_user_quota`, `seerr_user_watchlist_settings`, `seerr_user_notification_settings`, `seerr_user_import_plex`, `seerr_user_import_jellyfin` |
+| **Media & Requests** | `seerr_request`, `seerr_request_approval`, `seerr_request_retry`, `seerr_issue`, `seerr_issue_comment`, `seerr_watchlist`, `seerr_discover_slider` |
+| **Generic Primitives** | `seerr_api_object` |
+
+### Data Sources (69)
+| Category | Data Sources |
+|---|---|
+| **System & Discovery** | `seerr_about`, `seerr_service_status`, `seerr_public_settings`, `seerr_main_settings`, `seerr_network_settings`, `seerr_backup_settings`, `seerr_metadata_settings`, `seerr_discover_slider`, `seerr_discover`, `seerr_genres`, `seerr_languages`, `seerr_regions`, `seerr_jobs` |
+| **Dynamic Resolvers** | `seerr_radarr_quality_profile`, `seerr_radarr_root_folders`, `seerr_radarr_tags`, `seerr_radarr_server`, `seerr_sonarr_quality_profile`, `seerr_sonarr_root_folders`, `seerr_sonarr_tags`, `seerr_sonarr_language_profiles`, `seerr_sonarr_server` |
+| **Media Server Lookups** | `seerr_plex_settings`, `seerr_plex_devices`, `seerr_plex_users`, `seerr_plex_library_settings`, `seerr_jellyfin_settings`, `seerr_jellyfin_users`, `seerr_jellyfin_library_settings`, `seerr_emby_settings`, `seerr_emby_library_settings`, `seerr_tautulli_settings`, `seerr_user_import_plex`, `seerr_user_import_jellyfin` |
+| **Notifications** | `seerr_notification_agents`, `seerr_notification_discord`, `seerr_notification_email`, `seerr_notification_gotify`, `seerr_notification_lunasea`, `seerr_notification_ntfy`, `seerr_notification_pushbullet`, `seerr_notification_pushover`, `seerr_notification_slack`, `seerr_notification_telegram`, `seerr_notification_webhook`, `seerr_notification_webpush`, `seerr_email_settings`, `seerr_pushbullet_settings`, `seerr_pushover_sounds` |
+| **Users & Permissions** | `seerr_user`, `seerr_users`, `seerr_current_user`, `seerr_user_permissions`, `seerr_permission_set`, `seerr_user_quota`, `seerr_user_watchlist_settings`, `seerr_user_notification_settings`, `seerr_user_invitations` |
+| **Media, Requests & Issues** | `seerr_media`, `seerr_media_item`, `seerr_request`, `seerr_requests`, `seerr_issue`, `seerr_issues`, `seerr_blocklist`, `seerr_override_rule`, `seerr_watchlist` |
+| **Generic Primitives** | `seerr_api_key`, `seerr_api_request` |
+
+Detailed documentation and examples for every resource and data source are in [`docs/resources`](docs/resources) and [`docs/data-sources`](docs/data-sources).
+
+---
+
+## Development & Verification
+
+### Local Testing
+
+Run the full local validation fast gate:
 
 ```bash
 bash ./scripts/test-all-locally.sh
 ```
 
-## Contributor workflow
-
-The repo-level validation entry points are:
+Run unit tests directly:
 
 ```bash
-bash ./scripts/test-all-locally.sh
-SEERR_RUN_INTEGRATION=true bash ./scripts/test-all-locally.sh
-SEERR_TEST_SUITE=stable bash ./scripts/test-integration.sh
-SEERR_TEST_SUITE=all bash ./scripts/test-integration.sh
+go test -v ./...
 ```
 
-- `scripts/test-all-locally.sh`: generated-file check, `go build`, `go test`, and optional lint/integration.
-- `scripts/test-integration.sh`: builds a provider mirror, boots a local Seerr target when `SEERR_URL` is not already set, and runs `tofu test`.
-- The default integration suite is `stable` and mirrors the CI merge gate.
-- Set `SEERR_TEST_SUITE=all` to run the broader compatibility/dependency-sensitive suite as well.
+Run OpenAPI coverage analysis:
 
-## CI model
+```bash
+go test -v ./tools/openapi/...
+go run ./tools/openapi
+```
 
-- Pull requests run the fast gate (`scripts/test-all-locally.sh` without integration) plus the `stable` OpenTofu integration suite against an ephemeral local Seerr target. Pull requests never receive repository secrets and always use `ubuntu-latest`.
-- Pushes to `main`, schedules, and manual runs may use the trusted runner selected by the `TRUSTED_RUNNER_LABEL` variable. Configure that label to a UECB or isolated self-hosted runner only after restricting the `integration` environment and keeping the runner off the pull-request path.
-- Scheduled runs execute the broader `full` compatibility suite only. This keeps the merge gate deterministic while still exercising dependency-sensitive coverage regularly.
-- Manual runs support three modes through the GitHub Actions `integration_mode` input: `stable`, `full`, or `both`.
-- Stable- and full-suite artifacts upload only on failure, with a seven-day retention period.
+### Pre-Push Hook
 
-Use the stable suite for merge confidence and the full suite for broader compatibility triage. If a change only fails in the full suite, treat it as an environment or unsupported-endpoint investigation unless the stable suite also regresses.
-
-This repo includes a tracked `pre-push` hook at `.githooks/pre-push`. Enable it once per clone:
+Enable the tracked pre-push hook to enforce code generation and formatting before push:
 
 ```bash
 git config core.hooksPath .githooks
 ```
 
-The hook runs the same generated-file verification used by CI and fails the push if generated docs or formatting are stale.
+### Release & Publish Automation
 
-## Release and publish
+- **Automated Releases**: Version releases are managed automatically via [Release Please](https://github.com/googleapis/release-please) and GitHub Actions.
+- **Release Reconciliation**: Orphaned or skipped release tags are automatically reconciled through `.github/workflows/reconcile-releases.yml`.
+- **GPG Signing**: Official release binaries are signed and published across the OpenTofu Registry and HashiCorp Terraform Registry.
 
-The `Release` workflow builds an explicitly selected version tag. Auto-tagging and manual reconciliation dispatch the workflow from the default branch, so an old tag can never select an old workflow definition.
+---
 
-Auto-tagging reconciles orphaned stable version tags before creating a new version. Automatic reconciliation starts at the repository variable `RELEASE_RECONCILE_FROM_TAG` (default `v0.20.5`), which avoids publishing intentionally skipped legacy or prerelease tags. Every eligible orphan is published before the current commit is tagged. Maintainers can run the `Reconcile Releases` workflow manually to retry the oldest eligible tag without a new code push; its optional `tag` input explicitly backfills any valid historical version tag.
+## License
 
-Release backfills always execute the current hardened workflow and publishing configuration from the default branch, then build the exact requested tag. The workflows serialize tag allocation and release dispatch, skip already-published releases, resume incomplete drafts, and fail closed when GitHub release state cannot be verified.
-
-Expected secrets for signed provider releases:
-- `GPG_PRIVATE_KEY`
-- `PASSPHRASE`
-
-Configure these as secrets on the protected `release` environment, not as repository secrets. Require maintainer approval for that environment. Configure `SEERR_URL` and `SEERR_API_KEY` on the protected `integration` environment if external integration testing is needed. Repository-level secrets with these names should be removed after the environment secrets are verified.
-
-## OpenTofu registry naming
-
-- Provider type: `seerr`
-- Repository: `terraform-provider-seerr`
-- Binary naming: `terraform-provider-seerr_vX.Y.Z`
-- Suggested source address: `registry.opentofu.org/josh-archer/seerr`
+MIT License. See [LICENSE](LICENSE) for details.
