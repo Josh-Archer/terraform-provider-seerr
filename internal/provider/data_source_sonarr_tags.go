@@ -127,7 +127,7 @@ func (d *SonarrTagsDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	var tags []SonarrTagModel
+	tags := make([]SonarrTagModel, 0, len(results))
 	for _, item := range results {
 		tag := SonarrTagModel{}
 		if id, ok := int64ValueFromAny(item["id"]); ok {

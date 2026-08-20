@@ -182,13 +182,13 @@ func (d *RequestsDataSource) Read(ctx context.Context, req datasource.ReadReques
 	data.Total = types.Int64Value(int64(len(filteredRequests)))
 
 	idStr := "all_requests"
-	if !data.FilterStatus.IsNull() {
+	if !data.FilterStatus.IsNull() && !data.FilterStatus.IsUnknown() {
 		idStr += fmt.Sprintf("_status_%d", data.FilterStatus.ValueInt64())
 	}
-	if !data.FilterMediaType.IsNull() {
+	if !data.FilterMediaType.IsNull() && !data.FilterMediaType.IsUnknown() {
 		idStr += fmt.Sprintf("_type_%s", data.FilterMediaType.ValueString())
 	}
-	if !data.FilterRequestedByID.IsNull() {
+	if !data.FilterRequestedByID.IsNull() && !data.FilterRequestedByID.IsUnknown() {
 		idStr += fmt.Sprintf("_user_%d", data.FilterRequestedByID.ValueInt64())
 	}
 	data.ID = types.StringValue(idStr)

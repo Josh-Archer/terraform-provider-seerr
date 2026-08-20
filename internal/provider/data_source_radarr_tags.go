@@ -127,7 +127,7 @@ func (d *RadarrTagsDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	var tags []RadarrTagModel
+	tags := make([]RadarrTagModel, 0, len(results))
 	for _, item := range results {
 		tag := RadarrTagModel{}
 		if id, ok := int64ValueFromAny(item["id"]); ok {

@@ -35,7 +35,7 @@ func TestClientRetries429WithRetryAfterSeconds(t *testing.T) {
 	baseURL, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second, 0, 0)
+	client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second, defaultMaxRetries, 10*time.Millisecond)
 	resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -62,7 +62,7 @@ func TestClientRetries429WithRetryAfterHTTPDate(t *testing.T) {
 	baseURL, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second, 0, 0)
+	client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second, defaultMaxRetries, 10*time.Millisecond)
 	resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -89,7 +89,7 @@ func TestClientRetries502503504(t *testing.T) {
 			baseURL, err := url.Parse(srv.URL)
 			require.NoError(t, err)
 
-			client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second, 0, 0)
+			client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second, defaultMaxRetries, 10*time.Millisecond)
 			resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
 			require.NoError(t, err)
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -186,4 +186,25 @@ func TestIsRetryableStatusCode(t *testing.T) {
 	assert.False(t, isRetryableStatusCode(200))
 	assert.False(t, isRetryableStatusCode(400))
 	assert.False(t, isRetryableStatusCode(500))
+}
+
+func TestClientMaxRetriesZeroDisablesRetries(t *testing.T) {
+	var attempts int32
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&attempts, 1)
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = w.Write([]byte(`bad gateway`))
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	// maxRetries = 0 means 0 retries (1 total attempt)
+	client := NewClient(baseURL, "abc123", "test-agent", false, 30*time.Second, 0, 0)
+	resp, err := client.Request(context.Background(), "GET", "/api/v1/settings/main", "", nil)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusBadGateway, resp.StatusCode)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&attempts))
 }

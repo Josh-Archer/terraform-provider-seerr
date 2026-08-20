@@ -137,7 +137,7 @@ func (d *RadarrRootFoldersDataSource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	var rootFolders []RadarrRootFolderModel
+	rootFolders := make([]RadarrRootFolderModel, 0, len(results))
 	for _, item := range results {
 		folder := RadarrRootFolderModel{}
 		if id, ok := int64ValueFromAny(item["id"]); ok {

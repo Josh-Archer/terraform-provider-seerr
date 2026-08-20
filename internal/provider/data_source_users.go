@@ -140,10 +140,10 @@ func (d *UsersDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	data.Users = filteredUsers
 
 	idStr := "all_users"
-	if !data.FilterUserType.IsNull() {
+	if !data.FilterUserType.IsNull() && !data.FilterUserType.IsUnknown() {
 		idStr += fmt.Sprintf("_type_%d", data.FilterUserType.ValueInt64())
 	}
-	if !data.FilterPermissionsHas.IsNull() {
+	if !data.FilterPermissionsHas.IsNull() && !data.FilterPermissionsHas.IsUnknown() {
 		idStr += fmt.Sprintf("_perms_%d", data.FilterPermissionsHas.ValueInt64())
 	}
 	data.ID = types.StringValue(idStr)

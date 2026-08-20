@@ -127,7 +127,7 @@ func (d *SonarrLanguageProfilesDataSource) Read(ctx context.Context, req datasou
 		return
 	}
 
-	var languageProfiles []SonarrLanguageProfileModel
+	languageProfiles := make([]SonarrLanguageProfileModel, 0, len(results))
 	for _, item := range results {
 		profile := SonarrLanguageProfileModel{}
 		if id, ok := int64ValueFromAny(item["id"]); ok {
