@@ -33,7 +33,7 @@ output "id" {
 }
 
 output "hostname" { value = seerr_sonarr_server.test.hostname }
-output "port"     { value = seerr_sonarr_server.test.port }
+output "port" { value = seerr_sonarr_server.test.port }
 output "quality_profile_id" { value = seerr_sonarr_server.test.quality_profile_id }
 output "is_default" { value = seerr_sonarr_server.test.is_default }
 output "sync_enabled" { value = seerr_sonarr_server.test.sync_enabled }

@@ -18,39 +18,39 @@ provider "seerr" {
 
 # 1. Main Seerr Application Configuration
 resource "seerr_main_settings" "config" {
-  api_key          = var.seerr_api_key
+  api_key           = var.seerr_api_key
   application_title = var.app_title
   application_url   = var.seerr_url
-  trust_proxy      = true
-  hide_available   = false
-  csrf_protection  = true
+  trust_proxy       = true
+  hide_available    = false
+  csrf_protection   = true
 }
 
 # 2. Sonarr Server Connection (TV Shows)
 resource "seerr_sonarr_server" "primary_sonarr" {
-  name                = "Sonarr Primary (HD/4K)"
-  hostname            = var.sonarr_hostname
-  port                = var.sonarr_port
-  api_key             = var.sonarr_api_key
-  use_ssl             = var.sonarr_use_ssl
-  active_profile_id   = var.sonarr_quality_profile_id
-  active_directory    = var.sonarr_root_folder
-  is_default          = true
-  is_4k               = false
+  name                  = "Sonarr Primary (HD/4K)"
+  hostname              = var.sonarr_hostname
+  port                  = var.sonarr_port
+  api_key               = var.sonarr_api_key
+  use_ssl               = var.sonarr_use_ssl
+  active_profile_id     = var.sonarr_quality_profile_id
+  active_directory      = var.sonarr_root_folder
+  is_default            = true
+  is_4k                 = false
   enable_season_folders = true
 }
 
 # 3. Radarr Server Connection (Movies)
 resource "seerr_radarr_server" "primary_radarr" {
-  name              = "Radarr Primary (HD/4K)"
-  hostname          = var.radarr_hostname
-  port              = var.radarr_port
-  api_key           = var.radarr_api_key
-  use_ssl           = var.radarr_use_ssl
-  active_profile_id = var.radarr_quality_profile_id
-  active_directory  = var.radarr_root_folder
-  is_default        = true
-  is_4k             = false
+  name                 = "Radarr Primary (HD/4K)"
+  hostname             = var.radarr_hostname
+  port                 = var.radarr_port
+  api_key              = var.radarr_api_key
+  use_ssl              = var.radarr_use_ssl
+  active_profile_id    = var.radarr_quality_profile_id
+  active_directory     = var.radarr_root_folder
+  is_default           = true
+  is_4k                = false
   minimum_availability = "announced"
 }
 
@@ -66,7 +66,7 @@ resource "seerr_user" "power_user" {
   email    = "poweruser@example.com"
   username = "poweruser"
   permissions = (
-    2    # MANAGE_REQUESTS
+    2      # MANAGE_REQUESTS
     + 32   # AUTO_APPROVE
     + 64   # AUTO_APPROVE_MOVIE
     + 128  # AUTO_APPROVE_TV
@@ -93,9 +93,9 @@ resource "seerr_notification_discord" "alerts" {
 
 # 7. Pushover Notification Agent for Critical Alerts
 resource "seerr_notification_pushover" "admin_push" {
-  count       = var.enable_pushover_notifications ? 1 : 0
-  enabled     = true
-  user_token  = var.pushover_user_key
-  token       = var.pushover_app_token
-  types       = 2050 # Media Auto-Approved + Issue Created
+  count      = var.enable_pushover_notifications ? 1 : 0
+  enabled    = true
+  user_token = var.pushover_user_key
+  token      = var.pushover_app_token
+  types      = 2050 # Media Auto-Approved + Issue Created
 }

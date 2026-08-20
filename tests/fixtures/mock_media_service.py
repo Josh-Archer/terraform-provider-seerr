@@ -68,6 +68,32 @@ class Handler(BaseHTTPRequestHandler):
             )
             return
 
+        if self._path() == "/api/v3/rootfolder":
+            self._ok_json(
+                [
+                    {"id": 1, "path": f"/media/{SERVICE_KIND}", "accessible": True, "freeSpace": 1000000000000},
+                ]
+            )
+            return
+
+        if self._path() == "/api/v3/tag":
+            self._ok_json(
+                [
+                    {"id": 1, "label": "hd"},
+                    {"id": 2, "label": "favorite"},
+                ]
+            )
+            return
+
+        if self._path() == "/api/v3/languageprofile":
+            self._ok_json(
+                [
+                    {"id": 1, "name": "English"},
+                    {"id": 2, "name": "Any"},
+                ]
+            )
+            return
+
         self._ok_json({"status": "ok", "service": SERVICE_KIND})
 
     def _handle_plex(self):
