@@ -1,10 +1,27 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to `terraform-provider-seerr` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
+
+## [0.38.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.38.0...v0.38.1) (2026-08-20)
+
+
+### Features
+
+* **ci:** release automation with release-please, tag-on-merge, and registry verification ([#181](https://github.com/Josh-Archer/terraform-provider-seerr/issues/181)) ([#187](https://github.com/Josh-Archer/terraform-provider-seerr/issues/187)) ([34fb8c6](https://github.com/Josh-Archer/terraform-provider-seerr/commit/34fb8c6e89d7d90f1945bbaa9815c925dbaf4cb3))
+
+
+### Bug Fixes
+
+* **ci:** correct release-please-action commit sha in release-please.yml ([#188](https://github.com/Josh-Archer/terraform-provider-seerr/issues/188)) ([03e1e35](https://github.com/Josh-Archer/terraform-provider-seerr/commit/03e1e354dd87e7d575553e9861c46cfda8d0497c))
+
+
+### Documentation
+
+* modernize README and docs for accuracy and conciseness ([#192](https://github.com/Josh-Archer/terraform-provider-seerr/issues/192)) ([8b4cc9b](https://github.com/Josh-Archer/terraform-provider-seerr/commit/8b4cc9b7c3b8a0e4c0b2aaa001bd96b3f6a195a7))
 
 ## 0.38.0 (Unreleased)
 
