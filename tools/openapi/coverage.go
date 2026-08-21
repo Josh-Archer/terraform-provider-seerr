@@ -404,6 +404,12 @@ func FindRepoRoot() (string, error) {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "diff" {
+		os.Args = append([]string{os.Args[0]}, os.Args[2:]...)
+		runDiffCLI()
+		return
+	}
+
 	root, err := FindRepoRoot()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to find repo root: %v\n", err)

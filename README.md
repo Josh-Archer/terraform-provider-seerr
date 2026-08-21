@@ -252,6 +252,22 @@ Detailed documentation and examples for every resource and data source are in [`
 
 ---
 
+## Compatibility & Version Support
+
+The provider maintains continuous compatibility tracking with upstream media management servers:
+
+| Target | Supported Versions | Tested CI Baseline |
+| :--- | :--- | :--- |
+| **Seerr (Unified)** | `v3.0.0`+ | `seerr/seerr:v3.1.1` |
+| **Jellyseerr** | `v1.7.0` - `v2.x`+ | `fallenbagel/jellyseerr:latest` |
+| **Overseerr** | `v1.33.2`+ | `sct/overseerr:latest` |
+| **OpenTofu** | `>= 1.6.0` (tested `1.8.x` - `1.11.x`) | Protocol 6.0 |
+| **Terraform** | `>= 1.5.0` (tested `1.5.x` - `1.11.x`) | Protocol 6.0 |
+
+See the complete [Version Compatibility Guide](docs/guides/compatibility.md) for architectural details, dialect mappings, and automated drift monitoring.
+
+---
+
 ## Development & Verification
 
 ### Local Testing
@@ -268,11 +284,15 @@ Run unit tests directly:
 go test -v ./...
 ```
 
-Run OpenAPI coverage analysis:
+Run OpenAPI coverage and drift analysis:
 
 ```bash
+# Verify coverage mapping
 go test -v ./tools/openapi/...
 go run ./tools/openapi
+
+# Check schema drift against live upstream
+go run ./tools/openapi diff
 ```
 
 ### Pre-Push Hook

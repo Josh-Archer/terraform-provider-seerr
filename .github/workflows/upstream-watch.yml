@@ -1,0 +1,86 @@
+name: Upstream Release Watcher
+
+on:
+  schedule:
+    # Run daily at 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: upstream-watch
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch-upstream:
+    name: Monitor Upstream Releases
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check upstream repositories for new releases
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          
+          echo "Checking latest releases from upstream Seerr and Jellyseerr repositories..."
+          
+          # Query latest release tags from upstream projects
+          seerr_tag=$(gh api repos/seerr-team/seerr/releases/latest --jq '.tag_name' 2>/dev/null || echo "none")
+          jellyseerr_tag=$(gh api repos/Fallenbagel/jellyseerr/releases/latest --jq '.tag_name' 2>/dev/null || echo "none")
+          overseerr_tag=$(gh api repos/sct/overseerr/releases/latest --jq '.tag_name' 2>/dev/null || echo "none")
+          
+          echo "Latest Seerr release: ${seerr_tag}"
+          echo "Latest Jellyseerr release: ${jellyseerr_tag}"
+          echo "Latest Overseerr release: ${overseerr_tag}"
+          
+          cat <<EOF > upstream-releases.md
+          # Upstream Release Status
+
+          Automated check of upstream media request management releases.
+
+          | Upstream Project | Repository | Latest Release Tag |
+          |---|---|---|
+          | Seerr (Unified) | \`seerr-team/seerr\` | \`${seerr_tag}\` |
+          | Jellyseerr | \`Fallenbagel/jellyseerr\` | \`${jellyseerr_tag}\` |
+          | Overseerr | \`sct/overseerr\` | \`${overseerr_tag}\` |
+
+          ### Action Items for Provider Compatibility
+          - [ ] Verify test suite against new upstream container images.
+          - [ ] Run \`go run ./tools/openapi diff\` against the new release OpenAPI spec.
+          - [ ] Update \`docs/guides/compatibility.md\` with verified support.
+          EOF
+          
+          cat upstream-releases.md
+
+      - name: Check and report new upstream release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          issue_title="feat(compatibility): upstream release check and compatibility verification"
+          
+          existing_issue=$(gh issue list --repo "${GITHUB_REPOSITORY}" --state open --search "${issue_title} in:title" --json number --jq '.[0].number')
+          
+          if [[ -n "${existing_issue}" && "${existing_issue}" != "null" ]]; then
+            echo "Updating existing tracking issue #${existing_issue}..."
+            gh issue comment "${existing_issue}" --repo "${GITHUB_REPOSITORY}" --body-file upstream-releases.md
+          else
+            echo "Opening new tracking issue for upstream releases..."
+            gh issue create \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "${issue_title}" \
+              --body-file upstream-releases.md \
+              --label "enhancement"
+          fi

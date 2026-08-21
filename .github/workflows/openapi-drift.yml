@@ -1,0 +1,83 @@
+name: Upstream OpenAPI Drift Detection
+
+on:
+  schedule:
+    # Run every Monday at 04:00 UTC
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      upstream_url:
+        description: 'Upstream OpenAPI specification URL'
+        required: false
+        default: 'https://raw.githubusercontent.com/seerr-team/seerr/develop/seerr-api.yml'
+        type: string
+
+concurrency:
+  group: openapi-drift
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-drift:
+    name: Check Upstream OpenAPI Drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run OpenAPI Drift Comparison
+        id: diff
+        env:
+          UPSTREAM_URL: ${{ inputs.upstream_url || 'https://raw.githubusercontent.com/seerr-team/seerr/develop/seerr-api.yml' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Comparing local OpenAPI spec against: ${UPSTREAM_URL}"
+          go run ./tools/openapi diff \
+            -upstream "${UPSTREAM_URL}" \
+            -output drift-report.md \
+            -format markdown
+
+          go run ./tools/openapi diff \
+            -upstream "${UPSTREAM_URL}" \
+            -output drift-report.json \
+            -format json
+
+          has_drift=$(python3 -c "import json; d=json.load(open('drift-report.json')); print('true' if d.get('has_drift') else 'false')")
+          echo "has_drift=${has_drift}" >> "$GITHUB_OUTPUT"
+
+      - name: Report Drift to GitHub Issues
+        if: steps.diff.outputs.has_drift == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          issue_title="feat(upstream): upstream OpenAPI schema drift detected"
+          
+          # Check if an open drift issue already exists
+          existing_issue=$(gh issue list --repo "${GITHUB_REPOSITORY}" --state open --search "${issue_title} in:title" --json number --jq '.[0].number')
+
+          if [[ -n "${existing_issue}" && "${existing_issue}" != "null" ]]; then
+            echo "Updating existing tracking issue #${existing_issue} with latest drift report..."
+            gh issue comment "${existing_issue}" --repo "${GITHUB_REPOSITORY}" --body-file drift-report.md
+          else
+            echo "Opening new tracking issue for OpenAPI schema drift..."
+            gh issue create \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "${issue_title}" \
+              --body-file drift-report.md \
+              --label "enhancement"
+          fi
