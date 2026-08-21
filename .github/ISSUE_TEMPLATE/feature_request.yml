@@ -1,0 +1,48 @@
+name: "Feature Request"
+description: "Suggest a new resource, data source, or feature for the provider"
+title: "feat: [Short summary of the feature request]"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature! Please explain the use case and how this helps your Infrastructure as Code workflow.
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use Case / Problem
+      description: What are you trying to accomplish or manage that isn't currently supported?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution / Resource Design
+      description: What new resource, data source, or attribute would you like to see?
+      placeholder: |
+        resource "seerr_..." {
+          ...
+        }
+      render: hcl
+
+  - type: input
+    id: api_endpoint
+    attributes:
+      label: Upstream API Endpoint
+      description: If known, what Seerr / Jellyseerr REST API endpoint corresponds to this feature? (e.g. `/settings/radarr/test` or `/user/{id}/quota`)
+      placeholder: "/api/v1/..."
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions Considered
+      description: Any alternative approaches or workarounds you have considered.
+
+  - type: checkboxes
+    id: willingness
+    attributes:
+      label: Contribution
+      options:
+        - label: "I am willing to submit a PR to implement this feature."

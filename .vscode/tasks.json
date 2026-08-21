@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Test: Local Fast Gate",
+      "type": "shell",
+      "command": "bash ./scripts/test-all-locally.sh",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": ["$go"]
+    },
+    {
+      "label": "Generate: Provider Docs & Code",
+      "type": "shell",
+      "command": "go generate ./... && gofmt -s -w .",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$go"]
+    },
+    {
+      "label": "OpenAPI: Check Schema Drift",
+      "type": "shell",
+      "command": "go run ./tools/openapi diff",
+      "problemMatcher": []
+    }
+  ]
+}
