@@ -1,0 +1,15 @@
+services:
+  seerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: seerr-dev
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=UTC
+    ports:
+      - "5055:5055"
+    volumes:
+      - seerr_config:/app/config
+    restart: unless-stopped
+
+volumes:
+  seerr_config:

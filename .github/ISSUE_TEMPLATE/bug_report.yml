@@ -1,0 +1,97 @@
+name: "Bug Report"
+description: "Report a bug or unexpected behavior in the Seerr OpenTofu/Terraform provider"
+title: "fix: [Short summary of the bug]"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! Please provide as much detail as possible to help us reproduce and resolve the problem quickly.
+
+  - type: input
+    id: provider_version
+    attributes:
+      label: Provider Version
+      description: What version of `terraform-provider-seerr` are you using? (e.g. `0.38.2`)
+      placeholder: "0.38.2"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: iac_tool
+    attributes:
+      label: IaC Engine
+      description: Which tool are you running?
+      options:
+        - OpenTofu
+        - HashiCorp Terraform
+    validations:
+      required: true
+
+  - type: input
+    id: iac_version
+    attributes:
+      label: OpenTofu / Terraform Version
+      description: Exact output of `tofu version` or `terraform version`
+      placeholder: "OpenTofu v1.9.0 / Terraform v1.8.5"
+    validations:
+      required: true
+
+  - type: input
+    id: seerr_version
+    attributes:
+      label: Upstream Server & Version
+      description: Which media management server and version are you connecting to? (e.g. `Jellyseerr v2.3.0`, `Overseerr v1.33.2`, `Seerr v3.1.1`)
+      placeholder: "Jellyseerr v2.3.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: terraform_config
+    attributes:
+      label: Terraform / OpenTofu Configuration
+      description: Please provide the relevant snippet of your HCL configuration. (Be sure to redact API keys and passwords!)
+      render: hcl
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Exact steps to reproduce the behavior (e.g. `1. tofu apply`, `2. edit attribute ...`, `3. tofu apply again`).
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: debug_output
+    attributes:
+      label: Debug / Trace Output
+      description: Relevant debug logs (run with `TF_LOG=DEBUG` or error output from apply/plan).
+      render: shell
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: "I have verified that sensitive information (API keys, tokens, credentials) has been redacted."
+          required: true
+        - label: "I have checked existing GitHub issues to make sure this is not a duplicate."
+          required: true

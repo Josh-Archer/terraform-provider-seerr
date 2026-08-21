@@ -1,0 +1,32 @@
+{
+  "name": "Seerr Terraform Provider Dev",
+  "dockerFile": "Dockerfile",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "hashicorp.terraform",
+        "opentofu.opentofu",
+        "editorconfig.editorconfig",
+        "eamodio.gitlens",
+        "redhat.vscode-yaml",
+        "davidanson.vscode-markdownlint"
+      ],
+      "settings": {
+        "go.useLanguageServer": true,
+        "go.lintTool": "golangci-lint",
+        "go.lintOnSave": "package",
+        "editor.formatOnSave": true,
+        "[go]": {
+          "editor.defaultFormatter": "golang.Go"
+        }
+      }
+    }
+  },
+  "forwardPorts": [5055],
+  "postCreateCommand": "go mod download && go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest",
+  "remoteUser": "vscode"
+}

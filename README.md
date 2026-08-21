@@ -308,7 +308,19 @@ git config core.hooksPath .githooks
 
 - **Automated Releases**: Version releases are managed automatically via [Release Please](https://github.com/googleapis/release-please) and GitHub Actions.
 - **Release Reconciliation**: Orphaned or skipped release tags are automatically reconciled through `.github/workflows/reconcile-releases.yml`.
-- **GPG Signing**: Official release binaries are signed and published across the OpenTofu Registry and HashiCorp Terraform Registry.
+- **GPG Signing**: Official release binaries are signed with RSA 4096-bit keys and published across the OpenTofu Registry and HashiCorp Terraform Registry.
+
+---
+
+## Community & Contributing
+
+We welcome contributions from the community!
+
+- **Contributing Guide**: See [CONTRIBUTING.md](CONTRIBUTING.md) for a step-by-step "Your First PR" walkthrough, local development setup, and coding standards.
+- **Community Discussions**: Ask questions or share configurations in [GitHub Discussions](https://github.com/Josh-Archer/terraform-provider-seerr/discussions).
+- **Issue Templates**: Report bugs using [Bug Report](.github/ISSUE_TEMPLATE/bug_report.yml) or suggest features with [Feature Request](.github/ISSUE_TEMPLATE/feature_request.yml).
+- **Security Policy**: See [SECURITY.md](SECURITY.md) for vulnerability reporting guidelines.
+- **Code of Conduct**: All participants are expected to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ---
 

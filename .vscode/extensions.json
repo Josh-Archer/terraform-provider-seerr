@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "golang.go",
+    "hashicorp.terraform",
+    "opentofu.opentofu",
+    "redhat.vscode-yaml",
+    "davidanson.vscode-markdownlint",
+    "editorconfig.editorconfig"
+  ]
+}

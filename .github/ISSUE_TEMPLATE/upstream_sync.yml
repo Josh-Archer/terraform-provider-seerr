@@ -1,0 +1,42 @@
+name: "Upstream API Sync"
+description: "Report a new upstream API endpoint, schema change, or deprecation from Seerr/Jellyseerr"
+title: "feat(upstream): [Upstream feature or endpoint name]"
+labels: ["enhancement", "upstream"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template when reporting new or changed endpoints from upstream Seerr, Jellyseerr, or Overseerr releases.
+
+  - type: input
+    id: upstream_release
+    attributes:
+      label: Upstream Release / Commit
+      description: Which upstream version or commit introduced this change? (e.g. `Seerr v3.2.0`, `Jellyseerr develop`)
+      placeholder: "Seerr v3.2.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: changed_endpoints
+    attributes:
+      label: Changed / Added Endpoints
+      description: List the HTTP method and API paths (e.g. `POST /settings/plex/library/sync`).
+      placeholder: |
+        - POST /api/v1/...
+        - GET /api/v1/...
+    validations:
+      required: true
+
+  - type: textarea
+    id: schema_details
+    attributes:
+      label: OpenAPI Schema / Payload Details
+      description: Provide request/response JSON examples or links to the upstream OpenAPI commit.
+
+  - type: checkboxes
+    id: drift_tool
+    attributes:
+      label: Validation
+      options:
+        - label: "I have verified this against the live upstream OpenAPI spec using `go run ./tools/openapi diff`."
