@@ -18,6 +18,7 @@ Manage the Seerr API key. Creating this resource will regenerate the API key.
 ### Read-Only
 
 - `api_key` (String, Sensitive) The current Seerr API key.
+- `id` (String) Resource identifier.
 - `status_code` (Number) HTTP status code.
 
 ## Import
@@ -31,9 +32,9 @@ The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/c
 #
 # import {
 #   to = seerr_api_key.example
-#   id = "1"
+#   id = "api_key"
 # }
 
 # Otherwise, use the terraform import command:
-terraform import seerr_api_key.example 1
+terraform import seerr_api_key.example api_key
 ```

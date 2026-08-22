@@ -16,7 +16,7 @@ type ResourceImport struct {
 }
 
 var resources = []ResourceImport{
-	{Name: "seerr_api_key", ExampleID: "1"},
+	{Name: "seerr_api_key", ExampleID: "api_key"},
 	{Name: "seerr_api_object", ExampleID: "GET:/api/v1/status"},
 	{Name: "seerr_backup_settings", ExampleID: "backup"},
 	{Name: "seerr_blocklist", ExampleID: "1", Hint: "The TMDB ID of the blocked media."},

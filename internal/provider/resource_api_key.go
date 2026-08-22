@@ -23,6 +23,7 @@ type APIKeyResource struct {
 }
 
 type APIKeyModel struct {
+	ID         types.String `tfsdk:"id"`
 	ApiKey     types.String `tfsdk:"api_key"`
 	StatusCode types.Int64  `tfsdk:"status_code"`
 }
@@ -37,6 +38,13 @@ func (r *APIKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Manage the Seerr API key. Creating this resource will regenerate the API key.",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				MarkdownDescription: "Resource identifier.",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"api_key": schema.StringAttribute{
 				MarkdownDescription: "The current Seerr API key.",
 				Computed:            true,
@@ -111,6 +119,7 @@ func (r *APIKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	data.ID = types.StringValue("api_key")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -143,6 +152,7 @@ func (r *APIKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	data.ID = types.StringValue("api_key")
 	data.ApiKey = types.StringValue(apiKey)
 	data.StatusCode = types.Int64Value(int64(res.StatusCode))
 
@@ -162,6 +172,7 @@ func (r *APIKeyResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	data.ID = types.StringValue("api_key")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -170,5 +181,5 @@ func (r *APIKeyResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *
 }
 
 func (r *APIKeyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("api_key"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
