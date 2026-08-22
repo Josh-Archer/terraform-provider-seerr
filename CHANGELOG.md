@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.38.3](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.38.2...v0.38.3) (2026-08-22)
+
+
+### Bug Fixes
+
+* **api_key:** add id attribute to seerr_api_key schema and align import state ([#206](https://github.com/Josh-Archer/terraform-provider-seerr/issues/206)) ([163f4be](https://github.com/Josh-Archer/terraform-provider-seerr/commit/163f4bed58a34229fbfa9031ca816fcdfa6d7734))
+* **library_settings:** normalize singleton ID during import to prevent state mutation drift ([#207](https://github.com/Josh-Archer/terraform-provider-seerr/issues/207)) ([b6e55bc](https://github.com/Josh-Archer/terraform-provider-seerr/commit/b6e55bc3827714a1104dd9551a8497bbd4f12e3f))
+
+
+### Miscellaneous Chores
+
+* **deps:** bump the github-actions group across 1 directory with 4 updates ([#191](https://github.com/Josh-Archer/terraform-provider-seerr/issues/191)) ([c6acb52](https://github.com/Josh-Archer/terraform-provider-seerr/commit/c6acb52fa5e38f1efc985a7783c822e43c8b802e))
+
+
+### Continuous Integration
+
+* disable golangci-lint remote schema verification and add auto-merge for owner PRs ([#202](https://github.com/Josh-Archer/terraform-provider-seerr/issues/202)) ([76be0d0](https://github.com/Josh-Archer/terraform-provider-seerr/commit/76be0d0c7d8e17267689bc8611a12c06f7731dbd))
+
 ## [0.38.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.38.1...v0.38.2) (2026-08-22)
 
 
