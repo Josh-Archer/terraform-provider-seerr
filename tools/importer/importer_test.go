@@ -38,7 +38,7 @@ func TestSanitizeName(t *testing.T) {
 func TestImporterDiscoveryAndGeneration(t *testing.T) {
 	mux := http.NewServeMux()
 
-	// Mock Main Settings
+	// Mock Main Settings.
 	mux.HandleFunc("/api/v1/settings/main", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -52,7 +52,7 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 		})
 	})
 
-	// Mock Radarr Servers
+	// Mock Radarr Servers.
 	mux.HandleFunc("/api/v1/settings/radarr", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode([]map[string]any{
@@ -70,7 +70,7 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 		})
 	})
 
-	// Mock Discord Notification
+	// Mock Discord Notification.
 	mux.HandleFunc("/api/v1/settings/notifications/discord", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -83,7 +83,7 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 		})
 	})
 
-	// Mock Users
+	// Mock Users.
 	mux.HandleFunc("/api/v1/user", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -99,7 +99,7 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 		})
 	})
 
-	// Fallback 404 for un-mocked endpoints
+	// Fallback 404 for un-mocked endpoints.
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
@@ -119,7 +119,7 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 		t.Fatalf("Expected at least 4 discovered resources, got %d", len(resources))
 	}
 
-	// Verify HCL Generation
+	// Verify HCL Generation.
 	hcl := GenerateHCL(resources, true)
 	if !strings.Contains(hcl, `resource "seerr_main_settings" "main"`) {
 		t.Errorf("Expected seerr_main_settings in HCL, got:\n%s", hcl)
@@ -134,7 +134,7 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 		t.Errorf("Expected seerr_user in HCL, got:\n%s", hcl)
 	}
 
-	// Verify Import Blocks
+	// Verify Import Blocks.
 	imports := GenerateImportBlocks(resources)
 	if !strings.Contains(imports, "to = seerr_main_settings.main") {
 		t.Errorf("Expected import block for seerr_main_settings, got:\n%s", imports)
@@ -143,7 +143,7 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 		t.Errorf("Expected import id '0' for Radarr server, got:\n%s", imports)
 	}
 
-	// Verify Import Shell Script
+	// Verify Import Shell Script.
 	script := GenerateImportScript(resources)
 	if !strings.Contains(script, "terraform import seerr_main_settings.main main") {
 		t.Errorf("Expected terraform import command in script, got:\n%s", script)

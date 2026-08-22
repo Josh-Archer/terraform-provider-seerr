@@ -129,7 +129,11 @@ func (imp *Importer) DiscoverAll(ctx context.Context) ([]DiscoveredResource, err
 
 	// 1. Main Settings
 	mainRes, code, err := imp.get(ctx, "/api/v1/settings/main")
-	if err == nil && code == 200 {
+	if err != nil {
+		if code != http.StatusNotFound {
+			return nil, fmt.Errorf("failed to fetch main settings: %w", err)
+		}
+	} else if code == http.StatusOK {
 		if m, ok := mainRes.(map[string]any); ok {
 			attrs := map[string]any{}
 			copyString(m, attrs, "applicationTitle", "app_title")
@@ -597,7 +601,7 @@ func GenerateImportScript(resources []DiscoveredResource) string {
 	return sb.String()
 }
 
-// Helpers for data conversion
+// Helpers for data conversion.
 func copyString(src, dst map[string]any, srcKey, dstKey string) {
 	if v, ok := src[srcKey].(string); ok && v != "" {
 		dst[dstKey] = v

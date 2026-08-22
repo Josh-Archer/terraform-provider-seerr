@@ -65,7 +65,7 @@ func main() {
 
 	fmt.Printf("✅ Discovered %d live resources across your Seerr instance!\n\n", len(resources))
 
-	// Group by resource type for reporting
+	// Group by resource type for reporting.
 	counts := map[string]int{}
 	for _, r := range resources {
 		counts[r.ResourceType]++
