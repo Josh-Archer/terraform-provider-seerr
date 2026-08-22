@@ -110,7 +110,8 @@ grep -Fq "Release tag does not exist" "${test_root}/floor.err"
 echo "PASS missing floor"
 
 release_workflow="${repo_root}/.github/workflows/release.yml"
-test_workflow="${repo_root}/.github/workflows/test.yml"
+release_please_workflow="${repo_root}/.github/workflows/release-please.yml"
+reconcile_workflow="${repo_root}/.github/workflows/reconcile-releases.yml"
 
 tip_remote="${test_root}/tip-remote.git"
 git init -q --bare "${tip_remote}"
@@ -151,7 +152,7 @@ grep -Fq "remote tag object changed" "${test_root}/rollback.err"
 remote_tag_object="$(git --git-dir="${tip_remote}" rev-parse refs/tags/v8.8.8)"
 assert_output "replaced tag rollback is refused" "${replacement_tag_object}" "${remote_tag_object}"
 
-python3 - "${release_workflow}" "${test_workflow}" <<'PY'
+python3 - "${release_workflow}" "${release_please_workflow}" "${reconcile_workflow}" <<'PY'
 from pathlib import Path
 import sys
 
@@ -172,7 +173,8 @@ def step_block(path: Path, name: str) -> str:
 
 
 release_path = Path(sys.argv[1])
-test_path = Path(sys.argv[2])
+release_please_path = Path(sys.argv[2])
+reconcile_path = Path(sys.argv[3])
 release_text = release_path.read_text(encoding="utf-8")
 
 qualified_head_guard = (
@@ -186,34 +188,13 @@ checkout = step_block(release_path, "Checkout tagged source")
 if "ref: refs/tags/${{ env.RELEASE_TAG }}" not in checkout:
     raise SystemExit("tagged source checkout is not fully qualified")
 
-precheck = step_block(test_path, "Verify current default-branch tip")
-if "release-tip-is-current.sh" not in precheck:
-    raise SystemExit("pre-tag default-tip behavior guard is missing")
+release_trigger = step_block(release_please_path, "Trigger Release workflow on release creation")
+if "release.yml" not in release_trigger:
+    raise SystemExit("release-please must trigger release.yml")
 
-bump = step_block(test_path, "Bump version and push tag")
-if "if: steps.default_branch_tip.outputs.current == 'true'" not in bump:
-    raise SystemExit("version allocation is not gated by the pre-tag tip check")
-if "dry_run: true" not in bump:
-    raise SystemExit("version calculation must not create the tag directly")
-
-create_tag = step_block(test_path, "Create annotated release tag")
-for required in ("git/tags", "git/refs", "tag_object_sha="):
-    if required not in create_tag:
-        raise SystemExit(f"annotated tag creation is missing: {required}")
-
-postcheck = step_block(test_path, "Verify tagged commit is still the default-branch tip")
-for required in (
-    "release-tip-is-current.sh",
-    "delete-release-tag-if-unchanged.sh",
-    "EXPECTED_TAG_OBJECT",
-    "GITHUB_TOKEN",
-):
-    if required not in postcheck:
-        raise SystemExit(f"post-tag stale rollback is missing: {required}")
-
-dispatch = step_block(test_path, "Trigger Release workflow for new tag")
-if "if: steps.tagged_branch_tip.outputs.current == 'true'" not in dispatch:
-    raise SystemExit("release dispatch is not gated by the post-tag tip check")
+reconcile_step = step_block(reconcile_path, "Dispatch the oldest pending release")
+if "release.yml" not in reconcile_step:
+    raise SystemExit("reconcile-releases must trigger release.yml")
 
 print("PASS release workflow structure")
 PY
