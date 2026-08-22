@@ -27,7 +27,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -97,6 +96,12 @@ jobs:
             -f "ref=refs/tags/${RC_TAG}" \
             -f "sha=${tag_object_sha}" > /dev/null
           echo "Created annotated tag ${RC_TAG} at ${GITHUB_SHA}"
+
+          # Fetch the new tag into the local clone so GoReleaser can
+          # validate that it points at HEAD before building.
+          git fetch --tags --quiet
+          echo "Fetched tag ${RC_TAG}:"
+          git log -1 --oneline "refs/tags/${RC_TAG}"
 
       - name: Detect signing availability
         id: signing
