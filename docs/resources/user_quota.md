@@ -49,3 +49,22 @@ resource "seerr_user_quota" "standard_user" {
 - `global_tv_quota_days` (Number) Instance-wide default TV quota period in days (read-only, from global settings).
 - `global_tv_quota_limit` (Number) Instance-wide default TV quota limit (read-only, from global settings).
 - `id` (String) The ID of this resource.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_user_quota. For example:
+#
+# import {
+#   to = seerr_user_quota.example
+#   id = "1"
+# }
+
+# The ID of the user.
+# Otherwise, use the terraform import command:
+terraform import seerr_user_quota.example 1
+```

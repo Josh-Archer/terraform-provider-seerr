@@ -25,3 +25,22 @@ Manage media request approval and decline status lifecycle via `/api/v1/request/
 - `id` (String) The request ID.
 - `modified_by` (Number) The ID of the user who modified or approved/declined the request.
 - `updated_at` (String) Date and time the request was last updated in ISO 8601 format.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_request_approval. For example:
+#
+# import {
+#   to = seerr_request_approval.example
+#   id = "1"
+# }
+
+# The request ID to approve/decline.
+# Otherwise, use the terraform import command:
+terraform import seerr_request_approval.example 1
+```

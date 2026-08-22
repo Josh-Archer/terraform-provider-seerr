@@ -87,6 +87,7 @@ The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/c
 #   id = "1"
 # }
 
+# The ID of the user.
 # Otherwise, use the terraform import command:
 terraform import seerr_user_notification_settings.example 1
 ```

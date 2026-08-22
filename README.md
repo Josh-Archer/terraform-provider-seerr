@@ -269,6 +269,26 @@ See the complete [Version Compatibility Guide](docs/guides/compatibility.md) for
 
 ---
 
+## Bulk Import & Migration CLI
+
+Adopting the provider on an **existing, live** Seerr instance? You don't need to write Terraform/OpenTofu HCL by hand.
+
+Use the built-in bulk importer CLI to discover your live configuration and generate idiomatic HCL resources + `import { ... }` blocks:
+
+```bash
+# Point the importer at your live Seerr server
+go run ./tools/importer \
+  --url "http://localhost:5055" \
+  --api-key "YOUR_SEERR_API_KEY" \
+  --out-dir "./seerr-tf"
+```
+
+The importer inspects all settings, Radarr/Sonarr servers, notification agents, override rules, and users, generating ready-to-apply `main.tf` and `imports.tf` files.
+
+Read the step-by-step [Migration & Adoption Guide](docs/guides/migration.md) for full instructions.
+
+---
+
 ## Development & Verification
 
 ### Local Testing
