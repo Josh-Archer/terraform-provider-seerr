@@ -113,7 +113,7 @@ func (r *UserSettingsPermissionsResource) Read(ctx context.Context, req resource
 		return
 	}
 	if err := r.readPermissions(ctx, &data); err != nil {
-		if err.Error() == "not found" {
+		if IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -198,6 +198,9 @@ func (r *UserSettingsPermissionsResource) getUserPermissions(ctx context.Context
 	res, err := r.client.Request(ctx, "GET", fmt.Sprintf("/api/v1/user/%d", userID), "", nil)
 	if err != nil {
 		return 0, err
+	}
+	if res.StatusCode == 404 {
+		return 0, ErrNotFound
 	}
 	if !StatusIsOK(res.StatusCode) {
 		return 0, fmt.Errorf("read user status %d: %s", res.StatusCode, string(res.Body))

@@ -123,6 +123,10 @@ func (r *EmbyLibrarySettingsResource) Read(ctx context.Context, req resource.Rea
 	}
 
 	if err := r.readEmbyLibraries(ctx, &data); err != nil {
+		if IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
@@ -199,6 +203,9 @@ func (r *EmbyLibrarySettingsResource) readEmbyLibraries(ctx context.Context, dat
 	res, err := r.client.Request(ctx, "GET", apiPath, "", nil)
 	if err != nil {
 		return err
+	}
+	if res.StatusCode == 404 {
+		return ErrNotFound
 	}
 	if !StatusIsOK(res.StatusCode) {
 		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))

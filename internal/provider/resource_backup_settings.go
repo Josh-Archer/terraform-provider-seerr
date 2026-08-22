@@ -120,6 +120,9 @@ func (r *BackupSettingsResource) refreshState(ctx context.Context, data *BackupS
 	if err != nil {
 		return err
 	}
+	if res.StatusCode == 404 {
+		return ErrNotFound
+	}
 	if !StatusIsOK(res.StatusCode) {
 		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
 	}
@@ -182,6 +185,10 @@ func (r *BackupSettingsResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 	if err := r.refreshState(ctx, &data); err != nil {
+		if IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}

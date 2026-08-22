@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -123,6 +124,10 @@ func (r *PlexLibrarySettingsResource) Read(ctx context.Context, req resource.Rea
 	}
 
 	if err := r.readPlexLibraries(ctx, &data); err != nil {
+		if IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
@@ -152,31 +157,30 @@ func (r *PlexLibrarySettingsResource) Update(ctx context.Context, req resource.U
 }
 
 func (r *PlexLibrarySettingsResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
-	// Removes resource from state.
 }
 
 func (r *PlexLibrarySettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), "plex_library_settings")...)
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 func (r *PlexLibrarySettingsResource) updatePlexLibraries(ctx context.Context, data *PlexLibrarySettingsModel) error {
-	var enabledList []string
-	if !data.EnabledLibraries.IsNull() && !data.EnabledLibraries.IsUnknown() {
-		diags := data.EnabledLibraries.ElementsAs(ctx, &enabledList, false)
-		if diags.HasError() {
-			return fmt.Errorf("failed to extract enabled_libraries")
+	var enabledIDs []string
+	if !data.Libraries.IsNull() && !data.Libraries.IsUnknown() {
+		for _, elem := range data.Libraries.Elements() {
+			if obj, ok := elem.(types.Object); ok {
+				attrs := obj.Attributes()
+				if enabled, ok := attrs["enabled"].(types.Bool); ok && enabled.ValueBool() {
+					if id, ok := attrs["id"].(types.String); ok {
+						enabledIDs = append(enabledIDs, id.ValueString())
+					}
+				}
+			}
 		}
 	}
 
 	apiPath := "/api/v1/settings/plex/library"
-	if len(enabledList) > 0 {
-		enableQuery := ""
-		for i, id := range enabledList {
-			if i > 0 {
-				enableQuery += ","
-			}
-			enableQuery += id
-		}
+	if len(enabledIDs) > 0 {
+		enableQuery := strings.Join(enabledIDs, ",")
 		apiPath = fmt.Sprintf("/api/v1/settings/plex/library?enable=%s", enableQuery)
 	}
 	res, err := r.client.Request(ctx, "GET", apiPath, "", nil)
@@ -199,6 +203,9 @@ func (r *PlexLibrarySettingsResource) readPlexLibraries(ctx context.Context, dat
 	res, err := r.client.Request(ctx, "GET", apiPath, "", nil)
 	if err != nil {
 		return err
+	}
+	if res.StatusCode == 404 {
+		return ErrNotFound
 	}
 	if !StatusIsOK(res.StatusCode) {
 		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))

@@ -187,6 +187,10 @@ func (r *JellyfinSettingsResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 	if err := r.readJellyfinSettings(ctx, &data); err != nil {
+		if IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
@@ -258,6 +262,9 @@ func (r *JellyfinSettingsResource) readJellyfinSettings(ctx context.Context, dat
 	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/jellyfin", "", nil)
 	if err != nil {
 		return err
+	}
+	if res.StatusCode == 404 {
+		return ErrNotFound
 	}
 	if !StatusIsOK(res.StatusCode) {
 		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))

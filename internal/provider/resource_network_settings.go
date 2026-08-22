@@ -147,6 +147,10 @@ func (r *NetworkSettingsResource) Read(ctx context.Context, req resource.ReadReq
 	}
 
 	if err := r.refreshNetworkSettings(ctx, &data); err != nil {
+		if IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
@@ -185,7 +189,7 @@ func (r *NetworkSettingsResource) applyNetworkSettings(ctx context.Context, data
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
 	res, err := r.client.Request(ctx, "POST", "/api/v1/settings/network", string(body), nil)
@@ -203,6 +207,9 @@ func (r *NetworkSettingsResource) refreshNetworkSettings(ctx context.Context, da
 	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/network", "", nil)
 	if err != nil {
 		return err
+	}
+	if res.StatusCode == 404 {
+		return ErrNotFound
 	}
 	if !StatusIsOK(res.StatusCode) {
 		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))

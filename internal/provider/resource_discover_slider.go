@@ -279,6 +279,9 @@ func (r *DiscoverSliderResource) fetchSliders(ctx context.Context) ([]DiscoverSl
 		return nil, err
 	}
 
+	if res.StatusCode == 404 {
+		return nil, ErrNotFound
+	}
 	if !StatusIsOK(res.StatusCode) {
 		return nil, fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
 	}

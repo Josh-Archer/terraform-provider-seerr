@@ -142,6 +142,10 @@ func (r *PlexSettingsResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 	if err := r.readPlexSettings(ctx, &data); err != nil {
+		if IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
