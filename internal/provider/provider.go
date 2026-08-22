@@ -215,11 +215,11 @@ func resolveProviderConfigValues(data SeerrProviderModel, version string, getenv
 	if !data.MaxRetries.IsNull() && !data.MaxRetries.IsUnknown() {
 		config.MaxRetries = int(data.MaxRetries.ValueInt64())
 	} else if rawRetries := strings.TrimSpace(getenv("SEERR_MAX_RETRIES")); rawRetries != "" {
-		retries, err := strconv.ParseInt(rawRetries, 10, 64)
+		retries, err := strconv.Atoi(rawRetries)
 		if err != nil {
 			return providerConfigValues{}, fmt.Errorf("cannot parse SEERR_MAX_RETRIES %q: %s", rawRetries, err)
 		}
-		config.MaxRetries = int(retries)
+		config.MaxRetries = retries
 	}
 	if config.MaxRetries < 0 {
 		config.MaxRetries = 0
