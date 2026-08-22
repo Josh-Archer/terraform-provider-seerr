@@ -2,9 +2,8 @@
 #
 # import {
 #   to = seerr_emby_library_settings.example
-#   id = "1"
+#   id = "emby_library_settings"
 # }
 
-# The library ID.
 # Otherwise, use the terraform import command:
-terraform import seerr_emby_library_settings.example 1
+terraform import seerr_emby_library_settings.example emby_library_settings

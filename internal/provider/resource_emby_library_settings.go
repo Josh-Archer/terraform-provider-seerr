@@ -156,7 +156,7 @@ func (r *EmbyLibrarySettingsResource) Delete(_ context.Context, _ resource.Delet
 }
 
 func (r *EmbyLibrarySettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), "emby_library_settings")...)
 }
 
 func (r *EmbyLibrarySettingsResource) updateEmbyLibraries(ctx context.Context, data *EmbyLibrarySettingsModel) error {

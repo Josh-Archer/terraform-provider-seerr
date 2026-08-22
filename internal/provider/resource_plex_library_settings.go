@@ -156,7 +156,7 @@ func (r *PlexLibrarySettingsResource) Delete(_ context.Context, _ resource.Delet
 }
 
 func (r *PlexLibrarySettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), "plex_library_settings")...)
 }
 
 func (r *PlexLibrarySettingsResource) updatePlexLibraries(ctx context.Context, data *PlexLibrarySettingsModel) error {

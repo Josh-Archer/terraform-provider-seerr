@@ -2,9 +2,8 @@
 #
 # import {
 #   to = seerr_plex_library_settings.example
-#   id = "1"
+#   id = "plex_library_settings"
 # }
 
-# The library section ID.
 # Otherwise, use the terraform import command:
-terraform import seerr_plex_library_settings.example 1
+terraform import seerr_plex_library_settings.example plex_library_settings
