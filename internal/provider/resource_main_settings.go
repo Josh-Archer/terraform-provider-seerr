@@ -486,6 +486,10 @@ func (r *MainSettingsResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 	if err := r.refreshState(ctx, &data); err != nil {
+		if IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}

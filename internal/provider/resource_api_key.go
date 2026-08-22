@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -17,6 +18,7 @@ import (
 
 var _ resource.Resource = &APIKeyResource{}
 var _ resource.ResourceWithImportState = &APIKeyResource{}
+var _ resource.ResourceWithUpgradeState = &APIKeyResource{}
 
 type APIKeyResource struct {
 	client *APIClient
@@ -36,6 +38,7 @@ func (r *APIKeyResource) Metadata(_ context.Context, req resource.MetadataReques
 
 func (r *APIKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Manage the Seerr API key. Creating this resource will regenerate the API key.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -135,6 +138,10 @@ func (r *APIKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
+	if res.StatusCode == http.StatusNotFound {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 	if !StatusIsOK(res.StatusCode) {
 		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return
@@ -182,4 +189,40 @@ func (r *APIKeyResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *
 
 func (r *APIKeyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *APIKeyResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema: &schema.Schema{
+				Attributes: map[string]schema.Attribute{
+					"api_key": schema.StringAttribute{
+						Computed:  true,
+						Sensitive: true,
+					},
+					"status_code": schema.Int64Attribute{
+						Computed: true,
+					},
+				},
+			},
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				type APIKeyModelV0 struct {
+					ApiKey     types.String `tfsdk:"api_key"`
+					StatusCode types.Int64  `tfsdk:"status_code"`
+				}
+				var v0 APIKeyModelV0
+				resp.Diagnostics.Append(req.State.Get(ctx, &v0)...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+
+				v1 := APIKeyModel{
+					ID:         types.StringValue("api_key"),
+					ApiKey:     v0.ApiKey,
+					StatusCode: v0.StatusCode,
+				}
+				resp.Diagnostics.Append(resp.State.Set(ctx, &v1)...)
+			},
+		},
+	}
 }

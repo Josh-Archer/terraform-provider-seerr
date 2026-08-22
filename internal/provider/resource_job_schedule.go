@@ -145,6 +145,10 @@ func (r *JobScheduleResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
+	if res.StatusCode == 404 {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 	if !StatusIsOK(res.StatusCode) {
 		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return

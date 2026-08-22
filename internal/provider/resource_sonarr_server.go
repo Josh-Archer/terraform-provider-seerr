@@ -712,6 +712,10 @@ func (r *SonarrServerResource) Read(ctx context.Context, req resource.ReadReques
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
+	if res.StatusCode == 404 {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 	if !StatusIsOK(res.StatusCode) {
 		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return

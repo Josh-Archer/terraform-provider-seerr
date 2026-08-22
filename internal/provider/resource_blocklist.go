@@ -138,7 +138,7 @@ func (r *BlocklistResource) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 
 	if err := r.refreshBlocklist(ctx, &data); err != nil {
-		if strings.Contains(err.Error(), "status 404") {
+		if IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -266,6 +266,9 @@ func (r *BlocklistResource) refreshBlocklist(ctx context.Context, data *Blocklis
 		if fallbackRes, fallbackErr := r.client.Request(ctx, "GET", fallbackEndpoint, "", nil); fallbackErr == nil {
 			res = fallbackRes
 		}
+	}
+	if res.StatusCode == 404 {
+		return ErrNotFound
 	}
 	if !StatusIsOK(res.StatusCode) {
 		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))

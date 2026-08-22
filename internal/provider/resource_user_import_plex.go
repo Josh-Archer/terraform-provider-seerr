@@ -138,6 +138,10 @@ func (r *UserImportPlexResource) Read(ctx context.Context, req resource.ReadRequ
 	// Fetch all users to refresh imported Plex users list
 	results, err := fetchAllPaginatedResults(ctx, r.client, "/api/v1/user", defaultPaginationPageSize)
 	if err != nil {
+		if IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}

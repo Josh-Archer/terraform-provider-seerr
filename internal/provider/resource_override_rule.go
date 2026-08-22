@@ -160,6 +160,10 @@ func (r *OverrideRuleResource) Read(ctx context.Context, req resource.ReadReques
 
 	found, err := r.fetchOverrideRule(ctx, data.ID.ValueString())
 	if err != nil {
+		if IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
@@ -504,6 +508,9 @@ func (r *OverrideRuleResource) fetchOverrideRule(ctx context.Context, id string)
 	res, err := r.client.Request(ctx, "GET", "/api/v1/overrideRule", "", nil)
 	if err != nil {
 		return nil, err
+	}
+	if res.StatusCode == 404 {
+		return nil, nil
 	}
 	if !StatusIsOK(res.StatusCode) {
 		return nil, fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))

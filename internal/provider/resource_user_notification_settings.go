@@ -233,7 +233,7 @@ func (r *UserNotificationSettingsResource) Read(ctx context.Context, req resourc
 	}
 
 	if err := r.readNotificationSettings(ctx, &data); err != nil {
-		if err.Error() == "not found" {
+		if IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -304,7 +304,7 @@ func (r *UserNotificationSettingsResource) readNotificationSettings(ctx context.
 		return err
 	}
 	if res.StatusCode == 404 {
-		return fmt.Errorf("not found")
+		return ErrNotFound
 	}
 	if !StatusIsOK(res.StatusCode) {
 		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))

@@ -16,6 +16,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// ErrNotFound indicates that the requested upstream resource does not exist (HTTP 404).
+var ErrNotFound = fmt.Errorf("resource not found upstream")
+
+// IsNotFound returns true if the error indicates a 404 Not Found from upstream.
+func IsNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	return err == ErrNotFound || strings.Contains(err.Error(), "404") || strings.Contains(err.Error(), "not found")
+}
+
 const defaultRequestTimeout = 2 * time.Minute
 
 func normalizeRequestTimeout(timeout time.Duration) time.Duration {
