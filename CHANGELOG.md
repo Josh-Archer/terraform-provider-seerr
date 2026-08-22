@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.39.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.38.3...v0.39.0) (2026-08-22)
+
+
+### Features
+
+* **ci:** add RC prerelease workflow, GoReleaser snapshot check, and align with chaptarr ([#214](https://github.com/Josh-Archer/terraform-provider-seerr/issues/214)) ([e64f2f2](https://github.com/Josh-Archer/terraform-provider-seerr/commit/e64f2f299abba9d86b577c3193bb963cd782568c))
+* **resilience:** graceful 404 state removal and schema resilience ([#169](https://github.com/Josh-Archer/terraform-provider-seerr/issues/169)) ([#209](https://github.com/Josh-Archer/terraform-provider-seerr/issues/209)) ([3f26fd6](https://github.com/Josh-Archer/terraform-provider-seerr/commit/3f26fd685bd64d0c2598b7ea726983ed5a7ae89d))
+* **upstream:** sync OpenAPI spec with upstream develop and update coverage ([#197](https://github.com/Josh-Archer/terraform-provider-seerr/issues/197)) ([#212](https://github.com/Josh-Archer/terraform-provider-seerr/issues/212)) ([f35668f](https://github.com/Josh-Archer/terraform-provider-seerr/commit/f35668f8805e7cab303d20522c98ce3c911f7369))
+
+
+### Miscellaneous Chores
+
+* **release:** configure release-please to bump minor version for feat commits pre-1.0 ([#210](https://github.com/Josh-Archer/terraform-provider-seerr/issues/210)) ([aef9ca8](https://github.com/Josh-Archer/terraform-provider-seerr/commit/aef9ca88bc47c2ca91f2e9787ce78469184f17aa))
+
+
+### Continuous Integration
+
+* remove legacy auto-tag from test.yml in favor of staged release-please ([#211](https://github.com/Josh-Archer/terraform-provider-seerr/issues/211)) ([b8a2e50](https://github.com/Josh-Archer/terraform-provider-seerr/commit/b8a2e505b2673ddc18754238ceb6f8036564054b))
+
 ## [0.38.3](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.38.2...v0.38.3) (2026-08-22)
 
 
