@@ -2,8 +2,8 @@
 #
 # import {
 #   to = seerr_api_key.example
-#   id = "1"
+#   id = "api_key"
 # }
 
 # Otherwise, use the terraform import command:
-terraform import seerr_api_key.example 1
+terraform import seerr_api_key.example api_key
