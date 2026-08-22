@@ -6,6 +6,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.38.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.38.1...v0.38.2) (2026-08-22)
+
+
+### Features
+
+* bulk import and migration CLI tooling with HCL generator and migration guide ([#170](https://github.com/Josh-Archer/terraform-provider-seerr/issues/170)) ([#203](https://github.com/Josh-Archer/terraform-provider-seerr/issues/203)) ([37a44e6](https://github.com/Josh-Archer/terraform-provider-seerr/commit/37a44e679ca29211b69e039bcb286f83eeb25bad))
+* community readiness - issue and PR templates, devcontainer, contributing guide, and governance ([#183](https://github.com/Josh-Archer/terraform-provider-seerr/issues/183)) ([#201](https://github.com/Josh-Archer/terraform-provider-seerr/issues/201)) ([83a2b10](https://github.com/Josh-Archer/terraform-provider-seerr/commit/83a2b1036393351c3587246974566a2545baba16))
+* upstream compatibility automation - scheduled OpenAPI diff, release watcher, and compatibility matrix ([#182](https://github.com/Josh-Archer/terraform-provider-seerr/issues/182)) ([#195](https://github.com/Josh-Archer/terraform-provider-seerr/issues/195)) ([62a87a3](https://github.com/Josh-Archer/terraform-provider-seerr/commit/62a87a3e1b80d5bcffe6acfb5b87ce3d0d5a96a6))
+
+
+### Bug Fixes
+
+* **ci:** remove environment gate from release.yml for zero-click publishing ([#198](https://github.com/Josh-Archer/terraform-provider-seerr/issues/198)) ([26cbf40](https://github.com/Josh-Archer/terraform-provider-seerr/commit/26cbf4008be4895afe2780007ad522506f6eacbd))
+* **ci:** set draft: true for release-please to allow GoReleaser publishing ([#193](https://github.com/Josh-Archer/terraform-provider-seerr/issues/193)) ([f4d86ae](https://github.com/Josh-Archer/terraform-provider-seerr/commit/f4d86ae67231451ac43c6a4ce2bdfc53af3414e0))
+
+
+### Documentation
+
+* add ROADMAP.md and update progress matrix ([#199](https://github.com/Josh-Archer/terraform-provider-seerr/issues/199)) ([ff71232](https://github.com/Josh-Archer/terraform-provider-seerr/commit/ff71232bdc34a18f90e470332887f15c118f298e))
+* consolidate roadmap phases, wording, and dual Terraform/OpenTofu support ([#200](https://github.com/Josh-Archer/terraform-provider-seerr/issues/200)) ([e340501](https://github.com/Josh-Archer/terraform-provider-seerr/commit/e3405010ae94bdee49ba439d7379c28d4f42e5f2))
+
+
+### Miscellaneous Chores
+
+* **deps:** bump github.com/stretchr/testify ([#190](https://github.com/Josh-Archer/terraform-provider-seerr/issues/190)) ([088bd87](https://github.com/Josh-Archer/terraform-provider-seerr/commit/088bd87586465808bdf8ecd800639c0b94a65a94))
+
 ## [0.38.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.38.0...v0.38.1) (2026-08-20)
 
 
