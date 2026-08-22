@@ -54,10 +54,9 @@ The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/c
 #
 # import {
 #   to = seerr_jellyfin_library_settings.example
-#   id = "1"
+#   id = "jellyfin_library_settings"
 # }
 
-# The library ID.
 # Otherwise, use the terraform import command:
-terraform import seerr_jellyfin_library_settings.example 1
+terraform import seerr_jellyfin_library_settings.example jellyfin_library_settings
 ```
