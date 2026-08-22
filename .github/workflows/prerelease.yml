@@ -1,0 +1,135 @@
+name: Prerelease
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: prerelease
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GOTOOLCHAIN: local
+
+jobs:
+  prerelease:
+    name: Prerelease RC
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Compute next stable version
+        id: version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Find the latest stable semver tag (vX.Y.Z with no prerelease suffix).
+          stable_pattern='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+          latest_stable="$(git tag --list 'v*' --sort=-v:refname \
+            | grep -E "${stable_pattern}" \
+            | head -n 1 || true)"
+
+          if [[ -z "${latest_stable}" ]]; then
+            latest_stable="v0.0.0"
+          fi
+
+          echo "Latest stable tag: ${latest_stable}"
+
+          # Parse components.
+          IFS='.' read -r major_dot minor patch_raw <<< "${latest_stable#v}"
+          major="${major_dot}"
+          minor="${minor}"
+          patch="${patch_raw%%[^0-9]*}"
+
+          # Bump minor (matching release-please bump-minor-pre-major=true,
+          # bump-patch-for-minor-pre-major=false behaviour).
+          next_minor=$(( minor + 1 ))
+          next_stable="v${major}.${next_minor}.0"
+          echo "Next stable version will be: ${next_stable}"
+
+          # Count how many RC tags already exist for this next stable.
+          rc_pattern="^${next_stable}-rc\.[0-9]+$"
+          rc_count="$(git tag --list "${next_stable}-rc.*" \
+            | grep -cE "${rc_pattern}" || true)"
+          next_rc=$(( rc_count + 1 ))
+
+          rc_tag="${next_stable}-rc.${next_rc}"
+          echo "rc_tag=${rc_tag}" >> "${GITHUB_OUTPUT}"
+          echo "next_stable=${next_stable}" >> "${GITHUB_OUTPUT}"
+          echo "Prerelease tag: ${rc_tag}"
+
+      - name: Create and push prerelease tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RC_TAG: ${{ steps.version.outputs.rc_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag_object_sha="$(gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/git/tags" \
+            -f "tag=${RC_TAG}" \
+            -f "message=Prerelease candidate ${RC_TAG}" \
+            -f "object=${GITHUB_SHA}" \
+            -f type=commit \
+            --jq .sha)"
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/git/refs" \
+            -f "ref=refs/tags/${RC_TAG}" \
+            -f "sha=${tag_object_sha}" > /dev/null
+          echo "Created annotated tag ${RC_TAG} at ${GITHUB_SHA}"
+
+      - name: Detect signing availability
+        id: signing
+        run: |
+          if [ -n "${{ secrets.GPG_PRIVATE_KEY }}" ] && [ -n "${{ secrets.PASSPHRASE }}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Import GPG key
+        if: steps.signing.outputs.enabled == 'true'
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
+        id: import_gpg
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+
+      - name: Run GoReleaser prerelease (signed)
+        if: steps.import_gpg.outputs.fingerprint != ''
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.rc_tag }}
+
+      - name: Run GoReleaser prerelease (unsigned fallback)
+        if: steps.import_gpg.outputs.fingerprint == ''
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          args: release --clean --skip=sign
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.rc_tag }}
