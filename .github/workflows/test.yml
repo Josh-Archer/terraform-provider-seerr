@@ -217,6 +217,48 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  release-snapshot:
+    name: Release Snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build provider release snapshot
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          args: release --snapshot --clean --skip=sign --parallelism=2
+
+      - name: Verify registry artifacts exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f dist/terraform-provider-seerr_linux_amd64_v1/terraform-provider-seerr_v0.0.0-SNAPSHOT-* || \
+            find dist -type f -name 'terraform-provider-seerr_v*' -print -quit | grep -q .
+          checksum_file="$(find dist -maxdepth 1 -type f -name 'terraform-provider-seerr_*_SHA256SUMS' -print -quit)"
+          test -n "${checksum_file}"
+          manifest_line="$(grep -E ' terraform-provider-seerr_.+_manifest\.json$' "${checksum_file}")"
+          test "$(printf '%s\n' "${manifest_line}" | grep -c .)" -eq 1
+          read -r manifest_digest _ <<< "${manifest_line}"
+          expected_manifest_digest="$(sha256sum terraform-registry-manifest.json | awk '{print $1}')"
+          test "${manifest_digest}" = "${expected_manifest_digest}"
+          python3 - <<'PY'
+          import json
+          with open("terraform-registry-manifest.json", encoding="utf-8") as stream:
+              manifest = json.load(stream)
+          assert manifest == {"version": 1, "metadata": {"protocol_versions": ["6.0"]}}
+          PY
+
   auto-merge:
     name: Auto Merge
     needs: [build-test, tofu-test-stable]
@@ -236,5 +278,6 @@ jobs:
         run: |
           echo "Enabling auto-merge for ${PR_URL} authored by ${GITHUB_ACTOR}..."
           gh pr merge "${PR_URL}" --auto --squash
+
 
 
