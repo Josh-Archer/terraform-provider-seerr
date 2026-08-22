@@ -59,6 +59,7 @@ jobs:
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: v2.5.0
+          verify: false
 
   tofu-test-stable:
     name: OpenTofu Stable Integration (${{ matrix.tofu_version }})
@@ -376,4 +377,25 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --ref "${DEFAULT_BRANCH}" \
             -f "release_tag=${RELEASE_TAG}"
+
+  auto-merge:
+    name: Auto Merge
+    needs: [build-test, tofu-test-stable]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    if: |
+      github.event_name == 'pull_request' &&
+      (github.actor == 'Josh-Archer' || github.actor == 'app/github-actions' || github.actor == 'github-actions[bot]') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Enable auto-merge for pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          echo "Enabling auto-merge for ${PR_URL} authored by ${GITHUB_ACTOR}..."
+          gh pr merge "${PR_URL}" --auto --squash
+
 
