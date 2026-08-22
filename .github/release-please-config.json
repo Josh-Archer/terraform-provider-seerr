@@ -5,7 +5,7 @@
       "package-name": "terraform-provider-seerr",
       "release-type": "terraform-module",
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": false,
       "draft": true,
       "prerelease": false,
       "changelog-path": "CHANGELOG.md",
