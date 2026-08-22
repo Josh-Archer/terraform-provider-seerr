@@ -87,5 +87,13 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_network_settings. For example:
+#
+# import {
+#   to = seerr_network_settings.example
+#   id = "network"
+# }
+
+# Otherwise, use the terraform import command:
 terraform import seerr_network_settings.example network
 ```

@@ -42,3 +42,22 @@ Read-Only:
 - `enabled` (Boolean)
 - `id` (String)
 - `name` (String)
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_plex_library_settings. For example:
+#
+# import {
+#   to = seerr_plex_library_settings.example
+#   id = "1"
+# }
+
+# The library section ID.
+# Otherwise, use the terraform import command:
+terraform import seerr_plex_library_settings.example 1
+```

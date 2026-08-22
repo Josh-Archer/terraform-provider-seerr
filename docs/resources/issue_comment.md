@@ -26,3 +26,22 @@ Manage Seerr issue comments via `/api/v1/issue/{issueId}/comment` and `/api/v1/i
 - `id` (String) The comment ID.
 - `updated_at` (String) Date and time the comment was last updated in ISO 8601 format.
 - `user_id` (Number) The ID of the user who authored the comment.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_issue_comment. For example:
+#
+# import {
+#   to = seerr_issue_comment.example
+#   id = "1"
+# }
+
+# The comment ID.
+# Otherwise, use the terraform import command:
+terraform import seerr_issue_comment.example 1
+```

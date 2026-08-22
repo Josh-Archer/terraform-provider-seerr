@@ -70,5 +70,14 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
+# In Terraform 1.5.0 and later, use an import block to import seerr_issue. For example:
+#
+# import {
+#   to = seerr_issue.example
+#   id = "1"
+# }
+
+# The issue ID.
+# Otherwise, use the terraform import command:
 terraform import seerr_issue.example 1
 ```
