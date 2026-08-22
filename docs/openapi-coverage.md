@@ -4,10 +4,10 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 
 ## Coverage Summary
 
-- **Total OpenAPI Paths**: 163
-- **Total Endpoints (Methods)**: 212
-- **Covered Paths**: 73 (44.8%)
-- **Intentionally Out of Scope**: 90 (55.2%)
+- **Total OpenAPI Paths**: 167
+- **Total Endpoints (Methods)**: 216
+- **Covered Paths**: 77 (46.1%)
+- **Intentionally Out of Scope**: 90 (53.9%)
 - **Uncovered Settings/User Backlog**: 0 (0.0%)
 
 ## Classification Legend
@@ -104,6 +104,8 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/settings/initialize` | POST | `intentionally-out-of-scope` | First-run initial setup wizard endpoint |
 | `/settings/jellyfin` | GET, POST | `covered` | `seerr_jellyfin_settings` - Jellyfin settings resource & data source |
 | `/settings/jellyfin/library` | GET | `covered` | `seerr_jellyfin_library_settings` - Jellyfin library enable/disable settings |
+| `/settings/jellyfin/library/sync` | POST | `covered` | `seerr_jellyfin_library_sync` - Jellyfin library sync trigger |
+| `/settings/jellyfin/library/{libraryId}` | PUT | `covered` | `seerr_jellyfin_library_settings` - Jellyfin individual library setting |
 | `/settings/jellyfin/sync` | GET, POST | `covered` | `seerr_jellyfin_library_sync` - Jellyfin library sync trigger |
 | `/settings/jellyfin/users` | GET | `intentionally-out-of-scope` | Transient user lookup for Jellyfin server configuration |
 | `/settings/jobs` | GET | `covered` | `seerr_jobs` - Jobs data source |
@@ -140,6 +142,8 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/settings/plex` | GET, POST | `covered` | `seerr_plex_settings` - Plex settings resource & data source |
 | `/settings/plex/devices/servers` | GET | `covered` | `seerr_plex_devices` - Transient device discovery endpoint for Plex |
 | `/settings/plex/library` | GET | `covered` | `seerr_plex_library_settings` - Plex library enable/disable settings |
+| `/settings/plex/library/sync` | POST | `covered` | `seerr_plex_library_sync` - Plex library sync trigger |
+| `/settings/plex/library/{libraryId}` | PUT | `covered` | `seerr_plex_library_settings` - Plex individual library setting |
 | `/settings/plex/sync` | GET, POST | `covered` | `seerr_plex_library_sync` - Plex library sync trigger |
 | `/settings/plex/users` | GET | `intentionally-out-of-scope` | Transient user lookup for Plex server configuration |
 | `/settings/public` | GET | `covered` | `seerr_public_settings` - Public settings data source |

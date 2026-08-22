@@ -109,8 +109,12 @@ func DefaultRules() []PathRule {
 		{PathPattern: "/api-key/regenerate", Classification: ClassCovered, MappedResource: "seerr_api_key", Notes: "API key regenerate action"},
 
 		{PathPattern: "/settings/plex/library", Classification: ClassCovered, MappedResource: "seerr_plex_library_settings", Notes: "Plex library enable/disable settings"},
+		{PathPattern: "/settings/plex/library/{libraryId}", Classification: ClassCovered, MappedResource: "seerr_plex_library_settings", Notes: "Plex individual library setting"},
+		{PathPattern: "/settings/plex/library/sync", Classification: ClassCovered, MappedResource: "seerr_plex_library_sync", Notes: "Plex library sync trigger"},
 		{PathPattern: "/settings/plex/sync", Classification: ClassCovered, MappedResource: "seerr_plex_library_sync", Notes: "Plex library sync trigger"},
 		{PathPattern: "/settings/jellyfin/library", Classification: ClassCovered, MappedResource: "seerr_jellyfin_library_settings", Notes: "Jellyfin library enable/disable settings"},
+		{PathPattern: "/settings/jellyfin/library/{libraryId}", Classification: ClassCovered, MappedResource: "seerr_jellyfin_library_settings", Notes: "Jellyfin individual library setting"},
+		{PathPattern: "/settings/jellyfin/library/sync", Classification: ClassCovered, MappedResource: "seerr_jellyfin_library_sync", Notes: "Jellyfin library sync trigger"},
 		{PathPattern: "/settings/jellyfin/sync", Classification: ClassCovered, MappedResource: "seerr_jellyfin_library_sync", Notes: "Jellyfin library sync trigger"},
 		{PathPattern: "/settings/emby/library", Classification: ClassCovered, MappedResource: "seerr_emby_library_settings", Notes: "Emby library enable/disable settings"},
 		{PathPattern: "/settings/emby/sync", Classification: ClassCovered, MappedResource: "seerr_emby_library_sync", Notes: "Emby library sync trigger"},
