@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   GOTOOLCHAIN: local
@@ -84,24 +84,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tag_object_sha="$(gh api --method POST \
-            "repos/${GITHUB_REPOSITORY}/git/tags" \
-            -f "tag=${RC_TAG}" \
-            -f "message=Prerelease candidate ${RC_TAG}" \
-            -f "object=${GITHUB_SHA}" \
-            -f type=commit \
-            --jq .sha)"
-          gh api --method POST \
-            "repos/${GITHUB_REPOSITORY}/git/refs" \
-            -f "ref=refs/tags/${RC_TAG}" \
-            -f "sha=${tag_object_sha}" > /dev/null
-          echo "Created annotated tag ${RC_TAG} at ${GITHUB_SHA}"
-
-          # Fetch the new tag into the local clone so GoReleaser can
-          # validate that it points at HEAD before building.
-          git fetch --tags --quiet
-          echo "Fetched tag ${RC_TAG}:"
-          git log -1 --oneline "refs/tags/${RC_TAG}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${RC_TAG}" -m "Prerelease candidate ${RC_TAG}"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "refs/tags/${RC_TAG}"
+          echo "Created and pushed tag ${RC_TAG} for commit $(git rev-parse HEAD)"
 
       - name: Detect signing availability
         id: signing
