@@ -10,9 +10,9 @@ The `seerr` Terraform provider targets the Seerr / Jellyseerr / Overseerr REST A
 
 | Server Application | Supported Versions | Tested CI Baseline | Status |
 | :--- | :--- | :--- | :--- |
-| **Seerr (Unified)** | `v3.0.0`+ | `seerr/seerr:v3.1.1` | **Tier 1 (Primary Target)** ✅ |
-| **Jellyseerr** | `v1.7.0` - `v2.x`+ | `fallenbagel/jellyseerr:latest` | **Tier 1 (Fully Supported)** ✅ |
-| **Overseerr** | `v1.33.2`+ | `sct/overseerr:latest` | **Tier 2 (Supported)** ✅ |
+| **Seerr (Unified)** | `v3.0.0` - `v3.4.1`+ | `seerr/seerr:v3.1.1` (verified `v3.4.1`) | **Tier 1 (Primary Target)** ✅ |
+| **Jellyseerr** | `v1.7.0` - `v3.4.1`+ | `fallenbagel/jellyseerr:latest` (`v3.4.1`) | **Tier 1 (Fully Supported)** ✅ |
+| **Overseerr** | `v1.33.2` - `v1.35.0`+ | `sct/overseerr:latest` (`v1.35.0`) | **Tier 2 (Supported)** ✅ |
 
 ### Upstream Feature Mapping & API Dialects
 

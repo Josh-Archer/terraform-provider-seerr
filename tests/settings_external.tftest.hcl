@@ -13,7 +13,7 @@ run "plex_settings_lifecycle" {
   }
 
   assert {
-    condition     = !var.enabled || seerr_plex_settings.test[0].ip == var.ip
+    condition     = var.enabled ? seerr_plex_settings.test[0].ip == var.ip : length(seerr_plex_settings.test) == 0
     error_message = "Plex settings ip did not match expected value"
   }
 }
