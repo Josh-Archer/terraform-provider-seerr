@@ -68,7 +68,7 @@ jobs:
           issue_title="feat(upstream): upstream OpenAPI schema drift detected"
           
           # Check if an open drift issue already exists
-          existing_issue=$(gh issue list --repo "${GITHUB_REPOSITORY}" --state open --search "${issue_title} in:title" --json number --jq '.[0].number')
+          existing_issue=$(gh issue list --repo "${GITHUB_REPOSITORY}" --state open --json number,title --jq ".[] | select(.title == \"${issue_title}\") | .number" | head -n 1)
 
           if [[ -n "${existing_issue}" && "${existing_issue}" != "null" ]]; then
             echo "Updating existing tracking issue #${existing_issue} with latest drift report..."

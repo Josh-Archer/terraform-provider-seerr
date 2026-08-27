@@ -71,7 +71,7 @@ jobs:
           set -euo pipefail
           issue_title="feat(compatibility): upstream release check and compatibility verification"
           
-          existing_issue=$(gh issue list --repo "${GITHUB_REPOSITORY}" --state open --search "${issue_title} in:title" --json number --jq '.[0].number')
+          existing_issue=$(gh issue list --repo "${GITHUB_REPOSITORY}" --state open --json number,title --jq ".[] | select(.title == \"${issue_title}\") | .number" | head -n 1)
           
           if [[ -n "${existing_issue}" && "${existing_issue}" != "null" ]]; then
             echo "Updating existing tracking issue #${existing_issue}..."
