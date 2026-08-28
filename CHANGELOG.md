@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.39.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.38.3...v0.39.0) (2026-08-28)
+## [0.40.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.39.1...v0.40.0) (2026-08-28)
 
 
 ### Features
