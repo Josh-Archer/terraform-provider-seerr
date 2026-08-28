@@ -17,6 +17,14 @@ The `seerr` provider enables you to configure, manage, and automate [Overseerr](
 - **Granular Permissions & Quotas**: Bitmask permission sets, user request quotas, and watchlist sync management.
 - **Drift Protection & Schema Fidelity**: Double-apply drift protection and generic fallback primitives (`seerr_api_object`, `seerr_api_request`).
 
+## Guides & Runbooks
+
+- [Version Compatibility Matrix](guides/compatibility.md): Supported versions of Seerr, Jellyseerr, Overseerr, OpenTofu, and Terraform.
+- [Migration & Bulk Adoption Guide](guides/migration.md): Bulk-importing live Seerr configurations into HCL with `tools/importer`.
+- [Observability & Metrics Guide](guides/observability.md): Telemetry data sources, Prometheus metrics exporter, and Grafana dashboard.
+- [Automated Drift Detection Guide](guides/drift-detection.md): Scheduling drift detection with `-detailed-exitcode` and webhook alerts.
+- [Disaster Recovery Runbook](guides/disaster-recovery.md): Restoring instances, state recovery, SQLite restoration, and automated snapshots.
+
 ## Example Usage
 
 ```terraform

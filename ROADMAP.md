@@ -19,11 +19,9 @@ Every release is automatically signed with standard **RSA 4096-bit GPG keys** an
 
 ```mermaid
 flowchart LR
-    A["Phases 1–8<br/><b>Core & Automation</b><br/>✅ Complete (v0.38.2)"] --> B["Phase 9<br/><b>Community Readiness</b><br/>🔵 Next (v0.39.0)"]
-    B --> C["Phase 10<br/><b>Bulk Import CLI</b><br/>📅 (v0.40.0)"]
-    C --> D["Phase 11<br/><b>State Resilience</b><br/>📅 (v0.41.0)"]
-    D --> E["Phase 12–13<br/><b>DR & Modules</b><br/>📅 (v0.42–0.43)"]
-    E --> F["Phase 14<br/><b>v1.0.0 GA</b><br/>🏁 Stable Release"]
+    A["Phases 1–11<br/><b>Core, Import & Resilience</b><br/>✅ Complete (v0.41.0)"] --> B["Phase 12<br/><b>Observability & DR</b><br/>✅ Complete (v0.42.0)"]
+    B --> C["Phase 13<br/><b>Module Ecosystem</b><br/>🔵 Next (v0.43.0)"]
+    C --> D["Phase 14<br/><b>v1.0.0 GA</b><br/>🏁 Stable Release"]
 ```
 
 | Phase | Target Version | Focus Area | Status |
@@ -36,13 +34,12 @@ flowchart LR
 | **Phase 6: Advanced Resource Lifecycle** | `v0.36.0` | Request approvals/declines, issue comments, and computed user metadata. | ✅ Completed |
 | **Phase 7: Servarr Resolvers & Filtering** | `v0.37.1` | Dynamic Radarr/Sonarr entity resolution (quality profiles, root folders, tags) and filterable queries. | ✅ Completed |
 | **Phase 8: Production Automation & Dual Registry** | `v0.38.2` | **HashiCorp Terraform Registry** + **OpenTofu Registry** publishing, Google Release Please, and automated OpenAPI drift detection. | ✅ Completed |
-| **Phase 9: Community Readiness** | `v0.39.0` | Contributor onboarding (`CONTRIBUTING.md`), issue/PR templates, devcontainer, and Docker dev environment ([#183](https://github.com/Josh-Archer/terraform-provider-seerr/issues/183)). | 🔵 **In Progress** |
-| **Phase 10: Import & Migration Tooling** | `v0.40.0` | Bulk CLI generator (`tools/importer`) generating Terraform HCL and `import` blocks from live instances ([#170](https://github.com/Josh-Archer/terraform-provider-seerr/issues/170)). | 📅 Planned |
-| **Phase 11: State Resilience & Upgraders** | `v0.41.0` | State schema upgraders, semantic diff suppression, and uniform 404 state removal ([#169](https://github.com/Josh-Archer/terraform-provider-seerr/issues/169)). | 📅 Planned |
-| **Phase 12: Observability & Disaster Recovery** | `v0.42.0` | Backup/recovery runbooks, drift detection dashboards, and Prometheus/Grafana metrics presets ([#184](https://github.com/Josh-Archer/terraform-provider-seerr/issues/184)). | 📅 Planned |
-| **Phase 13: Module Ecosystem** | `v0.43.0` | Reusable composite modules for turnkey homelab stacks, arr integrations, and alert routing ([#171](https://github.com/Josh-Archer/terraform-provider-seerr/issues/171)). | 📅 Planned |
+| **Phase 9: Community Readiness** | `v0.39.0` | Contributor onboarding (`CONTRIBUTING.md`), issue/PR templates, devcontainer, and Docker dev environment ([#183](https://github.com/Josh-Archer/terraform-provider-seerr/issues/183)). | ✅ Completed |
+| **Phase 10: Import & Migration Tooling** | `v0.40.0` | Bulk CLI generator (`tools/importer`) generating Terraform HCL and `import` blocks from live instances ([#170](https://github.com/Josh-Archer/terraform-provider-seerr/issues/170)). | ✅ Completed |
+| **Phase 11: State Resilience & Upgraders** | `v0.41.0` | State schema upgraders, semantic diff suppression, and uniform 404 state removal ([#169](https://github.com/Josh-Archer/terraform-provider-seerr/issues/169)). | ✅ Completed |
+| **Phase 12: Observability & Disaster Recovery** | `v0.42.0` | Backup/recovery runbooks, drift detection dashboards, and Prometheus/Grafana metrics presets ([#184](https://github.com/Josh-Archer/terraform-provider-seerr/issues/184)). | ✅ Completed |
+| **Phase 13: Module Ecosystem** | `v0.43.0` | Reusable composite modules for turnkey homelab stacks, arr integrations, and alert routing ([#171](https://github.com/Josh-Archer/terraform-provider-seerr/issues/171)). | 🔵 **In Progress** |
 | **Phase 14: v1.0.0 General Availability** | `v1.0.0` | API stability guarantee, breaking change policy, and full cross-engine acceptance matrix. | 🏁 Planned |
-
 ---
 
 ## 🎯 Completed Milestone Highlights
@@ -65,6 +62,12 @@ flowchart LR
 - **50 Managed Resources** and **69 Data Sources** covering 100% of applicable OpenAPI configuration endpoints.
 - **Dynamic Servarr Resolvers**: Direct lookups for Radarr & Sonarr quality profiles, root folders, tags, and language profiles.
 - **11 Typed Notification Agents**: Discord, Email, Gotify, LunaSea, Ntfy, Pushbullet, Pushover, Slack, Telegram, Webhook, Webpush with live test triggers (`seerr_notification_agent_test`).
+
+### ✅ Observability, Monitoring & Disaster Recovery
+- **Pre-built Grafana Dashboard**: Full-featured v10+ dashboard (`examples/monitoring/grafana-dashboard.json`) for server health, request backlog, catalog volume, job schedules, and drift status.
+- **Prometheus Exporter**: Standalone & containerized exporter (`examples/monitoring/exporter/`) scraping live API and IaC state metrics on port `9850`.
+- **Automated Drift Detection & Webhooks**: Drift monitoring with `-detailed-exitcode` and Discord/Slack/HTTP webhook alerting.
+- **Disaster Recovery Runbooks**: Complete runbooks for container loss, state loss, SQLite restoration, and automated state snapshots with SHA256 verification.
 
 ---
 

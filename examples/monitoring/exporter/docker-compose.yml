@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  seerr-exporter:
+    build: .
+    container_name: seerr-prometheus-exporter
+    restart: unless-stopped
+    ports:
+      - "9850:9850"
+    environment:
+      - EXPORTER_PORT=9850
+      - SEERR_URL=http://seerr:5055
+      - SEERR_API_KEY=${SEERR_API_KEY}
+      - SCRAPE_INTERVAL_SECONDS=30
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9850/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
