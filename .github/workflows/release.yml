@@ -159,19 +159,21 @@ jobs:
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           workdir: source
-          args: release --clean --current-tag "${{ env.RELEASE_TAG }}" --config ../release-control/.goreleaser.yml
+          args: release --clean --config ../release-control/.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          GORELEASER_CURRENT_TAG: ${{ env.RELEASE_TAG }}
 
       - name: Run GoReleaser (unsigned fallback)
         if: steps.release_state.outputs.published != 'true' && steps.import_gpg.outputs.fingerprint == ''
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           workdir: source
-          args: release --clean --skip=sign --current-tag "${{ env.RELEASE_TAG }}" --config ../release-control/.goreleaser.yml
+          args: release --clean --skip=sign --config ../release-control/.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ env.RELEASE_TAG }}
 
       - name: Verify OpenTofu registry indexing
         if: steps.release_state.outputs.published != 'true'
