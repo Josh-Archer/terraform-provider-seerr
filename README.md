@@ -217,6 +217,9 @@ resource "seerr_plex_settings" "plex" {
 - [`modules/plex_settings`](modules/plex_settings): Plex media server connection and library settings.
 - [`modules/radarr_server`](modules/radarr_server): Radarr movie integration module.
 - [`modules/sonarr_server`](modules/sonarr_server): Sonarr series integration module.
+- [`modules/family_media_server`](modules/family_media_server): Family users, permission tiers, quotas, notification routing, and curated discover sliders.
+- [`modules/arr_stack_bootstrap`](modules/arr_stack_bootstrap): Keyed Sonarr/Radarr quality routes, override rules, and webhook notifications.
+- [`modules/monitoring`](modules/monitoring): Seerr server, request, and media metrics for Prometheus and Grafana consumption.
 
 ### Reference Architectures
 - [**Full Media Stack Module** (`examples/modules/full-media-stack`)](examples/modules/full-media-stack): Complete composite module integrating Seerr with Plex/Jellyfin, Radarr, Sonarr, Anime routing rules, curated Discover sliders, and Discord notifications.

@@ -172,6 +172,7 @@ elif [[ "${test_suite}" == "stable" ]]; then
     "features.tftest.hcl"
     "issue.tftest.hcl"
     "job_schedule.tftest.hcl"
+    "module_ecosystem.tftest.hcl"
     "override_rule.tftest.hcl"
     "request.tftest.hcl"
     "servers.tftest.hcl"

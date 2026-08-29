@@ -129,7 +129,15 @@ func assertModulesUseRegisteredResourceAttributes(t *testing.T, modulesDir strin
 	}
 
 	resourceBlockPattern := regexp.MustCompile(`(?s)resource\s+"([^"]+)"\s+"[^"]+"\s+\{(.*?)\n\}`)
-	attributePattern := regexp.MustCompile(`(?m)^\s*([A-Za-z0-9_]+)\s*=`)
+	// tofu fmt indents resource-level arguments by exactly two spaces. Nested
+	// object and block attributes are validated by the provider schema itself.
+	attributePattern := regexp.MustCompile(`(?m)^  ([A-Za-z0-9_]+)\s*=`)
+	resourceMetaArguments := map[string]struct{}{
+		"count":      {},
+		"depends_on": {},
+		"for_each":   {},
+		"provider":   {},
+	}
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -153,6 +161,9 @@ func assertModulesUseRegisteredResourceAttributes(t *testing.T, modulesDir strin
 					continue
 				}
 				attrName := strings.TrimSpace(match[1])
+				if _, ok := resourceMetaArguments[attrName]; ok {
+					continue
+				}
 				if _, ok := allowed[attrName]; !ok {
 					t.Fatalf("module %s references unsupported attribute %s.%s", entry.Name(), resourceName, attrName)
 				}
