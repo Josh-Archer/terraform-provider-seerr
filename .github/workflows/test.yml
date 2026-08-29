@@ -80,7 +80,22 @@ jobs:
           - target: jellyseerr-v2.7.3
             tofu_version: 1.8.0
             image: fallenbagel/jellyseerr:2.7.3
-            filters: ""
+            filters: >-
+              api_objects.tftest.hcl
+              backup_settings.tftest.hcl
+              current_user.tftest.hcl
+              data_sources.tftest.hcl
+              discover.tftest.hcl
+              discover_slider_data_source.tftest.hcl
+              features.tftest.hcl
+              issue.tftest.hcl
+              job_schedule.tftest.hcl
+              override_rule.tftest.hcl
+              request.tftest.hcl
+              servers.tftest.hcl
+              settings.tftest.hcl
+              user.tftest.hcl
+              user_permissions.tftest.hcl
           - target: overseerr-v1.35.0
             tofu_version: 1.8.0
             image: sctx/overseerr:1.35.0
@@ -301,5 +316,4 @@ jobs:
         run: |
           echo "Enabling auto-merge for ${PR_URL} authored by ${GITHUB_ACTOR}..."
           gh pr merge "${PR_URL}" --auto --squash
-
 

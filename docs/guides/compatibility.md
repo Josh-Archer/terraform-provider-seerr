@@ -16,7 +16,7 @@ The `seerr` Terraform provider targets the Seerr / Jellyseerr / Overseerr REST A
 
 ### Verified Release Snapshot (2026-08-29)
 
-Pull requests run OpenTofu integration coverage against all three pinned images above. Seerr and Jellyseerr run the stable provider suite; Overseerr runs the common Plex, ARR, request, issue, job, settings, user, and discovery subset because it does not implement Jellyfin/Emby-specific endpoints.
+Pull requests run OpenTofu integration coverage against all three pinned images above. Seerr runs the stable provider suite. Legacy Jellyseerr runs the same suite except for the post-consolidation blocklist endpoint, which returns 404 on `v2.7.3`. Overseerr runs the common Plex, ARR, request, issue, job, settings, user, and discovery subset because it does not implement Jellyfin/Emby-specific endpoints.
 
 The Seerr `v3.4.1` release OpenAPI specification was compared with `tools/openapi/seerr-api.yml`. It adds no endpoints missing from the provider snapshot. The provider snapshot contains four forward-development library sync endpoints that are not present in the release specification, so no release-spec rollback is required.
 
