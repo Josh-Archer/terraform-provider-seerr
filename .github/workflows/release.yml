@@ -184,7 +184,9 @@ jobs:
           set -euo pipefail
           version="${RELEASE_TAG#v}"
           echo "Checking OpenTofu registry indexing for version ${version}..."
-          registry_url="https://registry.opentofu.org/v1/providers/${GITHUB_REPOSITORY}/versions"
+          provider_name="${GITHUB_REPOSITORY#*/}"
+          provider_name="${provider_name#terraform-provider-}"
+          registry_url="https://registry.opentofu.org/v1/providers/${GITHUB_REPOSITORY_OWNER,,}/${provider_name}/versions"
           deadline=$((SECONDS + 600))
           indexed="false"
 
