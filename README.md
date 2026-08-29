@@ -259,9 +259,9 @@ The provider maintains continuous compatibility tracking with upstream media man
 
 | Target | Supported Versions | Tested CI Baseline |
 | :--- | :--- | :--- |
-| **Seerr (Unified)** | `v3.0.0`+ | `seerr/seerr:v3.1.1` |
-| **Jellyseerr** | `v1.7.0` - `v2.x`+ | `fallenbagel/jellyseerr:latest` |
-| **Overseerr** | `v1.33.2`+ | `sct/overseerr:latest` |
+| **Seerr (Unified)** | `v3.0.0` - `v3.4.1` | `seerr/seerr:v3.4.1` |
+| **Jellyseerr (legacy)** | `v1.7.0` - `v2.7.3` | `fallenbagel/jellyseerr:2.7.3` |
+| **Overseerr** | `v1.33.2` - `v1.35.0` | `sctx/overseerr:1.35.0` |
 | **OpenTofu** | `>= 1.6.0` (tested `1.8.x` - `1.11.x`) | Protocol 6.0 |
 | **Terraform** | `>= 1.5.0` (tested `1.5.x` - `1.11.x`) | Protocol 6.0 |
 

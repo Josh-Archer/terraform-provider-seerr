@@ -1,6 +1,6 @@
 services:
   seerr:
-    image: ${SEERR_TEST_IMAGE:-seerr/seerr:v3.1.1}
+    image: ${SEERR_TEST_IMAGE:-seerr/seerr:v3.4.1}
     container_name: seerr-test
     environment:
       - LOG_LEVEL=debug
