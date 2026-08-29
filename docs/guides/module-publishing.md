@@ -1,8 +1,10 @@
 # Publishing the reusable modules
 
-The reusable modules in this repository are tested as child modules and are ready to be extracted into registry packages. OpenTofu Registry module submissions cannot point at a child directory in a provider repository. Each published package must use a public repository named `{owner}/terraform-{target}-{name}` and must be submitted through the registry's interactive GitHub issue form.
+The supported distribution is the versioned child modules in this repository. Users can consume them directly with a GitHub subdirectory source such as `github.com/Josh-Archer/terraform-provider-seerr//modules/family_media_server?ref=v0.41.0`; no separate repository is required for normal use.
 
-Use these package mappings:
+Publishing them as independently searchable OpenTofu Registry packages is optional. The registry cannot point at a child directory in a provider repository, so that distribution model would require a separate public repository named `{owner}/terraform-{target}-{name}` for each package and submission through the registry's interactive GitHub issue form.
+
+If independent registry packages are ever desired, use these mappings:
 
 | Source directory | Publication repository | Module address |
 | --- | --- | --- |
@@ -17,4 +19,3 @@ For each package:
 3. Open the [OpenTofu Registry module submission form](https://github.com/opentofu/registry/issues/new?template=module.yml) in a signed-in browser and submit the repository path.
 
 The OpenTofu registry explicitly rejects API- or CLI-created submission issues because its automation depends on the structured interactive form.
-

@@ -212,6 +212,24 @@ resource "seerr_plex_settings" "plex" {
 
 ## Modules & Composite Examples
 
+Modules are optional convenience layers over the provider's resources. Existing direct-resource configurations continue to work unchanged. For a remote module, pin the repository tag so its implementation stays aligned with a known provider release:
+
+```hcl
+module "family" {
+  source = "github.com/Josh-Archer/terraform-provider-seerr//modules/family_media_server?ref=v0.41.0"
+
+  users = {
+    child = {
+      username       = "Child"
+      email          = "child@example.com"
+      permission_set = "standard"
+    }
+  }
+}
+```
+
+See the [module usage guide](docs/guides/modules.md) for simple family, ARR, and monitoring examples, provider inheritance, and state migration.
+
 ### Packaged Sub-Modules
 - [`modules/main_settings`](modules/main_settings): Standard application branding, locale, and general settings.
 - [`modules/plex_settings`](modules/plex_settings): Plex media server connection and library settings.

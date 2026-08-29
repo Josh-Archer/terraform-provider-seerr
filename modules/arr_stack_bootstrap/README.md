@@ -4,7 +4,7 @@ Registers keyed Radarr and Sonarr server sets, including separate quality-profil
 
 ```hcl
 module "arr" {
-  source = "./modules/arr_stack_bootstrap"
+  source = "github.com/Josh-Archer/terraform-provider-seerr//modules/arr_stack_bootstrap?ref=v0.41.0"
 
   radarr_servers = {
     hd = {
@@ -19,5 +19,6 @@ module "arr" {
 }
 ```
 
-API keys and the optional webhook configuration are treated as sensitive module inputs.
+When calling the module from a checkout of this repository, use `source = "./modules/arr_stack_bootstrap"` instead.
 
+Treat API keys and the optional webhook authorization header as sensitive values in the calling configuration and its state.
