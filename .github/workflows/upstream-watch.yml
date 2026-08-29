@@ -33,12 +33,27 @@ jobs:
         run: |
           set -euo pipefail
           
-          echo "Checking latest releases from upstream Seerr and Jellyseerr repositories..."
+          echo "Checking latest releases from upstream media request projects..."
           
           # Query latest release tags from upstream projects
           seerr_tag=$(gh api repos/seerr-team/seerr/releases/latest --jq '.tag_name' 2>/dev/null || echo "none")
-          jellyseerr_tag=$(gh api repos/Fallenbagel/jellyseerr/releases/latest --jq '.tag_name' 2>/dev/null || echo "none")
+          # Jellyseerr was consolidated into Seerr after v2.7.3. Its GitHub
+          # repository now redirects to Seerr, so querying releases/latest
+          # there incorrectly reports a Seerr v3 release as Jellyseerr.
+          jellyseerr_tag="v2.7.3"
           overseerr_tag=$(gh api repos/sct/overseerr/releases/latest --jq '.tag_name' 2>/dev/null || echo "none")
+
+          verified_seerr_tag=$(jq -r '.seerr.release' .github/upstream-compatibility.json)
+          verified_jellyseerr_tag=$(jq -r '.jellyseerr.release' .github/upstream-compatibility.json)
+          verified_overseerr_tag=$(jq -r '.overseerr.release' .github/upstream-compatibility.json)
+
+          has_update=false
+          if [[ "${seerr_tag}" != "${verified_seerr_tag}" ]] || \
+             [[ "${jellyseerr_tag}" != "${verified_jellyseerr_tag}" ]] || \
+             [[ "${overseerr_tag}" != "${verified_overseerr_tag}" ]]; then
+            has_update=true
+          fi
+          echo "has_update=${has_update}" >> "${GITHUB_OUTPUT}"
           
           echo "Latest Seerr release: ${seerr_tag}"
           echo "Latest Jellyseerr release: ${jellyseerr_tag}"
@@ -49,11 +64,11 @@ jobs:
 
           Automated check of upstream media request management releases.
 
-          | Upstream Project | Repository | Latest Release Tag |
+          | Upstream Project | Latest Release | Verified Release |
           |---|---|---|
-          | Seerr (Unified) | \`seerr-team/seerr\` | \`${seerr_tag}\` |
-          | Jellyseerr | \`Fallenbagel/jellyseerr\` | \`${jellyseerr_tag}\` |
-          | Overseerr | \`sct/overseerr\` | \`${overseerr_tag}\` |
+          | Seerr (Unified) | \`${seerr_tag}\` | \`${verified_seerr_tag}\` |
+          | Jellyseerr (legacy) | \`${jellyseerr_tag}\` | \`${verified_jellyseerr_tag}\` |
+          | Overseerr | \`${overseerr_tag}\` | \`${verified_overseerr_tag}\` |
 
           ### Action Items for Provider Compatibility
           - [ ] Verify test suite against new upstream container images.
@@ -64,6 +79,7 @@ jobs:
           cat upstream-releases.md
 
       - name: Check and report new upstream release
+        if: steps.check.outputs.has_update == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash

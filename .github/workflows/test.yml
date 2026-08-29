@@ -62,7 +62,7 @@ jobs:
           verify: false
 
   tofu-test-stable:
-    name: OpenTofu Stable Integration (${{ matrix.tofu_version }})
+    name: OpenTofu Compatibility (${{ matrix.target }}, ${{ matrix.tofu_version }})
     runs-on: ubuntu-latest
     environment: public-ci
     permissions:
@@ -72,11 +72,49 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tofu_version:
-          - 1.8.0
+        include:
+          - target: seerr-v3.4.1
+            tofu_version: 1.8.0
+            image: seerr/seerr:v3.4.1
+            filters: ""
+          - target: jellyseerr-v2.7.3
+            tofu_version: 1.8.0
+            image: fallenbagel/jellyseerr:2.7.3
+            filters: >-
+              api_objects.tftest.hcl
+              backup_settings.tftest.hcl
+              current_user.tftest.hcl
+              data_sources.tftest.hcl
+              discover.tftest.hcl
+              discover_slider_data_source.tftest.hcl
+              features.tftest.hcl
+              issue.tftest.hcl
+              job_schedule.tftest.hcl
+              override_rule.tftest.hcl
+              request.tftest.hcl
+              servers.tftest.hcl
+              settings.tftest.hcl
+              user.tftest.hcl
+              user_permissions.tftest.hcl
+          - target: overseerr-v1.35.0
+            tofu_version: 1.8.0
+            image: sctx/overseerr:1.35.0
+            filters: >-
+              current_user.tftest.hcl
+              data_sources.tftest.hcl
+              discover_slider_data_source.tftest.hcl
+              features.tftest.hcl
+              issue.tftest.hcl
+              job_schedule.tftest.hcl
+              request.tftest.hcl
+              servers.tftest.hcl
+              settings.tftest.hcl
+              user.tftest.hcl
+              user_permissions.tftest.hcl
     env:
       USE_SELF_HOSTED: "false"
-      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.1.1' }}
+      SEERR_TEST_IMAGE: ${{ matrix.image }}
+      SEERR_TOFU_FILTERS: ${{ matrix.filters }}
       SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -107,7 +145,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: stable-integration-artifacts-${{ matrix.tofu_version }}
+          name: compatibility-artifacts-${{ matrix.target }}-${{ matrix.tofu_version }}
           path: test-artifacts/
           if-no-files-found: ignore
           retention-days: 7
@@ -129,7 +167,7 @@ jobs:
       USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED || 'false' }}
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
-      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.1.1' }}
+      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.4.1' }}
       SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration-trusted
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -182,7 +220,7 @@ jobs:
       USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED || 'false' }}
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
-      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.1.1' }}
+      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.4.1' }}
       SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration-full
       SEERR_TEST_SUITE: all
     steps:
@@ -278,6 +316,4 @@ jobs:
         run: |
           echo "Enabling auto-merge for ${PR_URL} authored by ${GITHUB_ACTOR}..."
           gh pr merge "${PR_URL}" --auto --squash
-
-
 

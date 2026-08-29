@@ -10,9 +10,17 @@ The `seerr` Terraform provider targets the Seerr / Jellyseerr / Overseerr REST A
 
 | Server Application | Supported Versions | Tested CI Baseline | Status |
 | :--- | :--- | :--- | :--- |
-| **Seerr (Unified)** | `v3.0.0` - `v3.4.1`+ | `seerr/seerr:v3.1.1` (verified `v3.4.1`) | **Tier 1 (Primary Target)** ✅ |
-| **Jellyseerr** | `v1.7.0` - `v3.4.1`+ | `fallenbagel/jellyseerr:latest` (`v3.4.1`) | **Tier 1 (Fully Supported)** ✅ |
-| **Overseerr** | `v1.33.2` - `v1.35.0`+ | `sct/overseerr:latest` (`v1.35.0`) | **Tier 2 (Supported)** ✅ |
+| **Seerr (Unified)** | `v3.0.0` - `v3.4.1` | `seerr/seerr:v3.4.1` | **Tier 1 (Primary Target)** ✅ |
+| **Jellyseerr (legacy)** | `v1.7.0` - `v2.7.3` | `fallenbagel/jellyseerr:2.7.3` | **Tier 1 (Legacy Target)** ✅ |
+| **Overseerr** | `v1.33.2` - `v1.35.0` | `sctx/overseerr:1.35.0` | **Tier 2 (Supported)** ✅ |
+
+### Verified Release Snapshot (2026-08-29)
+
+Pull requests run OpenTofu integration coverage against all three pinned images above. Seerr runs the stable provider suite. Legacy Jellyseerr runs the same suite except for the post-consolidation blocklist endpoint, which returns 404 on `v2.7.3`. Overseerr runs the common Plex, ARR, request, issue, job, settings, user, and discovery subset because it does not implement Jellyfin/Emby-specific endpoints.
+
+The Seerr `v3.4.1` release OpenAPI specification was compared with `tools/openapi/seerr-api.yml`. It adds no endpoints missing from the provider snapshot. The provider snapshot contains four forward-development library sync endpoints that are not present in the release specification, so no release-spec rollback is required.
+
+Jellyseerr's GitHub repository was consolidated into Seerr after `v2.7.3`. GitHub's redirected `releases/latest` response therefore reports the current Seerr release and must not be interpreted as a new Jellyseerr release. The pinned `fallenbagel/jellyseerr:2.7.3` image is the legacy compatibility baseline.
 
 ### Upstream Feature Mapping & API Dialects
 
@@ -42,7 +50,7 @@ terraform {
   required_providers {
     seerr = {
       source  = "registry.opentofu.org/josh-archer/seerr"
-      version = "~> 0.38.0"
+      version = "~> 0.40.0"
     }
   }
 }
@@ -55,7 +63,7 @@ terraform {
   required_providers {
     seerr = {
       source  = "josh-archer/seerr"
-      version = "~> 0.38.0"
+      version = "~> 0.40.0"
     }
   }
 }
@@ -74,12 +82,12 @@ To prevent silent schema drift and ensure continuous compatibility as upstream p
 
 2. **Upstream Release Watcher (`.github/workflows/upstream-watch.yml`)**:
    - Runs daily at 06:00 UTC.
-   - Monitors upstream GitHub releases from `seerr-team/seerr`, `Fallenbagel/jellyseerr`, and `sct/overseerr`.
-   - Flags new upstream versions for automated regression and integration testing.
+   - Compares Seerr and Overseerr releases with `.github/upstream-compatibility.json` while retaining Jellyseerr `v2.7.3` as the final legacy baseline.
+   - Opens a compatibility issue only when a release differs from the verified baseline.
 
 3. **OpenAPI Coverage Audit (`tools/openapi/coverage.go`)**:
    - Validates that 100% of applicable configuration, user management, and service endpoints are mapped to provider resources and data sources.
    - Generated matrix is tracked in [`docs/openapi-coverage.md`](../openapi-coverage.md).
 
 4. **Multi-Version Integration Test Matrix (`.github/workflows/test.yml`)**:
-   - Executes integration tests against containerized upstream servers on every push and pull request.
+   - Executes dialect-aware integration tests against pinned Seerr, Jellyseerr, and Overseerr containers on every pull request.
