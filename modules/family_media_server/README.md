@@ -4,7 +4,7 @@ Creates family users from stable map keys, resolves `standard`, `power`, and `ad
 
 ```hcl
 module "family" {
-  source = "./modules/family_media_server"
+  source = "github.com/Josh-Archer/terraform-provider-seerr//modules/family_media_server?ref=v0.41.0"
 
   users = {
     child = {
@@ -22,5 +22,6 @@ module "family" {
 }
 ```
 
-Only one configuration should manage `discover_sliders`, because Seerr exposes it as a singleton.
+When calling the module from a checkout of this repository, use `source = "./modules/family_media_server"` instead.
 
+Only one configuration should manage `discover_sliders`, because Seerr exposes it as a singleton.
