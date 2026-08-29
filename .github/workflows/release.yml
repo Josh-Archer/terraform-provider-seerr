@@ -29,7 +29,7 @@ jobs:
     env:
       RELEASE_TAG: ${{ inputs.release_tag }}
     steps:
-      - name: Validate release tag
+      - name: Validate and ensure release tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
@@ -40,7 +40,43 @@ jobs:
             echo "Invalid release tag: ${RELEASE_TAG}" >&2
             exit 1
           fi
-          gh api --silent "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}"
+
+          if tag_error="$(gh api --silent "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" 2>&1)"; then
+            echo "Release tag ${RELEASE_TAG} already exists."
+            exit 0
+          fi
+          if [[ "${tag_error}" != *"(HTTP 404)"* ]]; then
+            echo "Unable to inspect release tag ${RELEASE_TAG}: ${tag_error}" >&2
+            exit 1
+          fi
+
+          # GitHub does not create a Git ref for a draft release. Release
+          # Please intentionally creates drafts so GoReleaser can upload the
+          # signed artifacts before publication. Recover the exact target from
+          # that draft and create the missing ref before checking out source.
+          release_record="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases" \
+            --jq ".[] | select(.tag_name == \"${RELEASE_TAG}\") | [.draft, .target_commitish] | @tsv")"
+          if [[ -z "${release_record}" ]]; then
+            echo "Release tag ${RELEASE_TAG} is missing and no matching draft release exists." >&2
+            exit 1
+          fi
+
+          IFS=$'\t' read -r is_draft target_commitish <<< "${release_record}"
+          if [[ "${is_draft}" != "true" ]]; then
+            echo "Refusing to create ${RELEASE_TAG} for a non-draft release." >&2
+            exit 1
+          fi
+
+          target_sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${target_commitish}" --jq '.sha')"
+          if [[ ! "${target_sha}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Unable to resolve a full commit SHA for ${RELEASE_TAG}: ${target_sha}" >&2
+            exit 1
+          fi
+
+          gh api --silent --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+            -f "ref=refs/tags/${RELEASE_TAG}" \
+            -f "sha=${target_sha}"
+          echo "Created ${RELEASE_TAG} at ${target_sha} from its draft release target."
 
       - name: Check release state
         id: release_state
@@ -123,7 +159,7 @@ jobs:
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           workdir: source
-          args: release --clean --config ../release-control/.goreleaser.yml
+          args: release --clean --current-tag "${{ env.RELEASE_TAG }}" --config ../release-control/.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
@@ -133,7 +169,7 @@ jobs:
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           workdir: source
-          args: release --clean --skip=sign --config ../release-control/.goreleaser.yml
+          args: release --clean --skip=sign --current-tag "${{ env.RELEASE_TAG }}" --config ../release-control/.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -165,4 +201,3 @@ jobs:
           if [[ "${indexed}" != "true" ]]; then
             echo "Note: OpenTofu registry indexing is still pending for ${RELEASE_TAG}. It usually finishes within 10-15 minutes."
           fi
-
