@@ -4,7 +4,7 @@
     ".": {
       "package-name": "terraform-provider-seerr",
       "release-type": "terraform-module",
-      "bump-minor-pre-major": true,
+      "bump-minor-pre-major": false,
       "bump-patch-for-minor-pre-major": false,
       "draft": true,
       "prerelease": false,
