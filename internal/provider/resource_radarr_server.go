@@ -318,8 +318,93 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 	if !data.QualityProfileName.IsNull() && !data.QualityProfileName.IsUnknown() {
 		profileName = strings.TrimSpace(data.QualityProfileName.ValueString())
 	}
-	if profileName == "" {
+
+	if r.client != nil {
+		testBody := map[string]any{
+			"hostname": hostname,
+			"port":     port,
+			"apiKey":   data.APIKey.ValueString(),
+			"useSsl":   useSSL,
+			"baseUrl":  baseURL,
+		}
+		testJSON, err := json.Marshal(testBody)
+		if err != nil {
+			return data, "", fmt.Errorf("marshal radarr test payload: %w", err)
+		}
+		testResp, err := r.client.Request(ctx, "POST", "/api/v1/settings/radarr/test", string(testJSON), nil)
+		if testResp.StatusCode < 200 || testResp.StatusCode >= 300 {
+			var errBody struct {
+				Message string `json:"message"`
+				Error   string `json:"error"`
+			}
+			errMsg := fmt.Sprintf("status %d", testResp.StatusCode)
+			if json.Unmarshal(testResp.Body, &errBody) == nil {
+				if errBody.Message != "" {
+					errMsg = errBody.Message
+				} else if errBody.Error != "" {
+					errMsg = errBody.Error
+				}
+			}
+			return data, "", fmt.Errorf("validate connectivity: %s", errMsg)
+		}
+
+		if profileName == "" && !data.QualityProfileID.IsNull() && !data.QualityProfileID.IsUnknown() {
+			var testResult struct {
+				Profiles []struct {
+					ID   int64  `json:"id"`
+					Name string `json:"name"`
+				} `json:"profiles"`
+			}
+			if err := json.Unmarshal(testResp.Body, &testResult); err == nil {
+				profileID := data.QualityProfileID.ValueInt64()
+				for _, p := range testResult.Profiles {
+					if p.ID == profileID {
+						profileName = strings.TrimSpace(p.Name)
+						break
+					}
+				}
+			}
+		}
+	} else {
+		if profileName == "" && !data.QualityProfileID.IsNull() && !data.QualityProfileID.IsUnknown() {
+			profileID := data.QualityProfileID.ValueInt64()
+			profile, lookupErr := findArrProfile(
+				ctx,
+				data.URL.ValueString(),
+				hostname,
+				port,
+				useSSL,
+				baseURL,
+				data.APIKey.ValueString(),
+				defaultRequestTimeout,
+				&profileID,
+				nil,
+			)
+			if lookupErr != nil {
+				return data, "", fmt.Errorf("resolve quality_profile_name: %w", lookupErr)
+			}
+			profileName = profile.Name
+		}
+		if err := ValidateArrConnectivity(
+			ctx,
+			data.URL.ValueString(),
+			hostname,
+			port,
+			useSSL,
+			baseURL,
+			data.APIKey.ValueString(),
+			defaultRequestTimeout,
+		); err != nil {
+			return data, "", fmt.Errorf("validate connectivity: %w", err)
+		}
+	}
+
+	if profileName == "" && !data.QualityProfileID.IsNull() && !data.QualityProfileID.IsUnknown() {
 		profileID := data.QualityProfileID.ValueInt64()
+		timeout := defaultRequestTimeout
+		if r.client != nil {
+			timeout = r.client.Timeout()
+		}
 		profile, lookupErr := findArrProfile(
 			ctx,
 			data.URL.ValueString(),
@@ -328,31 +413,15 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 			useSSL,
 			baseURL,
 			data.APIKey.ValueString(),
-			r.client.Timeout(),
+			timeout,
 			&profileID,
 			nil,
 		)
-		if lookupErr != nil {
-			return data, "", fmt.Errorf("resolve quality_profile_name: %w", lookupErr)
+		if lookupErr == nil && profile != nil {
+			profileName = profile.Name
 		}
-		profileName = profile.Name
 	}
 	data.QualityProfileName = types.StringValue(profileName)
-
-	// Validate connectivity to Radarr
-	if err := ValidateArrConnectivity(
-		ctx,
-		data.URL.ValueString(),
-		hostname,
-		port,
-		useSSL,
-		baseURL,
-		data.APIKey.ValueString(),
-		r.client.Timeout(),
-	); err != nil {
-		return data, "", fmt.Errorf("validate connectivity: %w", err)
-	}
-
 	base := map[string]any{
 		"name":                name,
 		"hostname":            hostname,

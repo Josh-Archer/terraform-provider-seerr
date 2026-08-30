@@ -2,7 +2,13 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -284,5 +290,114 @@ func TestReadRadarrStateFromJSON_NullValuesPreserved(t *testing.T) {
 	}
 	if !data.Tags.IsNull() {
 		t.Errorf("Tags should be null, got %v", data.Tags)
+	}
+}
+
+// TestRadarrServerPayload_SeerrProxyTest verifies that RadarrServerResource.payload
+// validates connectivity and resolves quality profile name via Seerr's proxy test endpoint
+// (/api/v1/settings/radarr/test), supporting internal container hostnames without
+// client-side network calls (fixes issue #231).
+func TestRadarrServerPayload_SeerrProxyTest(t *testing.T) {
+	var testedHostname string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/settings/radarr/test" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		var reqBody map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+			t.Fatalf("decode test request: %v", err)
+		}
+		if h, ok := reqBody["hostname"].(string); ok {
+			testedHostname = h
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+			"profiles": [
+				{"id": 1, "name": "Any"},
+				{"id": 3, "name": "Ultra-HD"}
+			],
+			"rootFolders": [
+				{"id": 1, "path": "/data/media/movies"}
+			]
+		}`))
+	}))
+	defer srv.Close()
+
+	serverURL, _ := url.Parse(srv.URL)
+	client := NewClient(serverURL, "apiKey", "test-agent", false, 5*time.Second, 0, 0)
+
+	res := &RadarrServerResource{
+		client: client,
+	}
+
+	tagsVal, _ := types.ListValueFrom(context.Background(), types.Int64Type, []int64{})
+
+	// Hostname "radarr" represents an internal Docker bridge DNS name
+	model := RadarrServerModel{
+		Name:               types.StringValue("Radarr"),
+		Hostname:           types.StringValue("radarr"),
+		Port:               types.Int64Value(7878),
+		APIKey:             types.StringValue("secret-radarr-key"),
+		QualityProfileID:   types.Int64Value(3),
+		QualityProfileName: types.StringNull(),
+		ActiveDirectory:    types.StringValue("/data/media/movies"),
+		Tags:               tagsVal,
+	}
+
+	updatedModel, payloadStr, err := res.payload(context.Background(), model)
+	if err != nil {
+		t.Fatalf("payload() failed: %v", err)
+	}
+
+	if testedHostname != "radarr" {
+		t.Errorf("expected tested hostname 'radarr', got %q", testedHostname)
+	}
+	if updatedModel.QualityProfileName.ValueString() != "Ultra-HD" {
+		t.Errorf("expected QualityProfileName 'Ultra-HD', got %q", updatedModel.QualityProfileName.ValueString())
+	}
+	if payloadStr == "" {
+		t.Error("expected non-empty payload string")
+	}
+}
+
+// TestRadarrServerPayload_SeerrProxyTestError verifies that connectivity errors
+// returned by Seerr's proxy endpoint are surfaced cleanly.
+func TestRadarrServerPayload_SeerrProxyTestError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message": "Invalid API key or Radarr host unreachable"}`))
+	}))
+	defer srv.Close()
+
+	serverURL, _ := url.Parse(srv.URL)
+	client := NewClient(serverURL, "apiKey", "test-agent", false, 5*time.Second, 0, 0)
+
+	res := &RadarrServerResource{
+		client: client,
+	}
+
+	tagsVal, _ := types.ListValueFrom(context.Background(), types.Int64Type, []int64{})
+
+	model := RadarrServerModel{
+		Name:             types.StringValue("Radarr"),
+		Hostname:         types.StringValue("radarr"),
+		Port:             types.Int64Value(7878),
+		APIKey:           types.StringValue("bad-key"),
+		QualityProfileID: types.Int64Value(1),
+		ActiveDirectory:  types.StringValue("/data/media/movies"),
+		Tags:             tagsVal,
+	}
+
+	_, _, err := res.payload(context.Background(), model)
+	if err == nil {
+		t.Fatal("expected error from payload(), got nil")
+	}
+	if expected := "Invalid API key or Radarr host unreachable"; !strings.Contains(err.Error(), expected) {
+		t.Errorf("expected error containing %q, got %q", expected, err.Error())
 	}
 }
