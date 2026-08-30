@@ -128,4 +128,4 @@ Access the server at `http://localhost:5055` to test real provider configuration
 
 Have questions or need guidance?
 - Start a discussion in [GitHub Discussions](https://github.com/Josh-Archer/terraform-provider-seerr/discussions).
-- Check the [Project Roadmap](ROADMAP.md) for planned phases and architecture decisions.
+- Check the [project roadmap](README.md#roadmap) for planned phases and architecture decisions.

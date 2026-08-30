@@ -3,10 +3,10 @@
 [![CI](https://github.com/Josh-Archer/terraform-provider-seerr/actions/workflows/test.yml/badge.svg)](https://github.com/Josh-Archer/terraform-provider-seerr/actions/workflows/test.yml)
 [![OpenTofu Registry](https://img.shields.io/badge/OpenTofu-Registry-FF5722?logo=opentofu&logoColor=white)](https://registry.opentofu.org/providers/josh-archer/seerr/latest)
 [![Terraform Registry](https://img.shields.io/badge/Terraform-Registry-844FBA?logo=terraform&logoColor=white)](https://registry.terraform.io/providers/josh-archer/seerr/latest)
-[![Roadmap](https://img.shields.io/badge/Roadmap-Active-2ea44f.svg)](ROADMAP.md)
+[![Roadmap](https://img.shields.io/badge/Roadmap-v1.0.0-2ea44f.svg)](#roadmap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-`seerr` is a feature-complete OpenTofu and Terraform provider for managing [Overseerr](https://overseerr.dev) and [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) instances via their REST APIs as Infrastructure as Code. Track ongoing milestones in the [Project Roadmap](ROADMAP.md).
+`seerr` is a feature-complete OpenTofu and Terraform provider for managing [Overseerr](https://overseerr.dev) and [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) instances via their REST APIs as Infrastructure as Code. Track ongoing milestones in the [roadmap](#roadmap) or join the conversation in [GitHub Discussion #161](https://github.com/Josh-Archer/terraform-provider-seerr/discussions/161).
 
 ---
 
@@ -22,6 +22,31 @@
 
 ---
 
+## Roadmap
+
+The latest stable release is [`v0.42.1`](https://github.com/Josh-Archer/terraform-provider-seerr/releases/tag/v0.42.1). The reusable module ecosystem is implemented and is being validated through `v0.43.0` release candidates. After that, the remaining planned milestone is `v1.0.0` general availability.
+
+This section is the canonical roadmap. Use [GitHub Discussion #161](https://github.com/Josh-Archer/terraform-provider-seerr/discussions/161) for feedback, proposals, and status discussion.
+
+| Milestone | Target | Outcome | Status |
+| :--- | :--- | :--- | :--- |
+| **Phases 1-8: Provider foundation** | `v0.31.0`-`v0.38.2` | Core quality, observability, identity and access, reference helpers, lifecycle hardening, Servarr resolvers, dual-registry publishing, and release automation. | ✅ Complete |
+| **Phase 9: Community readiness** | `v0.39.0` | Contributor onboarding, issue and pull request templates, and reproducible development environments ([#183](https://github.com/Josh-Archer/terraform-provider-seerr/issues/183)). | ✅ Complete |
+| **Phase 10: Import and migration tooling** | `v0.40.0` | Bulk importer that generates Terraform HCL and import blocks from a live Seerr instance ([#170](https://github.com/Josh-Archer/terraform-provider-seerr/issues/170)). | ✅ Complete |
+| **Phase 11: State resilience** | `v0.41.0` | Graceful 404 removal, state schema resilience, and semantic diff normalization ([#169](https://github.com/Josh-Archer/terraform-provider-seerr/issues/169)). | ✅ Complete |
+| **Phase 12: Observability and disaster recovery** | `v0.42.0` | Drift monitoring, Prometheus and Grafana assets, backup workflows, and recovery runbooks ([#184](https://github.com/Josh-Archer/terraform-provider-seerr/issues/184)). | ✅ Complete |
+| **Phase 13: Module ecosystem** | `v0.43.0` | Reusable modules for family media servers, ARR stack bootstrapping, and monitoring ([#171](https://github.com/Josh-Archer/terraform-provider-seerr/issues/171)). | 🧪 Release candidate |
+| **Phase 14: General availability** | `v1.0.0` | Stable public contracts, a documented breaking-change policy, and full Terraform/OpenTofu acceptance coverage. | 📅 Planned |
+
+### `v1.0.0` exit criteria
+
+- Publish and enforce the compatibility and breaking-change policy for public provider schemas and import identifiers.
+- Pass the supported Terraform and OpenTofu acceptance matrix against the documented Seerr, Jellyseerr, and Overseerr versions.
+- Validate installation and signed release artifacts through both the Terraform and OpenTofu registries.
+- Complete upgrade, migration, module, and recovery documentation for a stable release.
+
+---
+
 ## Quick Start
 
 ### Provider Installation
@@ -32,7 +57,7 @@ terraform {
   required_providers {
     seerr = {
       source  = "registry.opentofu.org/josh-archer/seerr"
-      version = "~> 0.38.0"
+      version = "~> 0.42.0"
     }
   }
 }
@@ -44,7 +69,7 @@ terraform {
   required_providers {
     seerr = {
       source  = "josh-archer/seerr"
-      version = "~> 0.38.0"
+      version = "~> 0.42.0"
     }
   }
 }
@@ -216,7 +241,7 @@ Modules are optional convenience layers over the provider's resources. Existing 
 
 ```hcl
 module "family" {
-  source = "github.com/Josh-Archer/terraform-provider-seerr//modules/family_media_server?ref=v0.41.0"
+  source = "github.com/Josh-Archer/terraform-provider-seerr//modules/family_media_server?ref=v0.42.1"
 
   users = {
     child = {
