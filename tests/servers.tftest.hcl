@@ -3,7 +3,7 @@ run "radarr_lifecycle" {
 
   variables {
     name               = "tofu_radarr_test"
-    hostname           = "127.0.0.1"
+    hostname           = "radarr-mock"
     port               = 7878
     api_key            = "radarr_api_key"
     quality_profile_id = 1
@@ -39,7 +39,7 @@ run "sonarr_lifecycle" {
 
   variables {
     name               = "tofu_sonarr_test"
-    hostname           = "127.0.0.1"
+    hostname           = "sonarr-mock"
     port               = 8989
     api_key            = "sonarr_api_key"
     quality_profile_id = 1

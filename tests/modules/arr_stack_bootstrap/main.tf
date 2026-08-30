@@ -13,7 +13,7 @@ module "arr" {
   radarr_servers = {
     integration = {
       name               = "tofu_module_radarr"
-      hostname           = "127.0.0.1"
+      hostname           = "radarr-mock"
       api_key            = "radarr_api_key"
       quality_profile_id = 1
       root_folder        = "/movies"
@@ -24,7 +24,7 @@ module "arr" {
   sonarr_servers = {
     integration = {
       name               = "tofu_module_sonarr"
-      hostname           = "127.0.0.1"
+      hostname           = "sonarr-mock"
       api_key            = "sonarr_api_key"
       quality_profile_id = 1
       root_folder        = "/tv"

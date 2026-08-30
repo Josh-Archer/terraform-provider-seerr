@@ -48,8 +48,6 @@ services:
     command: ["python", "/fixtures/mock_media_service.py"]
     volumes:
       - ./fixtures:/fixtures:ro
-    ports:
-      - "7878:7878"
 
   sonarr-mock:
     image: python:3.12-alpine
@@ -60,8 +58,6 @@ services:
     command: ["python", "/fixtures/mock_media_service.py"]
     volumes:
       - ./fixtures:/fixtures:ro
-    ports:
-      - "8989:8989"
 
   notify-mock:
     image: python:3.12-alpine
