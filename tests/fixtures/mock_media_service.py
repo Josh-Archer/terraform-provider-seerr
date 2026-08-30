@@ -39,7 +39,20 @@ class Handler(BaseHTTPRequestHandler):
         self._send(401, json_bytes({"error": "unauthorized"}))
 
     def _api_key(self):
-        key = self.headers.get("X-Api-Key", "").strip()
+        key = (
+            self.headers.get("X-Api-Key", "").strip()
+            or self.headers.get("X-Emby-Token", "").strip()
+            or self.headers.get("X-MediaBrowser-Token", "").strip()
+        )
+        if not key:
+            authorization = self.headers.get(
+                "Authorization", self.headers.get("X-Emby-Authorization", "")
+            )
+            for parameter in authorization.split(","):
+                name, separator, value = parameter.strip().partition("=")
+                if separator and name.lower().endswith("token"):
+                    key = value.strip().strip('"')
+                    break
         if not key and "apikey=" in self.path:
             key = self.path.split("apikey=", 1)[1].split("&", 1)[0].strip()
         if not key and "api_key=" in self.path:
