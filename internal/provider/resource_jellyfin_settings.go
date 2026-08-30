@@ -57,9 +57,10 @@ func (r *JellyfinSettingsResource) Schema(_ context.Context, _ resource.SchemaRe
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "The name of the Jellyfin server.",
-				Optional:            true,
 				Computed:            true,
-				Default:             stringdefault.StaticString("Jellyfin"),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"ip": schema.StringAttribute{
 				MarkdownDescription: "The IP address or hostname of the Jellyfin server.",
@@ -141,9 +142,6 @@ func (r *JellyfinSettingsResource) Create(ctx context.Context, req resource.Crea
 		"port":   data.Port.ValueInt64(),
 		"apiKey": data.APIKey.ValueString(),
 	}
-	if !data.Name.IsNull() && !data.Name.IsUnknown() {
-		payload["name"] = data.Name.ValueString()
-	}
 	if !data.UseSSL.IsNull() && !data.UseSSL.IsUnknown() {
 		payload["useSsl"] = data.UseSSL.ValueBool()
 	}
@@ -208,9 +206,6 @@ func (r *JellyfinSettingsResource) Update(ctx context.Context, req resource.Upda
 		"ip":     data.IP.ValueString(),
 		"port":   data.Port.ValueInt64(),
 		"apiKey": data.APIKey.ValueString(),
-	}
-	if !data.Name.IsNull() && !data.Name.IsUnknown() {
-		payload["name"] = data.Name.ValueString()
 	}
 	if !data.UseSSL.IsNull() && !data.UseSSL.IsUnknown() {
 		payload["useSsl"] = data.UseSSL.ValueBool()

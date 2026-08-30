@@ -35,13 +35,13 @@ resource "seerr_jellyfin_settings" "default" {
 
 - `external_hostname` (String) The external hostname for the Jellyfin server.
 - `jellyfin_forgot_password_url` (String) The URL for forgotten passwords on the Jellyfin server.
-- `name` (String) The name of the Jellyfin server.
 - `url_base` (String) The base URL for the Jellyfin server.
 - `use_ssl` (Boolean) Whether to use SSL for the connection.
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+- `name` (String) The name of the Jellyfin server.
 - `response_json` (String) Raw JSON response body from the latest operation.
 - `server_id` (String) The unique server ID of the connected Jellyfin server.
 - `status_code` (Number) HTTP status code from the latest operation.

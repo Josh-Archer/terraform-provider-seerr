@@ -6,7 +6,7 @@ func TestJellyfinSettingsResourceSchema(t *testing.T) {
 	t.Parallel()
 	assertResourceSchemaContract(t, NewJellyfinSettingsResource(), map[string]resourceAttributeContract{
 		"id":                           computedString,
-		"name":                         optionalComputedString,
+		"name":                         computedString,
 		"ip":                           requiredString,
 		"port":                         requiredInt64,
 		"use_ssl":                      optionalComputedBool,
