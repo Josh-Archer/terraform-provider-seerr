@@ -42,8 +42,7 @@ class Handler(BaseHTTPRequestHandler):
         return self.headers.get("X-Api-Key", "").strip()
 
     def _path(self):
-        return self.path.split("?", 1)[0]
-
+        return self.path.split("?", 1)[0].lower()
     def _handle_arr(self):
         if EXPECTED_API_KEY and self._api_key() != EXPECTED_API_KEY:
             self._unauthorized()
