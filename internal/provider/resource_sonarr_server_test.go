@@ -2,7 +2,13 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -293,5 +299,150 @@ func TestReadSonarrStateFromJSON_NullValuesPreserved(t *testing.T) {
 	}
 	if !data.AnimeTags.IsNull() {
 		t.Errorf("AnimeTags should be null, got %v", data.AnimeTags)
+	}
+}
+
+// TestSonarrServerPayload_SeerrProxyTest verifies that SonarrServerResource.payload
+// validates connectivity and resolves quality profile name via Seerr's proxy test endpoint
+// (/api/v1/settings/sonarr/test), supporting internal container hostnames without
+// client-side network calls (fixes issue #231).
+func TestSonarrServerPayload_SeerrProxyTest(t *testing.T) {
+	var testedHostname string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/settings/sonarr/test" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		var reqBody map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+			t.Fatalf("decode test request: %v", err)
+		}
+		if h, ok := reqBody["hostname"].(string); ok {
+			testedHostname = h
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+			"profiles": [
+				{"id": 1, "name": "SD"},
+				{"id": 5, "name": "HD-1080p"}
+			],
+			"rootFolders": [
+				{"id": 1, "path": "/data/media/tv"}
+			]
+		}`))
+	}))
+	defer srv.Close()
+
+	serverURL, _ := url.Parse(srv.URL)
+	client := NewClient(serverURL, "apiKey", "test-agent", false, 5*time.Second, 0, 0)
+
+	res := &SonarrServerResource{
+		client: client,
+	}
+
+	tagsVal, _ := types.ListValueFrom(context.Background(), types.Int64Type, []int64{})
+	animeTagsVal, _ := types.ListValueFrom(context.Background(), types.Int64Type, []int64{})
+
+	// Hostname "sonarr" represents an internal Docker bridge DNS name
+	model := SonarrServerModel{
+		Name:               types.StringValue("Sonarr"),
+		Hostname:           types.StringValue("sonarr"),
+		Port:               types.Int64Value(8989),
+		APIKey:             types.StringValue("secret-sonarr-key"),
+		QualityProfileID:   types.Int64Value(5),
+		QualityProfileName: types.StringNull(),
+		ActiveDirectory:    types.StringValue("/data/media/tv"),
+		Tags:               tagsVal,
+		AnimeTags:          animeTagsVal,
+	}
+
+	updatedModel, payloadStr, err := res.payload(context.Background(), model)
+	if err != nil {
+		t.Fatalf("payload() failed: %v", err)
+	}
+
+	if testedHostname != "sonarr" {
+		t.Errorf("expected tested hostname 'sonarr', got %q", testedHostname)
+	}
+	if updatedModel.QualityProfileName.ValueString() != "HD-1080p" {
+		t.Errorf("expected QualityProfileName 'HD-1080p', got %q", updatedModel.QualityProfileName.ValueString())
+	}
+	if payloadStr == "" {
+		t.Error("expected non-empty payload string")
+	}
+}
+
+// TestSonarrServerPayload_ExplicitQualityProfileNameNoNetworkCall verifies that
+// when quality_profile_name is provided, payload() succeeds without any network calls.
+func TestSonarrServerPayload_ExplicitQualityProfileNameNoNetworkCall(t *testing.T) {
+	res := &SonarrServerResource{}
+
+	tagsVal, _ := types.ListValueFrom(context.Background(), types.Int64Type, []int64{})
+	animeTagsVal, _ := types.ListValueFrom(context.Background(), types.Int64Type, []int64{})
+
+	model := SonarrServerModel{
+		Name:               types.StringValue("Sonarr"),
+		Hostname:           types.StringValue("sonarr"),
+		Port:               types.Int64Value(8989),
+		APIKey:             types.StringValue("secret-sonarr-key"),
+		QualityProfileID:   types.Int64Value(1),
+		QualityProfileName: types.StringValue("HD-1080p"),
+		ActiveDirectory:    types.StringValue("/data/media/tv"),
+		Tags:               tagsVal,
+		AnimeTags:          animeTagsVal,
+	}
+
+	updatedModel, payloadStr, err := res.payload(context.Background(), model)
+	if err != nil {
+		t.Fatalf("payload() failed: %v", err)
+	}
+	if updatedModel.QualityProfileName.ValueString() != "HD-1080p" {
+		t.Errorf("expected 'HD-1080p', got %q", updatedModel.QualityProfileName.ValueString())
+	}
+	if payloadStr == "" {
+		t.Error("expected non-empty payload")
+	}
+}
+
+// TestSonarrServerPayload_UnresolvableQualityProfileError verifies that when quality_profile_name
+// cannot be resolved, an error is returned prompting for explicit configuration.
+func TestSonarrServerPayload_UnresolvableQualityProfileError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message": "Host unreachable"}`))
+	}))
+	defer srv.Close()
+
+	serverURL, _ := url.Parse(srv.URL)
+	client := NewClient(serverURL, "apiKey", "test-agent", false, 5*time.Second, 0, 0)
+
+	res := &SonarrServerResource{
+		client: client,
+	}
+
+	tagsVal, _ := types.ListValueFrom(context.Background(), types.Int64Type, []int64{})
+	animeTagsVal, _ := types.ListValueFrom(context.Background(), types.Int64Type, []int64{})
+
+	model := SonarrServerModel{
+		Name:             types.StringValue("Sonarr"),
+		Hostname:         types.StringValue("sonarr-unreachable"),
+		Port:             types.Int64Value(8989),
+		APIKey:           types.StringValue("bad-key"),
+		QualityProfileID: types.Int64Value(99),
+		ActiveDirectory:  types.StringValue("/data/media/tv"),
+		Tags:             tagsVal,
+		AnimeTags:        animeTagsVal,
+	}
+
+	_, _, err := res.payload(context.Background(), model)
+	if err == nil {
+		t.Fatal("expected error from payload(), got nil")
+	}
+	if expected := "could not resolve quality_profile_name for profile id 99"; !strings.Contains(err.Error(), expected) {
+		t.Errorf("expected error containing %q, got %q", expected, err.Error())
 	}
 }
