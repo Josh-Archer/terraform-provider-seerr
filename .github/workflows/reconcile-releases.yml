@@ -7,6 +7,12 @@ on:
         description: Specific historical tag to retry; leave blank for the oldest eligible pending tag
         required: false
         type: string
+  schedule:
+    # Automatically detect and self-heal any unbuilt draft releases or dropped release events
+    - cron: '0 * * * *'
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read

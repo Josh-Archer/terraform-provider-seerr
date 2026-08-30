@@ -81,6 +81,12 @@ assert_output "published override is a no-op" "|false" "${output}"
 output="$(MOCK_DRAFT_TAGS=v0.20.5 MOCK_PUBLISHED_TAGS=v0.20.7 select_tag)"
 assert_output "draft release is retryable" "v0.20.5|false" "${output}"
 
+output="$(MOCK_DRAFT_TAGS=v0.20.11 MOCK_PUBLISHED_TAGS=v0.20.5,v0.20.6,v0.20.7,v0.20.9,v0.20.10 select_tag)"
+assert_output "untagged draft release from API is discovered" "v0.20.11|false" "${output}"
+
+output="$(RELEASE_TAG_OVERRIDE=v0.20.11 MOCK_DRAFT_TAGS=v0.20.11 select_tag)"
+assert_output "untagged draft release override is valid" "v0.20.11|false" "${output}"
+
 if MOCK_API_ERROR_TAG=v0.20.5 select_tag >"${test_root}/unexpected.out" 2>"${test_root}/api.err"; then
   echo "FAIL release API failure fails closed: command succeeded unexpectedly" >&2
   exit 1

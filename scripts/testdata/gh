@@ -13,14 +13,26 @@ shift || true
 
 case "${command_name}" in
   api)
+    is_list_releases=false
     tag=""
     for argument in "$@"; do
       case "${argument}" in
         repos/*/releases/tags/*)
           tag="${argument##*/releases/tags/}"
           ;;
+        repos/*/releases|repos/*/releases?*)
+          is_list_releases=true
+          ;;
       esac
     done
+
+    if [[ "${is_list_releases}" == "true" ]]; then
+      for item in ${MOCK_PUBLISHED_TAGS//,/ } ${MOCK_DRAFT_TAGS//,/ }; do
+        [[ -n "${item}" ]] && echo "${item}"
+      done
+      exit 0
+    fi
+
     [[ -n "${tag}" ]] || {
       echo "fake gh: missing release tag API path" >&2
       exit 2
