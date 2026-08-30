@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.42.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.42.1...v0.42.2) (2026-08-30)
+
+
+### Bug Fixes
+
+* **ci:** harden release reconciliation to discover draft releases and self-heal ([#236](https://github.com/Josh-Archer/terraform-provider-seerr/issues/236)) ([63d76fc](https://github.com/Josh-Archer/terraform-provider-seerr/commit/63d76fc34616ca4cf2157d1cfb7cd178ee005c15))
+
+
+### Documentation
+
+* consolidate roadmap into README ([#237](https://github.com/Josh-Archer/terraform-provider-seerr/issues/237)) ([cc54970](https://github.com/Josh-Archer/terraform-provider-seerr/commit/cc54970d7e883cfda0580660f1e559115dd715e7))
+
+
+### Tests
+
+* **arch:** add Single Egress Rule architecture test and isolate test network fixtures ([#234](https://github.com/Josh-Archer/terraform-provider-seerr/issues/234)) ([ab1841e](https://github.com/Josh-Archer/terraform-provider-seerr/commit/ab1841ecac85c517d88a75e3f607e95814d55038))
+
 ## [0.42.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.42.0...v0.42.1) (2026-08-30)
 
 
