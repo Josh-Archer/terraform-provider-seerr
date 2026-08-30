@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.42.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.42.0...v0.42.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* **servarr:** validate Arr connectivity via Seerr server proxy test endpoint ([#231](https://github.com/Josh-Archer/terraform-provider-seerr/issues/231)) ([2d128c0](https://github.com/Josh-Archer/terraform-provider-seerr/commit/2d128c089885ba5bab8033aa516f585ea0767073))
+
 ## [0.42.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.41.0...v0.42.0) (2026-08-29)
 
 
