@@ -450,38 +450,6 @@ func HandleAPIResponse(ctx context.Context, resp *APIResponse, diags *diag.Diagn
 	return false
 }
 
-// ValidateArrConnectivity checks if the Arr server is reachable and the API key is valid.
-func ValidateArrConnectivity(ctx context.Context, rawURL, hostname string, port int64, useSSL bool, baseURL, apiKey string, timeout time.Duration) error {
-	base, err := buildArrBaseURL(rawURL, hostname, port, useSSL, baseURL)
-	if err != nil {
-		return err
-	}
-	statusURL := strings.TrimRight(base, "/") + "/api/v3/system/status"
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, statusURL, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("X-Api-Key", apiKey)
-
-	client := &http.Client{Timeout: normalizeRequestTimeout(timeout)}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to connect to %s: %w", statusURL, err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == 401 {
-		return fmt.Errorf("invalid API key for %s", statusURL)
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("status %d from %s", resp.StatusCode, statusURL)
-	}
-
-	return nil
-}
-
 func parseNotificationTypesBitmask(mask int64) []string {
 	var eventNames []string
 	if mask&2 != 0 {
