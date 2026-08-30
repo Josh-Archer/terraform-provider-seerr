@@ -85,21 +85,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if response="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq '.draft' 2>&1)"; then
-            case "${response}" in
-              false)
-                echo "published=true" >> "$GITHUB_OUTPUT"
-                echo "Release ${RELEASE_TAG} is already published; nothing to do."
-                ;;
-              true)
-                echo "published=false" >> "$GITHUB_OUTPUT"
-                echo "Release ${RELEASE_TAG} has an incomplete draft; resuming it."
-                ;;
-              *)
-                echo "Unexpected GitHub Release response: ${response}" >&2
-                exit 1
-                ;;
-            esac
+          if response="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq '{draft: .draft, has_sums: ([.assets[].name | select(endswith("_SHA256SUMS"))] | length > 0)}' 2>&1)"; then
+            is_draft="$(echo "${response}" | jq -r '.draft')"
+            has_sums="$(echo "${response}" | jq -r '.has_sums')"
+            if [[ "${is_draft}" == "false" && "${has_sums}" == "true" ]]; then
+              echo "published=true" >> "$GITHUB_OUTPUT"
+              echo "Release ${RELEASE_TAG} is already published with artifacts; nothing to do."
+            else
+              echo "published=false" >> "$GITHUB_OUTPUT"
+              echo "Release ${RELEASE_TAG} needs artifact compilation (draft=${is_draft}, has_sums=${has_sums}); proceeding with build."
+            fi
           elif [[ "${response}" == *"(HTTP 404)"* ]]; then
             echo "published=false" >> "$GITHUB_OUTPUT"
           else
