@@ -6,6 +6,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.42.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.41.0...v0.42.0) (2026-08-29)
+
+
+### Features
+
+* add reusable module ecosystem ([#228](https://github.com/Josh-Archer/terraform-provider-seerr/issues/228)) ([99cdee0](https://github.com/Josh-Archer/terraform-provider-seerr/commit/99cdee04530ab63296736e06d4d3a6e3719cfd98))
+
+
+### Bug Fixes
+
+* **ci:** create tags for draft releases ([#226](https://github.com/Josh-Archer/terraform-provider-seerr/issues/226)) ([18ed2de](https://github.com/Josh-Archer/terraform-provider-seerr/commit/18ed2de8764b6c8eea77a73f46194203ea696cde))
+* **ci:** pass explicit tag to goreleaser ([#227](https://github.com/Josh-Archer/terraform-provider-seerr/issues/227)) ([9633ada](https://github.com/Josh-Archer/terraform-provider-seerr/commit/9633adae29b4d881be99692a9864b71a44bef107))
+* **ci:** query the OpenTofu provider endpoint ([#229](https://github.com/Josh-Archer/terraform-provider-seerr/issues/229)) ([6095c2d](https://github.com/Josh-Archer/terraform-provider-seerr/commit/6095c2db2e0f50339e6b28b6f48062b78042b250))
+
+
+### Documentation
+
+* clarify reusable module usage ([#230](https://github.com/Josh-Archer/terraform-provider-seerr/issues/230)) ([31e1435](https://github.com/Josh-Archer/terraform-provider-seerr/commit/31e1435968cc8e3ae592c8124c9db1860ebb4053))
+
+
+### Miscellaneous Chores
+
+* **deps:** bump the github-actions group across 1 directory with 3 updates ([#222](https://github.com/Josh-Archer/terraform-provider-seerr/issues/222)) ([addedab](https://github.com/Josh-Archer/terraform-provider-seerr/commit/addedab1c5f6d72ed2d79a41ac8a7399f48cffcb))
+
 ## [0.41.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.40.0...v0.41.0) (2026-08-29)
 
 
