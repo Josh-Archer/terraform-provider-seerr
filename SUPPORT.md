@@ -31,4 +31,4 @@ Have an idea for a new resource, data source, or helper?
 ## 🗺️ Project Roadmap
 
 To see what features and milestones are currently in progress or planned for upcoming releases:
-- Check the **[Project Roadmap](ROADMAP.md)** or [Discussion #161](https://github.com/Josh-Archer/terraform-provider-seerr/discussions/161).
+- Check the **[project roadmap](README.md#roadmap)** or [Discussion #161](https://github.com/Josh-Archer/terraform-provider-seerr/discussions/161).

@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/Josh-Archer/terraform-provider-seerr/discussions
     about: Ask questions, share homelab configurations, or discuss architecture ideas.
   - name: Project Roadmap
-    url: https://github.com/Josh-Archer/terraform-provider-seerr/blob/main/ROADMAP.md
+    url: https://github.com/Josh-Archer/terraform-provider-seerr#roadmap
     about: Check ongoing milestone tracking and progress towards v1.0.0.
