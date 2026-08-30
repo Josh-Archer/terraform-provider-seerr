@@ -39,8 +39,12 @@ class Handler(BaseHTTPRequestHandler):
         self._send(401, json_bytes({"error": "unauthorized"}))
 
     def _api_key(self):
-        return self.headers.get("X-Api-Key", "").strip()
-
+        key = self.headers.get("X-Api-Key", "").strip()
+        if not key and "apikey=" in self.path:
+            key = self.path.split("apikey=", 1)[1].split("&", 1)[0].strip()
+        if not key and "api_key=" in self.path:
+            key = self.path.split("api_key=", 1)[1].split("&", 1)[0].strip()
+        return key
     def _path(self):
         return self.path.split("?", 1)[0].lower()
     def _handle_arr(self):
