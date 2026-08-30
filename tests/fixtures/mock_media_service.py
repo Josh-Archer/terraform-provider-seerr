@@ -45,7 +45,9 @@ class Handler(BaseHTTPRequestHandler):
             or self.headers.get("X-MediaBrowser-Token", "").strip()
         )
         if not key:
-            authorization = self.headers.get("X-Emby-Authorization", "")
+            authorization = self.headers.get(
+                "Authorization", self.headers.get("X-Emby-Authorization", "")
+            )
             for parameter in authorization.split(","):
                 name, separator, value = parameter.strip().partition("=")
                 if separator and name.lower().endswith("token"):
