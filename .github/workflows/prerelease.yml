@@ -60,12 +60,32 @@ jobs:
           minor="${minor}"
           patch="${patch_raw%%[^0-9]*}"
 
-          # Bump minor (matching release-please bump-minor-pre-major=true,
-          # bump-patch-for-minor-pre-major=false behaviour).
-          next_minor=$(( minor + 1 ))
-          next_stable="v${major}.${next_minor}.0"
-          echo "Next stable version will be: ${next_stable}"
+          # Determine bump type based on conventional commits since latest stable tag.
+          commit_messages="$(git log "${latest_stable}..HEAD" --format="%B" 2>/dev/null || true)"
 
+          bump="patch"
+          if echo "${commit_messages}" | grep -qE "(BREAKING CHANGE:|^[a-zA-Z]+(\([^)]+\))?!:)"; then
+            if [[ "${major}" -eq 0 ]]; then
+              bump="minor"
+            else
+              bump="major"
+            fi
+          elif echo "${commit_messages}" | grep -qE "^feat(\([^)]+\))?:"; then
+            bump="minor"
+          fi
+
+          if [[ "${bump}" == "major" ]]; then
+            next_major=$(( major + 1 ))
+            next_stable="v${next_major}.0.0"
+          elif [[ "${bump}" == "minor" ]]; then
+            next_minor=$(( minor + 1 ))
+            next_stable="v${major}.${next_minor}.0"
+          else
+            next_patch=$(( patch + 1 ))
+            next_stable="v${major}.${minor}.${next_patch}"
+          fi
+
+          echo "Next stable version will be: ${next_stable} (bump=${bump})"
           # Count how many RC tags already exist for this next stable.
           rc_pattern="^${next_stable}-rc\.[0-9]+$"
           rc_count="$(git tag --list "${next_stable}-rc.*" \
