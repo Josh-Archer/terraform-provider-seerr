@@ -18,10 +18,18 @@ validate_tag() {
     echo "Invalid release tag: ${tag}" >&2
     return 1
   fi
-  if ! git show-ref --verify --quiet "refs/tags/${tag}"; then
-    echo "Release tag does not exist: ${tag}" >&2
-    return 1
+  if git show-ref --verify --quiet "refs/tags/${tag}"; then
+    return 0
   fi
+  # Check if a draft or published release exists in GitHub
+  local gh_releases
+  if gh_releases="$(gh api --paginate "repos/${repository}/releases" --jq '.[].tag_name' 2>/dev/null)"; then
+    if echo "${gh_releases}" | grep -qx "${tag}"; then
+      return 0
+    fi
+  fi
+  echo "Release tag does not exist: ${tag}" >&2
+  return 1
 }
 
 # Return 0 for a published release, 1 when the tag has no release or only a
@@ -129,6 +137,11 @@ while IFS= read -r tag; do
 
   print_candidate "${tag}"
   exit 0
-done < <(git tag --list 'v*' --sort=v:refname)
+done < <(
+  {
+    git tag --list 'v*'
+    gh api --paginate "repos/${repository}/releases" --jq '.[].tag_name' 2>/dev/null || true
+  } | sort -u -V
+)
 
 printf '|false\n'
