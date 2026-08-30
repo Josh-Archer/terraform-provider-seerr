@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.43.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.43.0...v0.43.1) (2026-08-30)
+
+
+### Documentation
+
+* formalize v1.0.0 stability and breaking-change policy ([#243](https://github.com/Josh-Archer/terraform-provider-seerr/issues/243)) ([a1d3b73](https://github.com/Josh-Archer/terraform-provider-seerr/commit/a1d3b73fae7d761cf6a0d99793d24b7021d7c10b))
+
+
+### Miscellaneous Chores
+
+* **main:** release 0.42.3 ([#239](https://github.com/Josh-Archer/terraform-provider-seerr/issues/239)) ([f39a71f](https://github.com/Josh-Archer/terraform-provider-seerr/commit/f39a71ffcb87e5e0ceb8c188f892856e1ff2a7bf))
+* **main:** release 0.43.0 ([#242](https://github.com/Josh-Archer/terraform-provider-seerr/issues/242)) ([6b4c1b6](https://github.com/Josh-Archer/terraform-provider-seerr/commit/6b4c1b6bba41ba2d2f8d51967d5a6d0544bb2964))
+
 ## [0.43.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.42.3...v0.43.0) (2026-08-30)
 
 
