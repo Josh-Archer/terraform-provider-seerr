@@ -375,13 +375,45 @@ func TestSonarrServerPayload_SeerrProxyTest(t *testing.T) {
 	}
 }
 
-// TestSonarrServerPayload_SeerrProxyTestError verifies that connectivity errors
-// returned by Seerr's proxy endpoint are surfaced cleanly.
-func TestSonarrServerPayload_SeerrProxyTestError(t *testing.T) {
+// TestSonarrServerPayload_ExplicitQualityProfileNameNoNetworkCall verifies that
+// when quality_profile_name is provided, payload() succeeds without any network calls.
+func TestSonarrServerPayload_ExplicitQualityProfileNameNoNetworkCall(t *testing.T) {
+	res := &SonarrServerResource{}
+
+	tagsVal, _ := types.ListValueFrom(context.Background(), types.Int64Type, []int64{})
+	animeTagsVal, _ := types.ListValueFrom(context.Background(), types.Int64Type, []int64{})
+
+	model := SonarrServerModel{
+		Name:               types.StringValue("Sonarr"),
+		Hostname:           types.StringValue("sonarr"),
+		Port:               types.Int64Value(8989),
+		APIKey:             types.StringValue("secret-sonarr-key"),
+		QualityProfileID:   types.Int64Value(1),
+		QualityProfileName: types.StringValue("HD-1080p"),
+		ActiveDirectory:    types.StringValue("/data/media/tv"),
+		Tags:               tagsVal,
+		AnimeTags:          animeTagsVal,
+	}
+
+	updatedModel, payloadStr, err := res.payload(context.Background(), model)
+	if err != nil {
+		t.Fatalf("payload() failed: %v", err)
+	}
+	if updatedModel.QualityProfileName.ValueString() != "HD-1080p" {
+		t.Errorf("expected 'HD-1080p', got %q", updatedModel.QualityProfileName.ValueString())
+	}
+	if payloadStr == "" {
+		t.Error("expected non-empty payload")
+	}
+}
+
+// TestSonarrServerPayload_UnresolvableQualityProfileError verifies that when quality_profile_name
+// cannot be resolved, an error is returned prompting for explicit configuration.
+func TestSonarrServerPayload_UnresolvableQualityProfileError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte(`{"message": "Invalid API key or Sonarr host unreachable"}`))
+		_, _ = w.Write([]byte(`{"message": "Host unreachable"}`))
 	}))
 	defer srv.Close()
 
@@ -397,10 +429,10 @@ func TestSonarrServerPayload_SeerrProxyTestError(t *testing.T) {
 
 	model := SonarrServerModel{
 		Name:             types.StringValue("Sonarr"),
-		Hostname:         types.StringValue("sonarr"),
+		Hostname:         types.StringValue("sonarr-unreachable"),
 		Port:             types.Int64Value(8989),
 		APIKey:           types.StringValue("bad-key"),
-		QualityProfileID: types.Int64Value(1),
+		QualityProfileID: types.Int64Value(99),
 		ActiveDirectory:  types.StringValue("/data/media/tv"),
 		Tags:             tagsVal,
 		AnimeTags:        animeTagsVal,
@@ -410,7 +442,7 @@ func TestSonarrServerPayload_SeerrProxyTestError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error from payload(), got nil")
 	}
-	if expected := "Invalid API key or Sonarr host unreachable"; !strings.Contains(err.Error(), expected) {
+	if expected := "could not resolve quality_profile_name for profile id 99"; !strings.Contains(err.Error(), expected) {
 		t.Errorf("expected error containing %q, got %q", expected, err.Error())
 	}
 }

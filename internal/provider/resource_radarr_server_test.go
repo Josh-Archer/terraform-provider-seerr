@@ -364,13 +364,43 @@ func TestRadarrServerPayload_SeerrProxyTest(t *testing.T) {
 	}
 }
 
-// TestRadarrServerPayload_SeerrProxyTestError verifies that connectivity errors
-// returned by Seerr's proxy endpoint are surfaced cleanly.
-func TestRadarrServerPayload_SeerrProxyTestError(t *testing.T) {
+// TestRadarrServerPayload_ExplicitQualityProfileNameNoNetworkCall verifies that
+// when quality_profile_name is provided, payload() succeeds without any network calls.
+func TestRadarrServerPayload_ExplicitQualityProfileNameNoNetworkCall(t *testing.T) {
+	res := &RadarrServerResource{}
+
+	tagsVal, _ := types.ListValueFrom(context.Background(), types.Int64Type, []int64{})
+
+	model := RadarrServerModel{
+		Name:               types.StringValue("Radarr"),
+		Hostname:           types.StringValue("radarr"),
+		Port:               types.Int64Value(7878),
+		APIKey:             types.StringValue("secret-radarr-key"),
+		QualityProfileID:   types.Int64Value(1),
+		QualityProfileName: types.StringValue("Ultra-HD"),
+		ActiveDirectory:    types.StringValue("/data/media/movies"),
+		Tags:               tagsVal,
+	}
+
+	updatedModel, payloadStr, err := res.payload(context.Background(), model)
+	if err != nil {
+		t.Fatalf("payload() failed: %v", err)
+	}
+	if updatedModel.QualityProfileName.ValueString() != "Ultra-HD" {
+		t.Errorf("expected 'Ultra-HD', got %q", updatedModel.QualityProfileName.ValueString())
+	}
+	if payloadStr == "" {
+		t.Error("expected non-empty payload")
+	}
+}
+
+// TestRadarrServerPayload_UnresolvableQualityProfileError verifies that when quality_profile_name
+// cannot be resolved, an error is returned prompting for explicit configuration.
+func TestRadarrServerPayload_UnresolvableQualityProfileError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte(`{"message": "Invalid API key or Radarr host unreachable"}`))
+		_, _ = w.Write([]byte(`{"message": "Host unreachable"}`))
 	}))
 	defer srv.Close()
 
@@ -385,10 +415,10 @@ func TestRadarrServerPayload_SeerrProxyTestError(t *testing.T) {
 
 	model := RadarrServerModel{
 		Name:             types.StringValue("Radarr"),
-		Hostname:         types.StringValue("radarr"),
+		Hostname:         types.StringValue("radarr-unreachable"),
 		Port:             types.Int64Value(7878),
 		APIKey:           types.StringValue("bad-key"),
-		QualityProfileID: types.Int64Value(1),
+		QualityProfileID: types.Int64Value(99),
 		ActiveDirectory:  types.StringValue("/data/media/movies"),
 		Tags:             tagsVal,
 	}
@@ -397,7 +427,7 @@ func TestRadarrServerPayload_SeerrProxyTestError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error from payload(), got nil")
 	}
-	if expected := "Invalid API key or Radarr host unreachable"; !strings.Contains(err.Error(), expected) {
+	if expected := "could not resolve quality_profile_name for profile id 99"; !strings.Contains(err.Error(), expected) {
 		t.Errorf("expected error containing %q, got %q", expected, err.Error())
 	}
 }

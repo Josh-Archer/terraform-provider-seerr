@@ -319,56 +319,44 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 		profileName = strings.TrimSpace(data.QualityProfileName.ValueString())
 	}
 
-	if r.client != nil {
-		testBody := map[string]any{
-			"hostname": hostname,
-			"port":     port,
-			"apiKey":   data.APIKey.ValueString(),
-			"useSsl":   useSSL,
-			"baseUrl":  baseURL,
-		}
-		testJSON, err := json.Marshal(testBody)
-		if err != nil {
-			return data, "", fmt.Errorf("marshal radarr test payload: %w", err)
-		}
-		testResp, err := r.client.Request(ctx, "POST", "/api/v1/settings/radarr/test", string(testJSON), nil)
-		if testResp.StatusCode < 200 || testResp.StatusCode >= 300 {
-			var errBody struct {
-				Message string `json:"message"`
-				Error   string `json:"error"`
+	if profileName == "" && !data.QualityProfileID.IsNull() && !data.QualityProfileID.IsUnknown() {
+		profileID := data.QualityProfileID.ValueInt64()
+		// Try resolving via Seerr proxy test endpoint first
+		if r.client != nil {
+			testBody := map[string]any{
+				"hostname": hostname,
+				"port":     port,
+				"apiKey":   data.APIKey.ValueString(),
+				"useSsl":   useSSL,
+				"baseUrl":  baseURL,
 			}
-			errMsg := fmt.Sprintf("status %d", testResp.StatusCode)
-			if json.Unmarshal(testResp.Body, &errBody) == nil {
-				if errBody.Message != "" {
-					errMsg = errBody.Message
-				} else if errBody.Error != "" {
-					errMsg = errBody.Error
-				}
-			}
-			return data, "", fmt.Errorf("validate connectivity: %s", errMsg)
-		}
-
-		if profileName == "" && !data.QualityProfileID.IsNull() && !data.QualityProfileID.IsUnknown() {
-			var testResult struct {
-				Profiles []struct {
-					ID   int64  `json:"id"`
-					Name string `json:"name"`
-				} `json:"profiles"`
-			}
-			if err := json.Unmarshal(testResp.Body, &testResult); err == nil {
-				profileID := data.QualityProfileID.ValueInt64()
-				for _, p := range testResult.Profiles {
-					if p.ID == profileID {
-						profileName = strings.TrimSpace(p.Name)
-						break
+			if testJSON, err := json.Marshal(testBody); err == nil {
+				if testResp, err := r.client.Request(ctx, "POST", "/api/v1/settings/radarr/test", string(testJSON), nil); err == nil && testResp.StatusCode >= 200 && testResp.StatusCode < 300 {
+					var testResult struct {
+						Profiles []struct {
+							ID   int64  `json:"id"`
+							Name string `json:"name"`
+						} `json:"profiles"`
+					}
+					if err := json.Unmarshal(testResp.Body, &testResult); err == nil {
+						for _, p := range testResult.Profiles {
+							if p.ID == profileID {
+								profileName = strings.TrimSpace(p.Name)
+								break
+							}
+						}
 					}
 				}
 			}
 		}
-	} else {
-		if profileName == "" && !data.QualityProfileID.IsNull() && !data.QualityProfileID.IsUnknown() {
-			profileID := data.QualityProfileID.ValueInt64()
-			profile, lookupErr := findArrProfile(
+
+		// If not resolved via Seerr proxy test, try direct Arr profile lookup fallback
+		if profileName == "" {
+			timeout := defaultRequestTimeout
+			if r.client != nil {
+				timeout = r.client.Timeout()
+			}
+			if profile, lookupErr := findArrProfile(
 				ctx,
 				data.URL.ValueString(),
 				hostname,
@@ -376,52 +364,20 @@ func (r *RadarrServerResource) payload(ctx context.Context, data RadarrServerMod
 				useSSL,
 				baseURL,
 				data.APIKey.ValueString(),
-				defaultRequestTimeout,
+				timeout,
 				&profileID,
 				nil,
-			)
-			if lookupErr != nil {
-				return data, "", fmt.Errorf("resolve quality_profile_name: %w", lookupErr)
+			); lookupErr == nil && profile != nil {
+				profileName = profile.Name
 			}
-			profileName = profile.Name
 		}
-		if err := ValidateArrConnectivity(
-			ctx,
-			data.URL.ValueString(),
-			hostname,
-			port,
-			useSSL,
-			baseURL,
-			data.APIKey.ValueString(),
-			defaultRequestTimeout,
-		); err != nil {
-			return data, "", fmt.Errorf("validate connectivity: %w", err)
-		}
-	}
 
-	if profileName == "" && !data.QualityProfileID.IsNull() && !data.QualityProfileID.IsUnknown() {
-		profileID := data.QualityProfileID.ValueInt64()
-		timeout := defaultRequestTimeout
-		if r.client != nil {
-			timeout = r.client.Timeout()
-		}
-		profile, lookupErr := findArrProfile(
-			ctx,
-			data.URL.ValueString(),
-			hostname,
-			port,
-			useSSL,
-			baseURL,
-			data.APIKey.ValueString(),
-			timeout,
-			&profileID,
-			nil,
-		)
-		if lookupErr == nil && profile != nil {
-			profileName = profile.Name
+		if profileName == "" {
+			return data, "", fmt.Errorf("could not resolve quality_profile_name for profile id %d; please specify quality_profile_name explicitly", profileID)
 		}
 	}
 	data.QualityProfileName = types.StringValue(profileName)
+
 	base := map[string]any{
 		"name":                name,
 		"hostname":            hostname,
