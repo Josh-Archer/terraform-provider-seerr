@@ -5,7 +5,7 @@ terraform {
       source  = "registry.opentofu.org/josh-archer/seerr"
       # For HashiCorp Terraform Registry, use:
       # source = "josh-archer/seerr"
-      version = "~> 0.38.0"
+      version = "~> 1.0.0"
     }
   }
 }

@@ -1,6 +1,6 @@
 # Compatibility Matrix
 
-See the full [Version Compatibility Guide](docs/guides/compatibility.md) for detailed compatibility tables and version constraints.
+See the full [Version Compatibility Guide](docs/guides/compatibility.md) for detailed compatibility tables and version constraints, and the [Stability and Breaking-Change Policy](docs/guides/stability-and-breaking-changes.md) for SemVer 2.0 commitments.
 
 ## Quick Summary
 

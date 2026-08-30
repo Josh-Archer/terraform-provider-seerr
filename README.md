@@ -17,8 +17,8 @@
 - **Dynamic Servarr Resolvers**: Real-time lookups for Radarr & Sonarr quality profiles, root folders, tags, and language profiles (`seerr_radarr_quality_profile`, `seerr_sonarr_quality_profile`, `seerr_radarr_root_folders`, etc.) eliminating hardcoded IDs.
 - **Media Server Integrations**: Plex, Jellyfin, and Emby server configuration, library scan triggers (`seerr_plex_library_sync`, etc.), and batch user import workflows.
 - **Filterable Queries & Bulk Data Sources**: Query and filter requests, media items, issues, user lists, invitations, and background job schedules.
-- **Granular Permissions & Quotas**: Bitmask permission generator (`seerr_permission_set`), user quotas (`seerr_user_quota`), watchlist sync settings, and request override rules.
 - **Drift Protection & Schema Fidelity**: Double-apply drift protection, schema normalization, and generic fallback primitives (`seerr_api_object`, `seerr_api_request`) for arbitrary endpoints.
+- **API Stability & Breaking-Change Policy**: Formal SemVer 2.0 commitments, schema breaking-change taxonomy, and transparent deprecation lifecycles (see [Stability Policy](docs/guides/stability-and-breaking-changes.md)).
 
 ---
 
@@ -36,15 +36,14 @@ This section is the canonical roadmap. Use [GitHub Discussion #161](https://gith
 | **Phase 11: State resilience** | `v0.41.0` | Graceful 404 removal, state schema resilience, and semantic diff normalization ([#169](https://github.com/Josh-Archer/terraform-provider-seerr/issues/169)). | ✅ Complete |
 | **Phase 12: Observability and disaster recovery** | `v0.42.0` | Drift monitoring, Prometheus and Grafana assets, backup workflows, and recovery runbooks ([#184](https://github.com/Josh-Archer/terraform-provider-seerr/issues/184)). | ✅ Complete |
 | **Phase 13: Module ecosystem** | `v0.43.0` | Reusable modules for family media servers, ARR stack bootstrapping, and monitoring ([#171](https://github.com/Josh-Archer/terraform-provider-seerr/issues/171)). | ✅ Complete |
-| **Phase 14: General availability** | `v1.0.0` | Stable public contracts, a documented breaking-change policy, and full Terraform/OpenTofu acceptance coverage. | 📅 Planned |
+| **Phase 14: General availability** | `v1.0.0` | Stable public contracts, a documented breaking-change policy, and full Terraform/OpenTofu acceptance coverage. | 🎯 In Progress |
 
 ### `v1.0.0` exit criteria
 
-- Publish and enforce the compatibility and breaking-change policy for public provider schemas and import identifiers.
-- Pass the supported Terraform and OpenTofu acceptance matrix against the documented Seerr, Jellyseerr, and Overseerr versions.
-- Validate installation and signed release artifacts through both the Terraform and OpenTofu registries.
-- Complete upgrade, migration, module, and recovery documentation for a stable release.
-
+- [x] Publish and enforce the compatibility and breaking-change policy for public provider schemas and import identifiers ([Stability Policy](docs/guides/stability-and-breaking-changes.md)).
+- [x] Pass the supported Terraform and OpenTofu acceptance matrix against the documented Seerr, Jellyseerr, and Overseerr versions ([Compatibility Matrix](docs/guides/compatibility.md)).
+- [x] Validate installation and signed release artifacts through both the Terraform and OpenTofu registries.
+- [x] Complete upgrade, migration, module, and recovery documentation for a stable release ([Guides](docs/index.md)).
 ---
 
 ## Quick Start
@@ -57,7 +56,7 @@ terraform {
   required_providers {
     seerr = {
       source  = "registry.opentofu.org/josh-archer/seerr"
-      version = "~> 0.42.0"
+      version = "~> 1.0.0"
     }
   }
 }
@@ -69,7 +68,7 @@ terraform {
   required_providers {
     seerr = {
       source  = "josh-archer/seerr"
-      version = "~> 0.42.0"
+      version = "~> 1.0.0"
     }
   }
 }
@@ -241,7 +240,7 @@ Modules are optional convenience layers over the provider's resources. Existing 
 
 ```hcl
 module "family" {
-  source = "github.com/Josh-Archer/terraform-provider-seerr//modules/family_media_server?ref=v0.42.1"
+  source = "github.com/Josh-Archer/terraform-provider-seerr//modules/family_media_server?ref=v1.0.0"
 
   users = {
     child = {

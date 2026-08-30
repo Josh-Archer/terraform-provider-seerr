@@ -2,6 +2,7 @@
 
 This document outlines the tested and supported versions of upstream media management servers (Seerr, Jellyseerr, Overseerr) and Infrastructure-as-Code engines (OpenTofu, Terraform).
 
+For SemVer 2.0 commitments, breaking-change rules, and the deprecation lifecycle, refer to the [Stability and Breaking-Change Policy](stability-and-breaking-changes.md).
 ---
 
 ## 📺 Upstream Server Compatibility
@@ -50,7 +51,7 @@ terraform {
   required_providers {
     seerr = {
       source  = "registry.opentofu.org/josh-archer/seerr"
-      version = "~> 0.40.0"
+      version = "~> 1.0.0"
     }
   }
 }
@@ -63,7 +64,7 @@ terraform {
   required_providers {
     seerr = {
       source  = "josh-archer/seerr"
-      version = "~> 0.40.0"
+      version = "~> 1.0.0"
     }
   }
 }
