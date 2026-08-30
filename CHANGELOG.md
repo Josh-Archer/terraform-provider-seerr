@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.42.3](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.42.2...v0.42.3) (2026-08-30)
+
+
+### Bug Fixes
+
+* restore release and Jellyfin compatibility gates ([#238](https://github.com/Josh-Archer/terraform-provider-seerr/issues/238)) ([7cb5743](https://github.com/Josh-Archer/terraform-provider-seerr/commit/7cb57430b9fbab52b72ce7aa7f3852729fb3d291))
+
+
+### Documentation
+
+* mark v0.43.0 module release stable ([#241](https://github.com/Josh-Archer/terraform-provider-seerr/issues/241)) ([0ac711f](https://github.com/Josh-Archer/terraform-provider-seerr/commit/0ac711f63685c962c0047d69190e2b795662357d))
+
+
+### Tests
+
+* align Jellyfin fixture authentication ([#240](https://github.com/Josh-Archer/terraform-provider-seerr/issues/240)) ([a32f3ad](https://github.com/Josh-Archer/terraform-provider-seerr/commit/a32f3ad64abcc84e0ee165c6e41a7f207c00a9f9))
+
 ## [0.42.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.42.1...v0.42.2) (2026-08-30)
 
 
