@@ -20,15 +20,16 @@ if [[ "${current_object}" != "${expected_object}" ]]; then
   exit 1
 fi
 
-git_options=()
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
   auth_header="$(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 | tr -d '\r\n')"
-  git_options+=(
+  git \
     -c
-    "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth_header}"
-  )
+    "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth_header}" \
+    push \
+    --force-with-lease="refs/tags/${tag}:${expected_object}" \
+    "${remote}" ":refs/tags/${tag}"
+else
+  git push \
+    --force-with-lease="refs/tags/${tag}:${expected_object}" \
+    "${remote}" ":refs/tags/${tag}"
 fi
-
-git "${git_options[@]}" push \
-  --force-with-lease="refs/tags/${tag}:${expected_object}" \
-  "${remote}" ":refs/tags/${tag}"
