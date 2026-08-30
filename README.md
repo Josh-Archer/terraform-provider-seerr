@@ -24,7 +24,7 @@
 
 ## Roadmap
 
-The latest stable release is [`v0.43.0`](https://github.com/Josh-Archer/terraform-provider-seerr/releases/tag/v0.43.0). The reusable module ecosystem is complete. The remaining planned milestone is `v1.0.0` general availability.
+The latest release milestone is [`v1.0.0`](https://github.com/Josh-Archer/terraform-provider-seerr/releases/tag/v1.0.0). All planned milestones (Phases 1 through 14) are complete with full General Availability guarantees.
 
 This section is the canonical roadmap. Use [GitHub Discussion #161](https://github.com/Josh-Archer/terraform-provider-seerr/discussions/161) for feedback, proposals, and status discussion.
 
@@ -36,7 +36,7 @@ This section is the canonical roadmap. Use [GitHub Discussion #161](https://gith
 | **Phase 11: State resilience** | `v0.41.0` | Graceful 404 removal, state schema resilience, and semantic diff normalization ([#169](https://github.com/Josh-Archer/terraform-provider-seerr/issues/169)). | ✅ Complete |
 | **Phase 12: Observability and disaster recovery** | `v0.42.0` | Drift monitoring, Prometheus and Grafana assets, backup workflows, and recovery runbooks ([#184](https://github.com/Josh-Archer/terraform-provider-seerr/issues/184)). | ✅ Complete |
 | **Phase 13: Module ecosystem** | `v0.43.0` | Reusable modules for family media servers, ARR stack bootstrapping, and monitoring ([#171](https://github.com/Josh-Archer/terraform-provider-seerr/issues/171)). | ✅ Complete |
-| **Phase 14: General availability** | `v1.0.0` | Stable public contracts, a documented breaking-change policy, and full Terraform/OpenTofu acceptance coverage. | 🎯 In Progress |
+| **Phase 14: General availability** | `v1.0.0` | Stable public contracts, a documented breaking-change policy, and full Terraform/OpenTofu acceptance coverage. | ✅ Complete |
 
 ### `v1.0.0` exit criteria
 
