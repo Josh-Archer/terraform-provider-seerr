@@ -153,6 +153,7 @@ func TestResource404StateRemoval(t *testing.T) {
 			ID:        types.StringValue("movie:99"),
 			TMDBID:    types.Int64Value(99),
 			MediaType: types.StringValue("movie"),
+			UserID:    types.Int64Value(1),
 		}).HasError())
 
 		readResp := resource.ReadResponse{State: state}

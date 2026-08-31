@@ -295,6 +295,7 @@ func TestResilience404Reconciliation(t *testing.T) {
 			ID:        types.StringValue("movie:12345"),
 			MediaType: types.StringValue("movie"),
 			TMDBID:    types.Int64Value(12345),
+			UserID:    types.Int64Value(1),
 		}
 		assert.False(t, state.Set(ctx, &initial).HasError())
 
