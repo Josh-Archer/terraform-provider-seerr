@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -50,23 +51,33 @@ func blocklistResourceAttributes() map[string]rschema.Attribute {
 				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"tmdb_id": rschema.Int64Attribute{Required: true},
+		"tmdb_id": rschema.Int64Attribute{
+			Required: true,
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.RequiresReplace(),
+			},
+		},
 		"media_type": rschema.StringAttribute{
 			Required: true,
 			Validators: []validator.String{
 				stringvalidator.OneOf("movie", "tv"),
+			},
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
 			},
 		},
 		"title": rschema.StringAttribute{Optional: true, Computed: true},
 		"user_id": rschema.Int64Attribute{
 			MarkdownDescription: "User ID recorded as the actor who manually blocklisted this media.",
 			Required:            true,
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.RequiresReplace(),
+			},
 		},
 		"blocklisted_tags": rschema.StringAttribute{Optional: true, Computed: true},
 		"created_at":       rschema.StringAttribute{Computed: true},
 	}
 }
-
 func blocklistDataSourceAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id":               schema.StringAttribute{Computed: true},
@@ -209,13 +220,14 @@ func buildBlocklistPayload(data *BlocklistModel) map[string]any {
 	payload := map[string]any{
 		"tmdbId":    data.TMDBID.ValueInt64(),
 		"mediaType": data.MediaType.ValueString(),
-		"user":      data.UserID.ValueInt64(),
+	}
+	if !data.UserID.IsNull() && !data.UserID.IsUnknown() && data.UserID.ValueInt64() > 0 {
+		payload["user"] = data.UserID.ValueInt64()
 	}
 	setOptionalString(payload, "title", data.Title)
 	setOptionalString(payload, "blocklistedTags", data.BlocklistedTags)
 	return payload
 }
-
 func applyBlocklistMap(data *BlocklistModel, decoded map[string]any) error {
 	data.Title = types.StringNull()
 	data.UserID = types.Int64Null()

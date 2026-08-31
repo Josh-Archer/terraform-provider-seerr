@@ -730,6 +730,10 @@ func (r *RadarrServerResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 	data.ID = types.StringValue(fmt.Sprintf("%d", data.ServerID.ValueInt64()))
+	if err := readRadarrStateFromJSON(ctx, res.Body, &data); err != nil {
+		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("read state after update: %s", err))
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
