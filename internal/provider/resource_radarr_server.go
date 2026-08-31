@@ -453,9 +453,23 @@ func (r *RadarrServerResource) Create(ctx context.Context, req resource.CreateRe
 func readRadarrStateFromJSON(ctx context.Context, item []byte, data *RadarrServerModel) error {
 	var m map[string]any
 	if err := json.Unmarshal(item, &m); err != nil {
-		return fmt.Errorf("parse radarr server response: %w", err)
+		var list []map[string]any
+		if listErr := json.Unmarshal(item, &list); listErr == nil && len(list) > 0 {
+			targetID := data.ServerID.ValueInt64()
+			for _, entry := range list {
+				if idVal, ok := entry["id"].(float64); ok && int64(idVal) == targetID {
+					m = entry
+					break
+				}
+			}
+			if m == nil {
+				m = list[0]
+			}
+		}
+		if m == nil {
+			return fmt.Errorf("parse radarr server response: %w", err)
+		}
 	}
-
 	if val, ok := m["name"]; ok {
 		if v, ok := val.(string); ok {
 			data.Name = types.StringValue(v)

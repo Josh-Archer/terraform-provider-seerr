@@ -293,6 +293,31 @@ func TestReadRadarrStateFromJSON_NullValuesPreserved(t *testing.T) {
 	}
 }
 
+func TestReadRadarrStateFromJSON_ArrayResponse(t *testing.T) {
+	raw := `[
+		{"id": 0, "name": "Radarr Main", "hostname": "radarr1.local", "port": 7878, "useSsl": false},
+		{"id": 1, "name": "Radarr 4K", "hostname": "radarr2.local", "port": 7878, "useSsl": true}
+	]`
+
+	data := &RadarrServerModel{
+		ServerID: types.Int64Value(1),
+	}
+
+	if err := readRadarrStateFromJSON(context.Background(), []byte(raw), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if data.Name.ValueString() != "Radarr 4K" {
+		t.Errorf("expected 'Radarr 4K', got %v", data.Name.ValueString())
+	}
+	if data.Hostname.ValueString() != "radarr2.local" {
+		t.Errorf("expected 'radarr2.local', got %v", data.Hostname.ValueString())
+	}
+	if !data.UseSSL.ValueBool() {
+		t.Errorf("expected UseSSL=true, got false")
+	}
+}
+
 // TestRadarrServerPayload_SeerrProxyTest verifies that RadarrServerResource.payload
 // validates connectivity and resolves quality profile name via Seerr's proxy test endpoint
 // (/api/v1/settings/radarr/test), supporting internal container hostnames without

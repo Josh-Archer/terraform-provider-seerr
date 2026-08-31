@@ -488,9 +488,23 @@ func (r *SonarrServerResource) Create(ctx context.Context, req resource.CreateRe
 func readSonarrStateFromJSON(ctx context.Context, item []byte, data *SonarrServerModel) error {
 	var m map[string]any
 	if err := json.Unmarshal(item, &m); err != nil {
-		return fmt.Errorf("parse sonarr server response: %w", err)
+		var list []map[string]any
+		if listErr := json.Unmarshal(item, &list); listErr == nil && len(list) > 0 {
+			targetID := data.ServerID.ValueInt64()
+			for _, entry := range list {
+				if idVal, ok := entry["id"].(float64); ok && int64(idVal) == targetID {
+					m = entry
+					break
+				}
+			}
+			if m == nil {
+				m = list[0]
+			}
+		}
+		if m == nil {
+			return fmt.Errorf("parse sonarr server response: %w", err)
+		}
 	}
-
 	if val, ok := m["name"]; ok {
 		if v, ok := val.(string); ok {
 			data.Name = types.StringValue(v)

@@ -302,6 +302,31 @@ func TestReadSonarrStateFromJSON_NullValuesPreserved(t *testing.T) {
 	}
 }
 
+func TestReadSonarrStateFromJSON_ArrayResponse(t *testing.T) {
+	raw := `[
+		{"id": 0, "name": "Sonarr Main", "hostname": "sonarr1.local", "port": 8989, "useSsl": false},
+		{"id": 2, "name": "Sonarr Anime", "hostname": "sonarr2.local", "port": 8989, "useSsl": true}
+	]`
+
+	data := &SonarrServerModel{
+		ServerID: types.Int64Value(2),
+	}
+
+	if err := readSonarrStateFromJSON(context.Background(), []byte(raw), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if data.Name.ValueString() != "Sonarr Anime" {
+		t.Errorf("expected 'Sonarr Anime', got %v", data.Name.ValueString())
+	}
+	if data.Hostname.ValueString() != "sonarr2.local" {
+		t.Errorf("expected 'sonarr2.local', got %v", data.Hostname.ValueString())
+	}
+	if !data.UseSSL.ValueBool() {
+		t.Errorf("expected UseSSL=true, got false")
+	}
+}
+
 // TestSonarrServerPayload_SeerrProxyTest verifies that SonarrServerResource.payload
 // validates connectivity and resolves quality profile name via Seerr's proxy test endpoint
 // (/api/v1/settings/sonarr/test), supporting internal container hostnames without
