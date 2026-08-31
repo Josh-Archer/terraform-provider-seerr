@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v1.0.1...v1.0.2) (2026-08-31)
+
+
+### Bug Fixes
+
+* resolve client response leak, servarr update state drift, and blocklist immutability ([#258](https://github.com/Josh-Archer/terraform-provider-seerr/issues/258)) ([0c17bc5](https://github.com/Josh-Archer/terraform-provider-seerr/commit/0c17bc50cc7c008d87e17d7b261b68af50d98bbf))
+
 ## [1.0.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v1.0.0...v1.0.1) (2026-08-30)
 
 
