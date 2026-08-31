@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v1.0.0...v1.0.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* **ci:** determine prerelease RC version from conventional commits ([#250](https://github.com/Josh-Archer/terraform-provider-seerr/issues/250)) ([5422bd5](https://github.com/Josh-Archer/terraform-provider-seerr/commit/5422bd5ecedd899737d47fb43e6cc6b2a74f3018))
+* **ci:** publish releases directly and preserve changelog in GoReleaser ([#249](https://github.com/Josh-Archer/terraform-provider-seerr/issues/249)) ([8908a2c](https://github.com/Josh-Archer/terraform-provider-seerr/commit/8908a2cc0253fab7cf61507917fa8d9688f3d785))
+
+
+### Miscellaneous Chores
+
+* **main:** release 0.43.1 ([#244](https://github.com/Josh-Archer/terraform-provider-seerr/issues/244)) ([b82bdb2](https://github.com/Josh-Archer/terraform-provider-seerr/commit/b82bdb290d6a23137b42a83dfce602e5ff6c6d25))
+* **main:** release 1.0.0 ([#247](https://github.com/Josh-Archer/terraform-provider-seerr/issues/247)) ([8a3c6de](https://github.com/Josh-Archer/terraform-provider-seerr/commit/8a3c6deff541dc7e50fc97d5708439f400649dba))
+
 ## [1.0.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v0.43.1...v1.0.0) (2026-08-30)
 
 
