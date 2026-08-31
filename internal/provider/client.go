@@ -169,11 +169,13 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 			}
 			return nil, err
 		}
-		defer res.Body.Close()
-
 		respBody, err := io.ReadAll(res.Body)
+		closeErr := res.Body.Close()
 		if err != nil {
 			return nil, err
+		}
+		if closeErr != nil {
+			return nil, closeErr
 		}
 
 		if retryableMethod && attempt < maxAttempts && isRetryableStatusCode(res.StatusCode) {

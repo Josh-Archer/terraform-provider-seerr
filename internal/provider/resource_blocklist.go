@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -50,9 +51,17 @@ func blocklistResourceAttributes() map[string]rschema.Attribute {
 				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"tmdb_id": rschema.Int64Attribute{Required: true},
+		"tmdb_id": rschema.Int64Attribute{
+			Required: true,
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.RequiresReplace(),
+			},
+		},
 		"media_type": rschema.StringAttribute{
 			Required: true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 			Validators: []validator.String{
 				stringvalidator.OneOf("movie", "tv"),
 			},
@@ -61,6 +70,9 @@ func blocklistResourceAttributes() map[string]rschema.Attribute {
 		"user_id": rschema.Int64Attribute{
 			MarkdownDescription: "User ID recorded as the actor who manually blocklisted this media.",
 			Required:            true,
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.RequiresReplace(),
+			},
 		},
 		"blocklisted_tags": rschema.StringAttribute{Optional: true, Computed: true},
 		"created_at":       rschema.StringAttribute{Computed: true},

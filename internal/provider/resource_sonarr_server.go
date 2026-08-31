@@ -801,6 +801,10 @@ func (r *SonarrServerResource) Update(ctx context.Context, req resource.UpdateRe
 		resp.Diagnostics.AddError("Update Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return
 	}
+	if err := readSonarrStateFromJSON(ctx, res.Body, &data); err != nil {
+		resp.Diagnostics.AddError("Update Failed", err.Error())
+		return
+	}
 	data.ID = types.StringValue(fmt.Sprintf("%d", data.ServerID.ValueInt64()))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

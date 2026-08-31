@@ -98,6 +98,48 @@ func TestClientRetries502503504(t *testing.T) {
 	}
 }
 
+func TestClientClosesRetryResponseBeforeNextAttempt(t *testing.T) {
+	var attempts int32
+	var firstResponseClosed atomic.Bool
+
+	client := &APIClient{
+		baseURL:      mustParseURL(t, "http://example.com"),
+		maxRetries:   1,
+		retryBackoff: time.Millisecond,
+		client: &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
+			if atomic.AddInt32(&attempts, 1) == 1 {
+				return &http.Response{
+					StatusCode: http.StatusServiceUnavailable,
+					Header:     make(http.Header),
+					Body: closeTracker{
+						ReadCloser: io.NopCloser(strings.NewReader(`temporary failure`)),
+						onClose:    func() { firstResponseClosed.Store(true) },
+					},
+				}, nil
+			}
+			if !firstResponseClosed.Load() {
+				t.Fatal("retry began before the previous response body was closed")
+			}
+			return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(`{"ok":true}`))}, nil
+		})},
+	}
+
+	resp, err := client.Request(context.Background(), http.MethodGet, "/api/v1/settings/main", "", nil)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, int32(2), attempts)
+}
+
+type closeTracker struct {
+	io.ReadCloser
+	onClose func()
+}
+
+func (c closeTracker) Close() error {
+	c.onClose()
+	return c.ReadCloser.Close()
+}
+
 func TestClientDoesNotRetry429ForPostMethod(t *testing.T) {
 	var attempts int32
 
