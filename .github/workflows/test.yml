@@ -64,7 +64,6 @@ jobs:
   tofu-test-stable:
     name: OpenTofu Compatibility (${{ matrix.target }}, ${{ matrix.tofu_version }})
     runs-on: ubuntu-latest
-    environment: public-ci
     permissions:
       contents: read
     timeout-minutes: 15

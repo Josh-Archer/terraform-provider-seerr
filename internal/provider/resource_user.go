@@ -594,12 +594,15 @@ func (r *UserResource) ImportState(ctx context.Context, req resource.ImportState
 }
 
 func (r *UserResource) updateMainSettings(ctx context.Context, userID string, data *UserModel) error {
+	path := fmt.Sprintf("/api/v1/user/%s/settings/main", userID)
+	unlock := r.client.LockEndpoint(path)
+	defer unlock()
+
 	payload, err := r.buildMainSettingsPayload(ctx, userID, data)
 	if err != nil {
 		return err
 	}
 	body, _ := json.Marshal(payload)
-	path := fmt.Sprintf("/api/v1/user/%s/settings/main", userID)
 	res, err := r.client.Request(ctx, "POST", path, string(body), nil)
 	if err != nil {
 		return err
@@ -629,12 +632,15 @@ func (r *UserResource) updateUserPermissions(ctx context.Context, userID string,
 }
 
 func (r *UserResource) updateNotificationSettings(ctx context.Context, userID string, settings *UserNotificationSettingsModel) error {
+	path := fmt.Sprintf("/api/v1/user/%s/settings/notifications", userID)
+	unlock := r.client.LockEndpoint(path)
+	defer unlock()
+
 	payload, err := r.buildNotificationSettingsPayload(ctx, userID, settings)
 	if err != nil {
 		return err
 	}
 	body, _ := json.Marshal(payload)
-	path := fmt.Sprintf("/api/v1/user/%s/settings/notifications", userID)
 	res, err := r.client.Request(ctx, "POST", path, string(body), nil)
 	if err != nil {
 		return err

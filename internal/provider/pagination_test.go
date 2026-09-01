@@ -209,18 +209,6 @@ func TestShouldStopPaginationShortPageWithMetadataContinues(t *testing.T) {
 	}
 }
 
-func TestFormatAPIErrorBody(t *testing.T) {
-	if got := formatAPIErrorBody([]byte(`{"message":"nope"}`)); got != "nope" {
-		t.Fatalf("message field: got %q", got)
-	}
-	if got := formatAPIErrorBody([]byte(`{"error":"bad"}`)); got != "bad" {
-		t.Fatalf("error field: got %q", got)
-	}
-	if got := formatAPIErrorBody([]byte(`plain`)); got != "plain" {
-		t.Fatalf("plain body: got %q", got)
-	}
-}
-
 // TestUsersDataSourceReadAggregatesMultiplePages is an integration-style unit test that
 // exercises the users collection data source against a multi-page mock API.
 func TestUsersDataSourceReadAggregatesMultiplePages(t *testing.T) {

@@ -416,6 +416,71 @@ func findArrProfile(ctx context.Context, rawURL, hostname string, port int64, us
 	}
 }
 
+// formatAPIErrorBody extracts descriptive error messages and nested validation error arrays
+// from an API response body.
+func formatAPIErrorBody(body []byte) string {
+	if len(body) == 0 {
+		return "empty response body"
+	}
+
+	var parsed struct {
+		Message string          `json:"message"`
+		Error   string          `json:"error"`
+		Errors  json.RawMessage `json:"errors"`
+	}
+
+	if err := json.Unmarshal(body, &parsed); err == nil {
+		var details []string
+
+		// Check if "errors" is an array of objects: [{"field": "...", "message": "..."}]
+		var structErrors []struct {
+			Field   string `json:"field"`
+			Message string `json:"message"`
+		}
+		if err := json.Unmarshal(parsed.Errors, &structErrors); err == nil && len(structErrors) > 0 {
+			for _, se := range structErrors {
+				if se.Field != "" && se.Message != "" {
+					details = append(details, fmt.Sprintf("• %s: %s", se.Field, se.Message))
+				} else if se.Message != "" {
+					details = append(details, fmt.Sprintf("• %s", se.Message))
+				} else if se.Field != "" {
+					details = append(details, fmt.Sprintf("• %s: invalid", se.Field))
+				}
+			}
+		}
+
+		// Check if "errors" is an array of strings: ["...", "..."]
+		if len(details) == 0 {
+			var strErrors []string
+			if err := json.Unmarshal(parsed.Errors, &strErrors); err == nil && len(strErrors) > 0 {
+				for _, s := range strErrors {
+					if strings.TrimSpace(s) != "" {
+						details = append(details, fmt.Sprintf("• %s", strings.TrimSpace(s)))
+					}
+				}
+			}
+		}
+
+		mainMsg := parsed.Message
+		if mainMsg == "" {
+			mainMsg = parsed.Error
+		}
+
+		if len(details) > 0 {
+			if mainMsg != "" {
+				return fmt.Sprintf("%s\n%s", mainMsg, strings.Join(details, "\n"))
+			}
+			return strings.Join(details, "\n")
+		}
+
+		if mainMsg != "" {
+			return mainMsg
+		}
+	}
+
+	return string(body)
+}
+
 // HandleAPIResponse checks the API response status and adds errors to diagnostics if not OK.
 func HandleAPIResponse(ctx context.Context, resp *APIResponse, diags *diag.Diagnostics, action string) bool {
 	if resp == nil {
@@ -427,20 +492,7 @@ func HandleAPIResponse(ctx context.Context, resp *APIResponse, diags *diag.Diagn
 		return true
 	}
 
-	// Try to extract a more descriptive error from the body
-	var errBody struct {
-		Message string `json:"message"`
-		Error   string `json:"error"`
-	}
-
-	errorMsg := string(resp.Body)
-	if err := json.Unmarshal(resp.Body, &errBody); err == nil {
-		if errBody.Message != "" {
-			errorMsg = errBody.Message
-		} else if errBody.Error != "" {
-			errorMsg = errBody.Error
-		}
-	}
+	errorMsg := formatAPIErrorBody(resp.Body)
 
 	diags.AddError(
 		action+" Failed",

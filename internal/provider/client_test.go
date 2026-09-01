@@ -333,3 +333,29 @@ func mustParseURL(t *testing.T, raw string) *url.URL {
 
 	return parsed
 }
+
+func TestClientLockEndpoint(t *testing.T) {
+	client := NewClient(mustParseURL(t, "http://example.com"), "key", "agent", false, 5*time.Second, 0, 0)
+
+	var count int
+	var wg sync.WaitGroup
+
+	for range 50 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			unlock := client.LockEndpoint("/api/v1/settings/main?query=1")
+			defer unlock()
+
+			// Critical section
+			current := count
+			time.Sleep(1 * time.Millisecond)
+			count = current + 1
+		}()
+	}
+
+	wg.Wait()
+	if count != 50 {
+		t.Fatalf("expected count 50, got %d (mutex race detected)", count)
+	}
+}
