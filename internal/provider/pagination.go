@@ -173,26 +173,6 @@ func shouldStopPagination(info pageInfo, pageLen, pageSize, totalFetched int) bo
 
 	return pageLen < effectivePageSize
 }
-
-// formatAPIErrorBody extracts message/error from a JSON API body when present,
-// matching HandleAPIResponse diagnostics style.
-func formatAPIErrorBody(body []byte) string {
-	errorMsg := string(body)
-	var errBody struct {
-		Message string `json:"message"`
-		Error   string `json:"error"`
-	}
-	if err := json.Unmarshal(body, &errBody); err == nil {
-		if errBody.Message != "" {
-			return errBody.Message
-		}
-		if errBody.Error != "" {
-			return errBody.Error
-		}
-	}
-	return errorMsg
-}
-
 func splitPathQuery(basePath string) (string, url.Values, error) {
 	basePath = strings.TrimSpace(basePath)
 	if basePath == "" {

@@ -211,6 +211,8 @@ func (r *UserQuotaResource) ImportState(ctx context.Context, req resource.Import
 // modified while all other main-settings are preserved server-side.
 func (r *UserQuotaResource) applyQuota(ctx context.Context, data *UserQuotaModel) error {
 	apiPath := userQuotaPath(data.UserID.ValueInt64())
+	unlock := r.client.LockEndpoint(apiPath)
+	defer unlock()
 
 	// Read current settings to preserve non-quota fields.
 	res, err := r.client.Request(ctx, "GET", apiPath, "", nil)

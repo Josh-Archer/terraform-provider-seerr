@@ -209,8 +209,10 @@ func (r *DiscoverSliderResource) Delete(ctx context.Context, req resource.Delete
 func (r *DiscoverSliderResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
-
 func (r *DiscoverSliderResource) updateSliders(ctx context.Context, sliders []DiscoverSliderItemModel) error {
+	unlock := r.client.LockEndpoint("/api/v1/settings/discover")
+	defer unlock()
+
 	current, err := r.fetchSliders(ctx)
 	if err != nil {
 		return err

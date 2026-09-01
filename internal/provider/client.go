@@ -13,17 +13,20 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
 
 type APIClient struct {
-	baseURL      *url.URL
-	userAgent    string
-	client       *http.Client
-	transport    *authTransport
-	maxRetries   int
-	retryBackoff time.Duration
+	baseURL       *url.URL
+	userAgent     string
+	client        *http.Client
+	transport     *authTransport
+	maxRetries    int
+	retryBackoff  time.Duration
+	lockMu        sync.Mutex
+	endpointLocks map[string]*sync.Mutex
 }
 
 type authTransport struct {
@@ -84,11 +87,12 @@ func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bo
 	}
 
 	return &APIClient{
-		baseURL:      baseURL,
-		userAgent:    userAgent,
-		transport:    at,
-		maxRetries:   maxRetries,
-		retryBackoff: retryBackoff,
+		baseURL:       baseURL,
+		userAgent:     userAgent,
+		transport:     at,
+		maxRetries:    maxRetries,
+		retryBackoff:  retryBackoff,
+		endpointLocks: make(map[string]*sync.Mutex),
 		client: &http.Client{
 			Transport: at,
 			Timeout:   normalizeRequestTimeout(timeout),
@@ -113,6 +117,34 @@ func (c *APIClient) SetSessionCookie(cookie string) {
 	if c.transport != nil {
 		c.transport.sessionCookie = cookie
 	}
+}
+
+func (c *APIClient) LockEndpoint(path string) func() {
+	if c == nil {
+		return func() {}
+	}
+	key := normalizeEndpointLockKey(path)
+	c.lockMu.Lock()
+	if c.endpointLocks == nil {
+		c.endpointLocks = make(map[string]*sync.Mutex)
+	}
+	mu, ok := c.endpointLocks[key]
+	if !ok {
+		mu = &sync.Mutex{}
+		c.endpointLocks[key] = mu
+	}
+	c.lockMu.Unlock()
+
+	mu.Lock()
+	return mu.Unlock
+}
+
+func normalizeEndpointLockKey(path string) string {
+	path = strings.TrimSpace(path)
+	if idx := strings.Index(path, "?"); idx >= 0 {
+		path = path[:idx]
+	}
+	return strings.TrimRight(path, "/")
 }
 
 func (c *APIClient) Request(ctx context.Context, method, path string, body string, extraHeaders map[string]string) (*APIResponse, error) {
