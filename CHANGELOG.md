@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.3](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v1.0.2...v1.0.3) (2026-08-31)
+
+
+### Miscellaneous Chores
+
+* **release:** configure release-please draft mode for GoReleaser publishing ([#260](https://github.com/Josh-Archer/terraform-provider-seerr/issues/260)) ([9f84f6f](https://github.com/Josh-Archer/terraform-provider-seerr/commit/9f84f6fce4aa86a1395b0c9af83e96db607852e9))
+
 ## [1.0.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v1.0.1...v1.0.2) (2026-08-31)
 
 
