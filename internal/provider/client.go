@@ -210,7 +210,7 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 		if retryableMethod && attempt < maxAttempts && isRetryableStatusCode(res.StatusCode) {
 			delay := retryDelayForResponse(res, attempt, c.retryBackoff)
 			if err := sleepWithContext(ctx, delay); err != nil {
-				return &APIResponse{StatusCode: res.StatusCode, Body: respBody, Headers: res.Header}, nil
+				return nil, err
 			}
 			continue
 		}
