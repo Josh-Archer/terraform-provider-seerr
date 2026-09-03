@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.4](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v1.0.3...v1.0.4) (2026-09-03)
+
+
+### Bug Fixes
+
+* **client:** propagate error when retry delay context is cancelled ([#266](https://github.com/Josh-Archer/terraform-provider-seerr/issues/266)) ([d206aaf](https://github.com/Josh-Archer/terraform-provider-seerr/commit/d206aaf4878e320f6557cff820b5b7f62cf61cb1))
+
 ## [1.0.3](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v1.0.2...v1.0.3) (2026-08-31)
 
 
