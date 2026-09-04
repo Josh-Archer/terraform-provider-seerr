@@ -1,0 +1,24 @@
+name: Guard empty major release
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Reject empty major bumps
+    if: startsWith(github.head_ref, 'release-please--')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require a new breaking commit for major bumps
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: bash ./scripts/guard-empty-major-release.sh
