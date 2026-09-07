@@ -73,6 +73,7 @@ func (r *UserNotificationSettingsResource) Schema(_ context.Context, _ resource.
 				MarkdownDescription: "Whether email notifications are enabled for this user.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"pgp_key": schema.StringAttribute{
 				MarkdownDescription: "PGP public key for encrypted email notifications.",
@@ -83,6 +84,7 @@ func (r *UserNotificationSettingsResource) Schema(_ context.Context, _ resource.
 				MarkdownDescription: "Whether Discord notifications are enabled for this user.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"discord_id": schema.StringAttribute{
 				MarkdownDescription: "Discord user ID for direct notification mentions.",
@@ -116,6 +118,7 @@ func (r *UserNotificationSettingsResource) Schema(_ context.Context, _ resource.
 				MarkdownDescription: "Whether Telegram notifications are enabled for this user.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"telegram_bot_username": schema.StringAttribute{
 				MarkdownDescription: "Telegram bot username for this user.",
@@ -136,11 +139,13 @@ func (r *UserNotificationSettingsResource) Schema(_ context.Context, _ resource.
 				MarkdownDescription: "Whether Telegram notifications should be sent silently.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"webpush_enabled": schema.BoolAttribute{
 				MarkdownDescription: "Whether Web Push notifications are enabled for this user.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"notification_types": schema.SingleNestedAttribute{
 				MarkdownDescription: "Per-user notification type bitmasks per agent.",

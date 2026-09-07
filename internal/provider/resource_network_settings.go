@@ -67,16 +67,19 @@ func networkSettingsResourceSchema() schema.Schema {
 				},
 			},
 			"csrf_protection": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:      true,
+				Computed:      true,
+				PlanModifiers: useStateForUnknownBool(),
 			},
 			"force_ipv4_first": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:      true,
+				Computed:      true,
+				PlanModifiers: useStateForUnknownBool(),
 			},
 			"trust_proxy": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:      true,
+				Computed:      true,
+				PlanModifiers: useStateForUnknownBool(),
 			},
 			"api_request_timeout_ms": schema.Int64Attribute{
 				MarkdownDescription: "Maximum time in milliseconds Seerr waits for external API responses.",
@@ -87,19 +90,19 @@ func networkSettingsResourceSchema() schema.Schema {
 		Blocks: map[string]schema.Block{
 			"proxy": schema.SingleNestedBlock{
 				Attributes: map[string]schema.Attribute{
-					"enabled":                schema.BoolAttribute{Optional: true, Computed: true},
+					"enabled":                optionalComputedBoolAttr(),
 					"hostname":               schema.StringAttribute{Optional: true, Computed: true},
 					"port":                   schema.Int64Attribute{Optional: true, Computed: true, Validators: []validator.Int64{int64validator.Between(1, 65535)}},
-					"use_ssl":                schema.BoolAttribute{Optional: true, Computed: true},
+					"use_ssl":                optionalComputedBoolAttr(),
 					"user":                   schema.StringAttribute{Optional: true, Computed: true},
 					"password":               schema.StringAttribute{Optional: true, Computed: true, Sensitive: true},
 					"bypass_filter":          schema.StringAttribute{Optional: true, Computed: true},
-					"bypass_local_addresses": schema.BoolAttribute{Optional: true, Computed: true},
+					"bypass_local_addresses": optionalComputedBoolAttr(),
 				},
 			},
 			"dns_cache": schema.SingleNestedBlock{
 				Attributes: map[string]schema.Attribute{
-					"enabled":       schema.BoolAttribute{Optional: true, Computed: true},
+					"enabled":       optionalComputedBoolAttr(),
 					"force_min_ttl": schema.Int64Attribute{Optional: true, Computed: true},
 					"force_max_ttl": schema.Int64Attribute{Optional: true, Computed: true},
 				},
