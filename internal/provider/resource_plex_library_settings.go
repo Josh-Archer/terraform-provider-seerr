@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -57,6 +58,9 @@ func (r *PlexLibrarySettingsResource) Schema(_ context.Context, _ resource.Schem
 				MarkdownDescription: "Whether to pass `sync=true` when reading libraries from Plex.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"enabled_libraries": schema.SetAttribute{
 				ElementType:         types.StringType,
@@ -66,6 +70,9 @@ func (r *PlexLibrarySettingsResource) Schema(_ context.Context, _ resource.Schem
 			"libraries": schema.ListNestedAttribute{
 				MarkdownDescription: "List of available Plex libraries discovered on the server.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
@@ -160,58 +167,27 @@ func (r *PlexLibrarySettingsResource) Delete(_ context.Context, _ resource.Delet
 }
 
 func (r *PlexLibrarySettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), "plex_library_settings")...)
 }
 
 func (r *PlexLibrarySettingsResource) updatePlexLibraries(ctx context.Context, data *PlexLibrarySettingsModel) error {
-	var enabledIDs []string
-	if !data.Libraries.IsNull() && !data.Libraries.IsUnknown() {
-		for _, elem := range data.Libraries.Elements() {
-			if obj, ok := elem.(types.Object); ok {
-				attrs := obj.Attributes()
-				if enabled, ok := attrs["enabled"].(types.Bool); ok && enabled.ValueBool() {
-					if id, ok := attrs["id"].(types.String); ok {
-						enabledIDs = append(enabledIDs, id.ValueString())
-					}
-				}
-			}
-		}
-	}
-
-	apiPath := "/api/v1/settings/plex/library"
-	if len(enabledIDs) > 0 {
-		enableQuery := strings.Join(enabledIDs, ",")
-		apiPath = fmt.Sprintf("/api/v1/settings/plex/library?enable=%s", enableQuery)
-	}
-	res, err := r.client.Request(ctx, "GET", apiPath, "", nil)
+	enabledList, err := extractEnabledLibraryIDs(ctx, data.EnabledLibraries)
 	if err != nil {
 		return err
 	}
-	if !StatusIsOK(res.StatusCode) {
-		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	body, err := applyLibraryEnablement(ctx, r.client, "/api/v1/settings/plex/library", enabledList)
+	if err != nil {
+		return err
 	}
-
-	return r.parsePlexLibraryResponse(ctx, res.Body, data)
+	return r.parsePlexLibraryResponse(ctx, body, data)
 }
 
 func (r *PlexLibrarySettingsResource) readPlexLibraries(ctx context.Context, data *PlexLibrarySettingsModel) error {
-	apiPath := "/api/v1/settings/plex/library"
-	if data.SyncOnRead.ValueBool() {
-		apiPath += "?sync=true"
-	}
-
-	res, err := r.client.Request(ctx, "GET", apiPath, "", nil)
+	body, err := fetchLibraryList(ctx, r.client, "/api/v1/settings/plex/library", data.SyncOnRead.ValueBool())
 	if err != nil {
 		return err
 	}
-	if res.StatusCode == 404 {
-		return ErrNotFound
-	}
-	if !StatusIsOK(res.StatusCode) {
-		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
-	}
-
-	return r.parsePlexLibraryResponse(ctx, res.Body, data)
+	return r.parsePlexLibraryResponse(ctx, body, data)
 }
 
 func (r *PlexLibrarySettingsResource) parsePlexLibraryResponse(ctx context.Context, body []byte, data *PlexLibrarySettingsModel) error {
