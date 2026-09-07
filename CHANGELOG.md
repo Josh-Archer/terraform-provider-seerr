@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.0...v2.0.1) (2026-09-07)
+
+
+### Bug Fixes
+
+* keep omitted optional computed bools in state ([#274](https://github.com/Josh-Archer/terraform-provider-seerr/issues/274)) ([0a72d39](https://github.com/Josh-Archer/terraform-provider-seerr/commit/0a72d398d061e5879bdfba03191456e3cecf8648))
+* persist library enablement via PUT and stop perpetual plan ([#272](https://github.com/Josh-Archer/terraform-provider-seerr/issues/272)) ([#273](https://github.com/Josh-Archer/terraform-provider-seerr/issues/273)) ([4e50b9d](https://github.com/Josh-Archer/terraform-provider-seerr/commit/4e50b9d20b90ae80382662ddead9d40f7e27162b))
+* **release:** reject empty majors and skip RC on release-please merges ([#271](https://github.com/Josh-Archer/terraform-provider-seerr/issues/271)) ([6b9c7ce](https://github.com/Josh-Archer/terraform-provider-seerr/commit/6b9c7cec672dd875afea4c2e3cc9fa8cfc8248cc))
+
 ## [2.0.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v1.0.5...v2.0.0) (2026-09-03)
 
 
