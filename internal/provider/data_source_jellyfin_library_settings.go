@@ -81,18 +81,9 @@ func (d *JellyfinLibrarySettingsDataSource) Read(ctx context.Context, req dataso
 		return
 	}
 
-	apiPath := "/api/v1/settings/jellyfin/library"
-	if !data.SyncOnRead.IsNull() && data.SyncOnRead.ValueBool() {
-		apiPath += "?sync=true"
-	}
-
-	res, err := d.client.Request(ctx, "GET", apiPath, "", nil)
+	body, err := fetchLibraryList(ctx, d.client, "/api/v1/settings/jellyfin/library", !data.SyncOnRead.IsNull() && data.SyncOnRead.ValueBool(), nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
-		return
-	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 		return
 	}
 
@@ -102,7 +93,7 @@ func (d *JellyfinLibrarySettingsDataSource) Read(ctx context.Context, req dataso
 		Enabled bool   `json:"enabled"`
 	}
 
-	if err := json.Unmarshal(res.Body, &rawLibs); err != nil {
+	if err := json.Unmarshal(body, &rawLibs); err != nil {
 		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("failed to decode response: %s", err.Error()))
 		return
 	}

@@ -184,7 +184,11 @@ func (r *JellyfinLibrarySettingsResource) updateJellyfinLibraries(ctx context.Co
 }
 
 func (r *JellyfinLibrarySettingsResource) readJellyfinLibraries(ctx context.Context, data *JellyfinLibrarySettingsModel) error {
-	body, err := fetchLibraryList(ctx, r.client, "/api/v1/settings/jellyfin/library", data.SyncOnRead.ValueBool())
+	preserve, err := extractEnabledLibraryIDs(ctx, data.EnabledLibraries)
+	if err != nil {
+		return err
+	}
+	body, err := fetchLibraryList(ctx, r.client, "/api/v1/settings/jellyfin/library", data.SyncOnRead.ValueBool(), preserve)
 	if err != nil {
 		return err
 	}

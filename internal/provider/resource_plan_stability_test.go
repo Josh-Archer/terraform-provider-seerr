@@ -193,10 +193,13 @@ func TestCoveredLibraryWriteEndpointsUsePUT(t *testing.T) {
 	}
 	body := string(src)
 	if !strings.Contains(body, "http.MethodPut") {
-		t.Fatal("library enablement must PUT /{libraryId}; list GET is read-only")
+		t.Fatal("library enablement must PUT /{libraryId} on servers that expose it")
 	}
-	if strings.Contains(body, "?enable=") {
-		t.Fatal("library enablement still encodes a write as a list GET query")
+	if !strings.Contains(body, "detectLibraryWriteMode") {
+		t.Fatal("must probe PUT vs Seerr 3.4.1 GET-enable before writing")
+	}
+	if !strings.Contains(body, "libraryWriteGetEnable") {
+		t.Fatal("must fall back to GET enable when PUT is an unmatched route")
 	}
 }
 
