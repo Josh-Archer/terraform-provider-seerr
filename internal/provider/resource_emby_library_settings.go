@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -56,6 +58,9 @@ func (r *EmbyLibrarySettingsResource) Schema(_ context.Context, _ resource.Schem
 				MarkdownDescription: "Whether to pass `sync=true` when reading libraries from Emby.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"enabled_libraries": schema.SetAttribute{
 				ElementType:         types.StringType,
@@ -65,6 +70,9 @@ func (r *EmbyLibrarySettingsResource) Schema(_ context.Context, _ resource.Schem
 			"libraries": schema.ListNestedAttribute{
 				MarkdownDescription: "List of available Emby libraries discovered on the server.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
@@ -164,54 +172,23 @@ func (r *EmbyLibrarySettingsResource) ImportState(ctx context.Context, req resou
 }
 
 func (r *EmbyLibrarySettingsResource) updateEmbyLibraries(ctx context.Context, data *EmbyLibrarySettingsModel) error {
-	var enabledList []string
-	if !data.EnabledLibraries.IsNull() && !data.EnabledLibraries.IsUnknown() {
-		diags := data.EnabledLibraries.ElementsAs(ctx, &enabledList, false)
-		if diags.HasError() {
-			return fmt.Errorf("failed to extract enabled_libraries")
-		}
-	}
-
-	apiPath := "/api/v1/settings/emby/library"
-	if len(enabledList) > 0 {
-		enableQuery := ""
-		for i, id := range enabledList {
-			if i > 0 {
-				enableQuery += ","
-			}
-			enableQuery += id
-		}
-		apiPath = fmt.Sprintf("/api/v1/settings/emby/library?enable=%s", enableQuery)
-	}
-	res, err := r.client.Request(ctx, "GET", apiPath, "", nil)
+	enabledList, err := extractEnabledLibraryIDs(ctx, data.EnabledLibraries)
 	if err != nil {
 		return err
 	}
-	if !StatusIsOK(res.StatusCode) {
-		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	body, err := applyLibraryEnablement(ctx, r.client, "/api/v1/settings/emby/library", enabledList)
+	if err != nil {
+		return err
 	}
-
-	return r.parseEmbyLibraryResponse(ctx, res.Body, data)
+	return r.parseEmbyLibraryResponse(ctx, body, data)
 }
 
 func (r *EmbyLibrarySettingsResource) readEmbyLibraries(ctx context.Context, data *EmbyLibrarySettingsModel) error {
-	apiPath := "/api/v1/settings/emby/library"
-	if data.SyncOnRead.ValueBool() {
-		apiPath += "?sync=true"
-	}
-
-	res, err := r.client.Request(ctx, "GET", apiPath, "", nil)
+	body, err := fetchLibraryList(ctx, r.client, "/api/v1/settings/emby/library", data.SyncOnRead.ValueBool())
 	if err != nil {
 		return err
 	}
-	if res.StatusCode == 404 {
-		return ErrNotFound
-	}
-	if !StatusIsOK(res.StatusCode) {
-		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
-	}
-
-	return r.parseEmbyLibraryResponse(ctx, res.Body, data)
+	return r.parseEmbyLibraryResponse(ctx, body, data)
 }
 
 func (r *EmbyLibrarySettingsResource) parseEmbyLibraryResponse(ctx context.Context, body []byte, data *EmbyLibrarySettingsModel) error {
