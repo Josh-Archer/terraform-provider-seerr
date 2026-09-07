@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.1...v2.0.2) (2026-09-07)
+
+
+### Bug Fixes
+
+* enable libraries on Seerr 3.4.1 without PUT 404 ([#276](https://github.com/Josh-Archer/terraform-provider-seerr/issues/276)) ([#277](https://github.com/Josh-Archer/terraform-provider-seerr/issues/277)) ([b9bb99f](https://github.com/Josh-Archer/terraform-provider-seerr/commit/b9bb99f04203c99bfc554d4fe29b14ab6d3957a6))
+
 ## [2.0.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.0...v2.0.1) (2026-09-07)
 
 
