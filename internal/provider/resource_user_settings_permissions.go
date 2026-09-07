@@ -55,21 +55,25 @@ func (r *UserSettingsPermissionsResource) Schema(_ context.Context, _ resource.S
 				MarkdownDescription: "Whether the user's movie requests are automatically approved.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"auto_approve_tv": schema.BoolAttribute{
 				MarkdownDescription: "Whether the user's TV series requests are automatically approved.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"auto_approve_4k_movies": schema.BoolAttribute{
 				MarkdownDescription: "Whether the user's 4K movie requests are automatically approved.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"auto_approve_4k_tv": schema.BoolAttribute{
 				MarkdownDescription: "Whether the user's 4K TV series requests are automatically approved.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 		},
 	}

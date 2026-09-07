@@ -86,12 +86,14 @@ func (r *MainSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 				Optional:            true,
 				Computed:            true,
 				DeprecationMessage:  "`trust_proxy` moved to `seerr_network_settings` in Seerr v3.",
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"csrf_protection": schema.BoolAttribute{
 				MarkdownDescription: "Whether CSRF protection is enabled.",
 				Optional:            true,
 				Computed:            true,
 				DeprecationMessage:  "`csrf_protection` moved to `seerr_network_settings` in Seerr v3.",
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"image_proxy": schema.BoolAttribute{
 				MarkdownDescription: "Whether the image proxy is enabled.",
@@ -101,11 +103,13 @@ func (r *MainSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 				Validators: []validator.Bool{
 					boolvalidator.ConflictsWith(path.MatchRoot("cache_images")),
 				},
+				PlanModifiers: useStateForUnknownBool(),
 			},
 			"cache_images": schema.BoolAttribute{
 				MarkdownDescription: "Whether Seerr caches proxied images.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"locale": schema.StringAttribute{
 				MarkdownDescription: "The application locale.",
@@ -141,26 +145,31 @@ func (r *MainSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 				MarkdownDescription: "Whether to hide available media.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"partial_requests": schema.BoolAttribute{
 				MarkdownDescription: "Whether partial requests are allowed.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"local_login": schema.BoolAttribute{
 				MarkdownDescription: "Whether local login is enabled.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"media_server_login": schema.BoolAttribute{
 				MarkdownDescription: "Whether media-server login is enabled.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"new_plex_login": schema.BoolAttribute{
 				MarkdownDescription: "Whether the new Plex login is enabled.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"plex_login": schema.BoolAttribute{
 				MarkdownDescription: "Whether Plex login is enabled.",
@@ -170,24 +179,28 @@ func (r *MainSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 				Validators: []validator.Bool{
 					boolvalidator.ConflictsWith(path.MatchRoot("media_server_login")),
 				},
+				PlanModifiers: useStateForUnknownBool(),
 			},
 			"movie_requests_enabled": schema.BoolAttribute{
 				MarkdownDescription: "Whether movie requests are enabled.",
 				Optional:            true,
 				Computed:            true,
 				DeprecationMessage:  "Seerr v3 removed this main setting; use `partial_requests` and user quota settings instead.",
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"series_requests_enabled": schema.BoolAttribute{
 				MarkdownDescription: "Whether series requests are enabled.",
 				Optional:            true,
 				Computed:            true,
 				DeprecationMessage:  "Seerr v3 removed this main setting; use `partial_requests` and user quota settings instead.",
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"enable_report_an_issue": schema.BoolAttribute{
 				MarkdownDescription: "Whether the 'Report an Issue' feature is enabled.",
 				Optional:            true,
 				Computed:            true,
 				DeprecationMessage:  "Seerr v3 no longer exposes this value from `/api/v1/settings/main`.",
+				PlanModifiers:       useStateForUnknownBool(),
 			},
 			"movie_request_limit": schema.Int64Attribute{
 				MarkdownDescription: "The movie request limit.",

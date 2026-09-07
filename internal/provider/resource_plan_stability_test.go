@@ -96,7 +96,7 @@ func computedCollectionStabilityViolations(ctx context.Context, r resource.Resou
 	var schemaResp resource.SchemaResponse
 	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
 	var out []string
-	walkSchemaAttributes(schemaResp.Schema.Attributes, "", func(path string, attr schema.Attribute) {
+	walkResourceSchema(schemaResp.Schema, func(path string, attr schema.Attribute) {
 		if !isComputedCollection(attr) {
 			return
 		}
@@ -114,16 +114,9 @@ func optionalComputedBoolStabilityViolations(ctx context.Context, r resource.Res
 	var schemaResp resource.SchemaResponse
 	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
 	var out []string
-	walkSchemaAttributes(schemaResp.Schema.Attributes, "", func(path string, attr schema.Attribute) {
+	walkResourceSchema(schemaResp.Schema, func(path string, attr schema.Attribute) {
 		boolAttr, ok := attr.(schema.BoolAttribute)
 		if !ok {
-			return
-		}
-		name := path
-		if i := strings.LastIndex(path, "."); i >= 0 {
-			name = path[i+1:]
-		}
-		if name != "sync_on_read" {
 			return
 		}
 		if !attr.IsOptional() || !attr.IsComputed() {
@@ -143,6 +136,31 @@ func isComputedCollection(attr schema.Attribute) bool {
 		return attr.IsComputed()
 	default:
 		return false
+	}
+}
+
+func walkResourceSchema(s schema.Schema, fn func(path string, attr schema.Attribute)) {
+	walkSchemaAttributes(s.Attributes, "", fn)
+	walkSchemaBlocks(s.Blocks, "", fn)
+}
+
+func walkSchemaBlocks(blocks map[string]schema.Block, prefix string, fn func(path string, attr schema.Attribute)) {
+	for name, block := range blocks {
+		path := name
+		if prefix != "" {
+			path = prefix + "." + name
+		}
+		switch b := block.(type) {
+		case schema.SingleNestedBlock:
+			walkSchemaAttributes(b.Attributes, path, fn)
+			walkSchemaBlocks(b.Blocks, path, fn)
+		case schema.ListNestedBlock:
+			walkSchemaAttributes(b.NestedObject.Attributes, path, fn)
+			walkSchemaBlocks(b.NestedObject.Blocks, path, fn)
+		case schema.SetNestedBlock:
+			walkSchemaAttributes(b.NestedObject.Attributes, path, fn)
+			walkSchemaBlocks(b.NestedObject.Blocks, path, fn)
+		}
 	}
 }
 
