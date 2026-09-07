@@ -79,6 +79,7 @@ func newLibrarySettingsServer(t *testing.T, basePath string, libs []mockLibrary)
 				}
 			}
 			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"message":"Library does not exist."}`))
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -129,7 +130,7 @@ func TestApplyLibraryEnablementPersistsAcrossRead(t *testing.T) {
 		{ID: "jf2", Name: "TV", Enabled: false},
 	}, afterUpdate)
 
-	readBody, err := fetchLibraryList(ctx, client, basePath, false)
+	readBody, err := fetchLibraryList(ctx, client, basePath, false, []string{"jf1"})
 	require.NoError(t, err)
 	var afterRead []mockLibrary
 	require.NoError(t, json.Unmarshal(readBody, &afterRead))
@@ -137,14 +138,13 @@ func TestApplyLibraryEnablementPersistsAcrossRead(t *testing.T) {
 	assert.Equal(t, afterUpdate, srv.snapshot())
 
 	for _, call := range srv.recordedCalls() {
-		assert.Empty(t, call.Query.Get("enable"), "GET ?enable= is not an upstream API: %+v", call)
+		assert.Empty(t, call.Query.Get("enable"), "develop GET must not write via enable query: %+v", call)
 	}
 
 	var putCount int
 	for _, call := range srv.recordedCalls() {
-		if call.Method == http.MethodPut {
+		if call.Method == http.MethodPut && call.Path == basePath+"/jf1" {
 			putCount++
-			assert.Equal(t, basePath+"/jf1", call.Path)
 			assert.JSONEq(t, `{"enabled":true}`, call.Body)
 		}
 	}
@@ -197,6 +197,136 @@ func TestApplyLibraryEnablementIsNoopWhenAlreadyEnabled(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, call := range srv.recordedCalls() {
-		assert.NotEqual(t, http.MethodPut, call.Method)
+		if call.Method == http.MethodPut {
+			assert.True(t, strings.HasSuffix(call.Path, "/"+libraryWriteProbeID), "unexpected PUT %s", call.Path)
+		}
 	}
+}
+
+func newLibrarySettingsServerV341(t *testing.T, basePath string, libs []mockLibrary) *librarySettingsServer {
+	t.Helper()
+	parent := strings.TrimSuffix(basePath, "/library")
+	srv := &librarySettingsServer{libs: append([]mockLibrary(nil), libs...)}
+	srv.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		srv.mu.Lock()
+		defer srv.mu.Unlock()
+		srv.calls = append(srv.calls, libraryAPICall{
+			Method: r.Method,
+			Path:   r.URL.Path,
+			Query:  r.URL.Query(),
+			Body:   string(body),
+		})
+		w.Header().Set("Content-Type", "application/json")
+
+		if r.Method == http.MethodPut {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"message":"not found","errors":[{"path":"` + r.URL.Path + `","message":"not found"}]}`))
+			return
+		}
+		if r.Method == http.MethodGet && r.URL.Path == parent {
+			_ = json.NewEncoder(w).Encode(map[string]any{"libraries": srv.libs})
+			return
+		}
+		if r.Method == http.MethodGet && r.URL.Path == basePath {
+			enabledQuery, hasEnable := r.URL.Query()["enable"]
+			enabled := map[string]struct{}{}
+			if hasEnable && enabledQuery[0] != "" {
+				for _, id := range strings.Split(enabledQuery[0], ",") {
+					enabled[id] = struct{}{}
+				}
+			}
+			for i := range srv.libs {
+				_, srv.libs[i].Enabled = enabled[srv.libs[i].ID]
+			}
+			b, _ := json.Marshal(srv.libs)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(b)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestApplyLibraryEnablementOnSeerr341UsesGetEnable(t *testing.T) {
+	const basePath = "/api/v1/settings/jellyfin/library"
+	srv := newLibrarySettingsServerV341(t, basePath, []mockLibrary{
+		{ID: "f137a2dd21bbc1b99aa5c0f6bf02a805", Name: "Movies", Enabled: false},
+		{ID: "4514ec850e5ad0c47b58444e17b6346c", Name: "TV", Enabled: false},
+	})
+	client := testAPIClient(t, srv.URL)
+	ctx := context.Background()
+
+	body, err := applyLibraryEnablement(ctx, client, basePath, []string{"f137a2dd21bbc1b99aa5c0f6bf02a805", "4514ec850e5ad0c47b58444e17b6346c"})
+	require.NoError(t, err)
+
+	var afterUpdate []mockLibrary
+	require.NoError(t, json.Unmarshal(body, &afterUpdate))
+	assert.Equal(t, []mockLibrary{
+		{ID: "f137a2dd21bbc1b99aa5c0f6bf02a805", Name: "Movies", Enabled: true},
+		{ID: "4514ec850e5ad0c47b58444e17b6346c", Name: "TV", Enabled: true},
+	}, afterUpdate)
+
+	readBody, err := fetchLibraryList(ctx, client, basePath, false, []string{"f137a2dd21bbc1b99aa5c0f6bf02a805", "4514ec850e5ad0c47b58444e17b6346c"})
+	require.NoError(t, err)
+	var afterRead []mockLibrary
+	require.NoError(t, json.Unmarshal(readBody, &afterRead))
+	assert.Equal(t, afterUpdate, afterRead)
+	assert.Equal(t, afterUpdate, srv.snapshot())
+
+	var wroteViaGetEnable bool
+	for _, call := range srv.recordedCalls() {
+		if call.Method == http.MethodPut && !strings.Contains(call.Path, libraryWriteProbeID) {
+			t.Fatalf("3.4.1 must not PUT real library IDs: %+v", call)
+		}
+		if call.Method == http.MethodGet && call.Path == basePath && call.Query.Get("enable") != "" {
+			wroteViaGetEnable = true
+		}
+	}
+	assert.True(t, wroteViaGetEnable)
+}
+
+func TestFetchLibraryListOnSeerr341DoesNotWipeEnabledLibraries(t *testing.T) {
+	const basePath = "/api/v1/settings/jellyfin/library"
+	srv := newLibrarySettingsServerV341(t, basePath, []mockLibrary{
+		{ID: "jf1", Name: "Movies", Enabled: true},
+		{ID: "jf2", Name: "TV", Enabled: false},
+	})
+	client := testAPIClient(t, srv.URL)
+
+	body, err := fetchLibraryList(context.Background(), client, basePath, false, []string{"jf1"})
+	require.NoError(t, err)
+	var got []mockLibrary
+	require.NoError(t, json.Unmarshal(body, &got))
+	assert.Equal(t, []mockLibrary{
+		{ID: "jf1", Name: "Movies", Enabled: true},
+		{ID: "jf2", Name: "TV", Enabled: false},
+	}, got)
+	assert.Equal(t, got, srv.snapshot())
+
+	for _, call := range srv.recordedCalls() {
+		if call.Path == basePath {
+			t.Fatalf("3.4.1 read must not GET /library without enable (wipes flags): %+v", call)
+		}
+	}
+}
+
+func TestDetectLibraryWriteModePrefersPutWhenRouteExists(t *testing.T) {
+	const basePath = "/api/v1/settings/jellyfin/library"
+	srv := newLibrarySettingsServer(t, basePath, nil)
+	client := testAPIClient(t, srv.URL)
+	mode, err := detectLibraryWriteMode(context.Background(), client, basePath)
+	require.NoError(t, err)
+	assert.Equal(t, libraryWritePut, mode)
+}
+
+func TestDetectLibraryWriteModeFallsBackWhenPutUnmatched(t *testing.T) {
+	const basePath = "/api/v1/settings/jellyfin/library"
+	srv := newLibrarySettingsServerV341(t, basePath, nil)
+	client := testAPIClient(t, srv.URL)
+	mode, err := detectLibraryWriteMode(context.Background(), client, basePath)
+	require.NoError(t, err)
+	assert.Equal(t, libraryWriteGetEnable, mode)
 }

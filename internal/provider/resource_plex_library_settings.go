@@ -183,7 +183,11 @@ func (r *PlexLibrarySettingsResource) updatePlexLibraries(ctx context.Context, d
 }
 
 func (r *PlexLibrarySettingsResource) readPlexLibraries(ctx context.Context, data *PlexLibrarySettingsModel) error {
-	body, err := fetchLibraryList(ctx, r.client, "/api/v1/settings/plex/library", data.SyncOnRead.ValueBool())
+	preserve, err := extractEnabledLibraryIDs(ctx, data.EnabledLibraries)
+	if err != nil {
+		return err
+	}
+	body, err := fetchLibraryList(ctx, r.client, "/api/v1/settings/plex/library", data.SyncOnRead.ValueBool(), preserve)
 	if err != nil {
 		return err
 	}

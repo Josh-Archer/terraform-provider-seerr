@@ -27,6 +27,8 @@ type APIClient struct {
 	retryBackoff  time.Duration
 	lockMu        sync.Mutex
 	endpointLocks map[string]*sync.Mutex
+	libraryModeMu sync.Mutex
+	libraryMode   map[string]libraryWriteMode
 }
 
 type authTransport struct {
@@ -93,6 +95,7 @@ func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bo
 		maxRetries:    maxRetries,
 		retryBackoff:  retryBackoff,
 		endpointLocks: make(map[string]*sync.Mutex),
+		libraryMode:   make(map[string]libraryWriteMode),
 		client: &http.Client{
 			Transport: at,
 			Timeout:   normalizeRequestTimeout(timeout),
@@ -117,6 +120,28 @@ func (c *APIClient) SetSessionCookie(cookie string) {
 	if c.transport != nil {
 		c.transport.sessionCookie = cookie
 	}
+}
+
+func (c *APIClient) libraryWriteMode(basePath string) (libraryWriteMode, bool) {
+	if c == nil {
+		return libraryWriteUnknown, false
+	}
+	c.libraryModeMu.Lock()
+	defer c.libraryModeMu.Unlock()
+	mode, ok := c.libraryMode[basePath]
+	return mode, ok && mode != libraryWriteUnknown
+}
+
+func (c *APIClient) setLibraryWriteMode(basePath string, mode libraryWriteMode) {
+	if c == nil {
+		return
+	}
+	c.libraryModeMu.Lock()
+	defer c.libraryModeMu.Unlock()
+	if c.libraryMode == nil {
+		c.libraryMode = make(map[string]libraryWriteMode)
+	}
+	c.libraryMode[basePath] = mode
 }
 
 func (c *APIClient) LockEndpoint(path string) func() {

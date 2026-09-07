@@ -184,7 +184,11 @@ func (r *EmbyLibrarySettingsResource) updateEmbyLibraries(ctx context.Context, d
 }
 
 func (r *EmbyLibrarySettingsResource) readEmbyLibraries(ctx context.Context, data *EmbyLibrarySettingsModel) error {
-	body, err := fetchLibraryList(ctx, r.client, "/api/v1/settings/emby/library", data.SyncOnRead.ValueBool())
+	preserve, err := extractEnabledLibraryIDs(ctx, data.EnabledLibraries)
+	if err != nil {
+		return err
+	}
+	body, err := fetchLibraryList(ctx, r.client, "/api/v1/settings/emby/library", data.SyncOnRead.ValueBool(), preserve)
 	if err != nil {
 		return err
 	}
