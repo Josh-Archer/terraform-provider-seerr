@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.4](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.3...v2.0.4) (2026-09-10)
+
+
+### Continuous Integration
+
+* hand draft releases to signed publisher ([784a8f2](https://github.com/Josh-Archer/terraform-provider-seerr/commit/784a8f20d4f30266c778afa89bd8ab70fa65913f))
+
 ## [2.0.3](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.2...v2.0.3) (2026-09-10)
 
 
