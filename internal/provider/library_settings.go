@@ -173,8 +173,16 @@ func writeLibrariesViaGetEnable(ctx context.Context, client *APIClient, basePath
 	if syncOnRead {
 		q.Set("sync", "true")
 	}
-	q.Set("enable", strings.Join(enabledIDs, ","))
-	res, err := client.Request(ctx, http.MethodGet, basePath+"?"+q.Encode(), "", nil)
+	// Seerr 3.4.1 rejects enable= during OpenAPI validation. Omitting the
+	// parameter represents an empty selection in its GET library handler.
+	if len(enabledIDs) > 0 {
+		q.Set("enable", strings.Join(enabledIDs, ","))
+	}
+	apiPath := basePath
+	if query := q.Encode(); query != "" {
+		apiPath += "?" + query
+	}
+	res, err := client.Request(ctx, http.MethodGet, apiPath, "", nil)
 	if err != nil {
 		return nil, err
 	}

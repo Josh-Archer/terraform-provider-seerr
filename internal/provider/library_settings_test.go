@@ -230,6 +230,12 @@ func newLibrarySettingsServerV341(t *testing.T, basePath string, libs []mockLibr
 		}
 		if r.Method == http.MethodGet && r.URL.Path == basePath {
 			enabledQuery, hasEnable := r.URL.Query()["enable"]
+			// Seerr's OpenAPI middleware rejects explicit empty query values.
+			if hasEnable && enabledQuery[0] == "" {
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(`{"message":"Empty value found for query parameter 'enable'"}`))
+				return
+			}
 			enabled := map[string]struct{}{}
 			if hasEnable && enabledQuery[0] != "" {
 				for _, id := range strings.Split(enabledQuery[0], ",") {
@@ -329,4 +335,25 @@ func TestDetectLibraryWriteModeFallsBackWhenPutUnmatched(t *testing.T) {
 	mode, err := detectLibraryWriteMode(context.Background(), client, basePath)
 	require.NoError(t, err)
 	assert.Equal(t, libraryWriteGetEnable, mode)
+}
+
+func TestDisableAllLibrariesOnSeerr341(t *testing.T) {
+	for _, server := range []string{"jellyfin", "plex", "emby"} {
+		t.Run(server, func(t *testing.T) {
+			basePath := "/api/v1/settings/" + server + "/library"
+			srv := newLibrarySettingsServerV341(t, basePath, []mockLibrary{{ID: "movies", Name: "Movies", Enabled: true}})
+			body, err := applyLibraryEnablement(context.Background(), testAPIClient(t, srv.URL), basePath, []string{})
+			require.NoError(t, err)
+			var got []mockLibrary
+			require.NoError(t, json.Unmarshal(body, &got))
+			require.Len(t, got, 1)
+			assert.False(t, got[0].Enabled)
+			assert.Equal(t, got, srv.snapshot())
+			for _, call := range srv.recordedCalls() {
+				if call.Path == basePath {
+					assert.NotContains(t, call.Query, "enable")
+				}
+			}
+		})
+	}
 }
