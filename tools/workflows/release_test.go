@@ -1,0 +1,62 @@
+package workflows
+
+import (
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
+)
+
+// Protect the bot-merge release path independently of the ordinary push path.
+func TestReleasePleaseSurvivesSuppressedBotPush(t *testing.T) {
+	raw, err := os.ReadFile("../../.github/workflows/release-please.yml")
+	require.NoError(t, err)
+	var workflow struct {
+		On struct {
+			Dispatch *yaml.Node `yaml:"workflow_dispatch"`
+			Run      struct {
+				Workflows []string `yaml:"workflows"`
+				Types     []string `yaml:"types"`
+			} `yaml:"workflow_run"`
+			Schedule []struct {
+				Cron string `yaml:"cron"`
+			} `yaml:"schedule"`
+		} `yaml:"on"`
+		Concurrency struct {
+			Group  string `yaml:"group"`
+			Cancel bool   `yaml:"cancel-in-progress"`
+		} `yaml:"concurrency"`
+		Jobs map[string]struct {
+			If    string `yaml:"if"`
+			Steps []struct {
+				Uses string `yaml:"uses"`
+				Run  string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	require.NoError(t, yaml.Unmarshal(raw, &workflow))
+	require.Contains(t, workflow.On.Run.Workflows, "CI")
+	require.Equal(t, []string{"completed"}, workflow.On.Run.Types)
+	require.NotEmpty(t, workflow.On.Schedule, "delayed merges need recovery")
+	// A null YAML value still declares a manual trigger.
+	var document map[string]any
+	require.NoError(t, yaml.Unmarshal(raw, &document))
+	triggers, ok := document["on"].(map[string]any)
+	require.True(t, ok)
+	require.Contains(t, triggers, "workflow_dispatch")
+	require.NotEmpty(t, workflow.Concurrency.Group)
+	require.False(t, workflow.Concurrency.Cancel, "do not cancel an in-progress release")
+	job := workflow.Jobs["release-please"]
+	require.Contains(t, job.If, "github.event.workflow_run.conclusion == 'success'")
+	require.Contains(t, job.If, "github.event.workflow_run.head_repository.full_name == github.repository")
+	var dispatchesRelease bool
+	for _, step := range job.Steps {
+		require.NotContains(t, step.Uses, "actions/checkout", "privileged completion handler must not execute PR code")
+		if step.Run != "" {
+			require.Contains(t, step.Run, "gh workflow run release.yml")
+			dispatchesRelease = true
+		}
+	}
+	require.True(t, dispatchesRelease, "GITHUB_TOKEN-created releases need explicit publication dispatch")
+}

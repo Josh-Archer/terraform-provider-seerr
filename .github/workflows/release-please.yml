@@ -1,6 +1,14 @@
 name: Release Please
 
 on:
+  workflow_dispatch:
+  # Bot merges use GITHUB_TOKEN, so their push event cannot start this workflow.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  # Recover delayed auto-merges or missed completion events.
+  schedule:
+    - cron: '17 * * * *'
   push:
     branches:
       - main
@@ -16,6 +24,11 @@ concurrency:
 
 jobs:
   release-please:
+    # Never execute PR code here; release-please reads the default branch via API.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
