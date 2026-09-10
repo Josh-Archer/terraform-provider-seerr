@@ -83,3 +83,25 @@ func TestReleasePleaseHandsDraftToGoReleaser(t *testing.T) {
 	require.NoError(t, yaml.Unmarshal(raw, &goreleaser))
 	require.True(t, goreleaser.Release.UseDraft)
 }
+
+func TestPipelineOnlyChangesDoNotCreateProviderReleases(t *testing.T) {
+	raw, err := os.ReadFile("../../.github/release-please-config.json")
+	require.NoError(t, err)
+	var config struct {
+		Sections []struct {
+			Type   string `json:"type"`
+			Hidden bool   `json:"hidden"`
+		} `json:"changelog-sections"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &config))
+	sections := map[string]bool{}
+	for _, section := range config.Sections {
+		sections[section.Type] = section.Hidden
+	}
+	require.Contains(t, sections, "ci")
+	require.True(t, sections["ci"], "visible ci entries generate patch releases even without provider changes")
+	for _, kind := range []string{"feat", "fix", "perf"} {
+		require.Contains(t, sections, kind)
+		require.False(t, sections[kind], "provider changes must still create releases")
+	}
+}
