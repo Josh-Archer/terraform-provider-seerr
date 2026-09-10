@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.3](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.2...v2.0.3) (2026-09-10)
+
+
+### Bug Fixes
+
+* omit empty library enable query parameter ([#281](https://github.com/Josh-Archer/terraform-provider-seerr/issues/281)) ([feec364](https://github.com/Josh-Archer/terraform-provider-seerr/commit/feec364c579f19cd4d2349226e142b9e240cdff0))
+* resume release automation after bot merges ([#282](https://github.com/Josh-Archer/terraform-provider-seerr/issues/282)) ([620d5f8](https://github.com/Josh-Archer/terraform-provider-seerr/commit/620d5f8a78d43f30495e940e48a23a5efceb10b3))
+
 ## [2.0.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.1...v2.0.2) (2026-09-07)
 
 
