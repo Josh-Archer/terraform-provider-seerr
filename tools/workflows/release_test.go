@@ -1,6 +1,7 @@
 package workflows
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -59,4 +60,26 @@ func TestReleasePleaseSurvivesSuppressedBotPush(t *testing.T) {
 		}
 	}
 	require.True(t, dispatchesRelease, "GITHUB_TOKEN-created releases need explicit publication dispatch")
+}
+
+// GoReleaser owns publication, after signed assets have been uploaded.
+func TestReleasePleaseHandsDraftToGoReleaser(t *testing.T) {
+	raw, err := os.ReadFile("../../.github/release-please-config.json")
+	require.NoError(t, err)
+	var config struct {
+		Packages map[string]struct {
+			Draft bool `json:"draft"`
+		} `json:"packages"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &config))
+	require.True(t, config.Packages["."].Draft, "publishing an empty release conflicts with GoReleaser's draft handoff")
+	raw, err = os.ReadFile("../../.goreleaser.yml")
+	require.NoError(t, err)
+	var goreleaser struct {
+		Release struct {
+			UseDraft bool `yaml:"use_existing_draft"`
+		} `yaml:"release"`
+	}
+	require.NoError(t, yaml.Unmarshal(raw, &goreleaser))
+	require.True(t, goreleaser.Release.UseDraft)
 }
