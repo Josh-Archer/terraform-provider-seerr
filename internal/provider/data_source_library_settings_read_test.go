@@ -34,7 +34,8 @@ func TestLibrarySettingsDataSourceReadOnSeerr341(t *testing.T) {
 					ctx := context.Background()
 					schema := datasource.SchemaResponse{}
 					d.Schema(ctx, datasource.SchemaRequest{}, &schema)
-					typ := schema.Schema.Type().TerraformType(ctx).(tftypes.Object)
+					typ, ok := schema.Schema.Type().TerraformType(ctx).(tftypes.Object)
+					require.True(t, ok)
 					vals := map[string]tftypes.Value{}
 					for k, v := range typ.AttributeTypes {
 						vals[k] = tftypes.NewValue(v, nil)
