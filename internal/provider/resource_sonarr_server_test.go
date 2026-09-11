@@ -446,3 +446,22 @@ func TestSonarrServerPayload_UnresolvableQualityProfileError(t *testing.T) {
 		t.Errorf("expected error containing %q, got %q", expected, err.Error())
 	}
 }
+
+func TestReadSonarrStateFromJSON_ArrayResponse(t *testing.T) {
+	raw := `[
+		{"id": 1, "name": "Sonarr 1", "hostname": "sonarr1.local", "port": 8989},
+		{"id": 2, "name": "Sonarr 2", "hostname": "sonarr2.local", "port": 8990}
+	]`
+	data := &SonarrServerModel{
+		ServerID: types.Int64Value(2),
+	}
+	if err := readSonarrStateFromJSON(context.Background(), []byte(raw), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := data.Name.ValueString(); got != "Sonarr 2" {
+		t.Fatalf("expected Sonarr 2, got %q", got)
+	}
+	if got := data.Port.ValueInt64(); got != 8990 {
+		t.Fatalf("expected port 8990, got %d", got)
+	}
+}
