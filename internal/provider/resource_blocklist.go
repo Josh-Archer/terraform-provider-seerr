@@ -66,7 +66,13 @@ func blocklistResourceAttributes() map[string]rschema.Attribute {
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"title": rschema.StringAttribute{Optional: true, Computed: true},
+		"title": rschema.StringAttribute{
+			Optional: true,
+			Computed: true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+		},
 		"user_id": rschema.Int64Attribute{
 			MarkdownDescription: "User ID recorded as the actor who manually blocklisted this media.",
 			Required:            true,
@@ -74,7 +80,13 @@ func blocklistResourceAttributes() map[string]rschema.Attribute {
 				int64planmodifier.RequiresReplace(),
 			},
 		},
-		"blocklisted_tags": rschema.StringAttribute{Optional: true, Computed: true},
+		"blocklisted_tags": rschema.StringAttribute{
+			Optional: true,
+			Computed: true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+		},
 		"created_at":       rschema.StringAttribute{Computed: true},
 	}
 }
