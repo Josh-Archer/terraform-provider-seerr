@@ -468,6 +468,9 @@ func (r *MainSettingsResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
+	unlock := r.client.LockEndpoint("/api/v1/settings/main")
+	defer unlock()
+
 	body, err := json.Marshal(r.buildPayload(&data))
 	if err != nil {
 		resp.Diagnostics.AddError("Create Failed", fmt.Sprintf("failed to marshal payload: %s", err))
@@ -518,6 +521,9 @@ func (r *MainSettingsResource) Update(ctx context.Context, req resource.UpdateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	unlock := r.client.LockEndpoint("/api/v1/settings/main")
+	defer unlock()
 
 	body, err := json.Marshal(r.buildPayload(&data))
 	if err != nil {

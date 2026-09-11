@@ -6,8 +6,12 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMainSettingsApplyDecodedSettingsClearsMissingValues(t *testing.T) {
@@ -203,4 +207,60 @@ func TestMainSettingsRefreshStateReadsCanonicalValues(t *testing.T) {
 	if got := data.SeriesRequestLimit.ValueInt64(); got != 11 {
 		t.Fatalf("expected series request limit 11, got %d", got)
 	}
+}
+
+func TestMainSettingsCreateAndUpdateHoldEndpointLock(t *testing.T) {
+	ctx := context.Background()
+
+	var client *APIClient
+	verifyLockHeld := func() {
+		acquired := make(chan struct{})
+		go func() {
+			unlock := client.LockEndpoint("/api/v1/settings/main")
+			unlock()
+			close(acquired)
+		}()
+		select {
+		case <-acquired:
+			t.Errorf("expected endpoint lock to be held during mutation")
+		case <-time.After(30 * time.Millisecond):
+			// Lock was properly held
+		}
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/settings/main" {
+			verifyLockHeld()
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"applicationTitle":"Seerr","applicationUrl":"https://seerr.example"}`))
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	client = NewClient(baseURL, "test-key", "test-agent", false, defaultRequestTimeout, 0, 0)
+	r := &MainSettingsResource{client: client}
+
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+
+	planModel := MainSettingsModel{
+		AppTitle:       types.StringValue("Seerr"),
+		ApplicationURL: types.StringValue("https://seerr.example"),
+	}
+	plan := tfsdk.Plan{Schema: schemaResp.Schema}
+	require.False(t, plan.Set(ctx, &planModel).HasError())
+
+	// Test Create holds lock
+	createResp := resource.CreateResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
+	r.Create(ctx, resource.CreateRequest{Plan: plan}, &createResp)
+	require.False(t, createResp.Diagnostics.HasError(), createResp.Diagnostics)
+
+	// Test Update holds lock
+	updateResp := resource.UpdateResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: createResp.State}, &updateResp)
+	require.False(t, updateResp.Diagnostics.HasError(), updateResp.Diagnostics)
 }
