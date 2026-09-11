@@ -431,3 +431,22 @@ func TestRadarrServerPayload_UnresolvableQualityProfileError(t *testing.T) {
 		t.Errorf("expected error containing %q, got %q", expected, err.Error())
 	}
 }
+
+func TestReadRadarrStateFromJSON_ArrayResponse(t *testing.T) {
+	raw := `[
+		{"id": 1, "name": "Radarr 1", "hostname": "radarr1.local", "port": 7878},
+		{"id": 2, "name": "Radarr 2", "hostname": "radarr2.local", "port": 7879}
+	]`
+	data := &RadarrServerModel{
+		ServerID: types.Int64Value(2),
+	}
+	if err := readRadarrStateFromJSON(context.Background(), []byte(raw), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := data.Name.ValueString(); got != "Radarr 2" {
+		t.Fatalf("expected Radarr 2, got %q", got)
+	}
+	if got := data.Port.ValueInt64(); got != 7879 {
+		t.Fatalf("expected port 7879, got %d", got)
+	}
+}
