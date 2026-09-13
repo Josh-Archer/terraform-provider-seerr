@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.4](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.3...v2.0.4) (2026-09-13)
+
+
+### Bug Fixes
+
+* serialize singleton /api/v1/settings/main mutations ([#292](https://github.com/Josh-Archer/terraform-provider-seerr/issues/292)) ([1f28435](https://github.com/Josh-Archer/terraform-provider-seerr/commit/1f28435d7cfce79f3f1566677c69ce566b880141))
+
 ## [2.0.3](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.2...v2.0.3) (2026-09-10)
 
 
