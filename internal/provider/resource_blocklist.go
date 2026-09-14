@@ -87,7 +87,7 @@ func blocklistResourceAttributes() map[string]rschema.Attribute {
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"created_at":       rschema.StringAttribute{Computed: true},
+		"created_at": rschema.StringAttribute{Computed: true},
 	}
 }
 func blocklistDataSourceAttributes() map[string]schema.Attribute {
