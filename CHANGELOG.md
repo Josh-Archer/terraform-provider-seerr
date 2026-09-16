@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.4](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.3...v2.0.4) (2026-09-16)
+
+
+### Bug Fixes
+
+* add RequiresReplace plan modifier to blocklist attributes ([#293](https://github.com/Josh-Archer/terraform-provider-seerr/issues/293)) ([1812343](https://github.com/Josh-Archer/terraform-provider-seerr/commit/181234361d515fc4b969e067b8f6f1560a6597f8))
+* serialize singleton /api/v1/settings/main mutations ([#292](https://github.com/Josh-Archer/terraform-provider-seerr/issues/292)) ([1f28435](https://github.com/Josh-Archer/terraform-provider-seerr/commit/1f28435d7cfce79f3f1566677c69ce566b880141))
+* support array responses on radarr and sonarr server updates ([#294](https://github.com/Josh-Archer/terraform-provider-seerr/issues/294)) ([27ff8e0](https://github.com/Josh-Archer/terraform-provider-seerr/commit/27ff8e00b1a511025afba8da0b02fd6e8501c086))
+
 ## [2.0.3](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.2...v2.0.3) (2026-09-10)
 
 
