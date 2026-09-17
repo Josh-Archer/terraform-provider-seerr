@@ -49,6 +49,12 @@ done < <(git rev-list "${latest_stable}..HEAD")
 
 if (( breaking == 0 )); then
   echo "Refusing empty major v${new_major}.0.0: no feat!/BREAKING CHANGE commits after ${latest_stable}." >&2
+  if [[ -n "${PR_NUMBER:-}" && -n "${GH_TOKEN:-}" ]]; then
+    echo "Automatically closing invalid empty major release PR #${PR_NUMBER}..." >&2
+    gh pr close "${PR_NUMBER}" \
+      --comment "Closed by release guard: major release v${new_major}.0.0 requested without any breaking changes after ${latest_stable}." \
+      --delete-branch || true
+  fi
   exit 1
 fi
 

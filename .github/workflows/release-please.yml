@@ -31,21 +31,89 @@ jobs:
        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     steps:
+      - name: Inspect release state
+        id: gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          default_branch="${{ github.event.repository.default_branch || 'main' }}"
+          has_draft="$(gh api "repos/${GITHUB_REPOSITORY}/releases" --jq '[.[] | select(.draft == true)] | length' 2>/dev/null || echo "0")"
+          latest_commit="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${default_branch}" --jq '.commit.message' 2>/dev/null || echo "")"
+
+          skip_pr="false"
+          if [[ "${has_draft}" -gt 0 ]]; then
+            echo "Draft release in-flight (${has_draft} draft(s)). Skipping PR creation to prevent history replay during GoReleaser handoff."
+            skip_pr="true"
+          elif [[ "${latest_commit}" =~ ^chore(\(main\))?:\ release[[:space:]] ]] || [[ "${latest_commit}" == Merge\ pull\ request*release* ]]; then
+            echo "Latest commit on ${default_branch} is a release commit. Skipping PR creation during release publication."
+            skip_pr="true"
+          fi
+          echo "skip_pull_request=${skip_pr}" >> "$GITHUB_OUTPUT"
+
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: release
         with:
           config-file: .github/release-please-config.json
           manifest-file: .release-please-manifest.json
+          skip-github-pull-request: ${{ steps.gate.outputs.skip_pull_request == 'true' }}
 
       - name: Trigger Release workflow on release creation
         if: ${{ steps.release.outputs.releases_created == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
         run: |
           echo "Release-please created release tag ${RELEASE_TAG}. Dispatching Release workflow..."
           gh workflow run release.yml \
             --repo "${GITHUB_REPOSITORY}" \
             --ref "${DEFAULT_BRANCH}" \
             -f "release_tag=${RELEASE_TAG}"
+
+          # Close any premature candidate release PR opened while this release was being created
+          pr_number="$(gh pr list --head "release-please--branches--main--components--terraform-provider-seerr" --json number --jq '.[0].number' 2>/dev/null || true)"
+          if [[ -n "${pr_number}" ]]; then
+            echo "Closing premature candidate release PR #${pr_number} created during draft handoff..."
+            gh pr close "${pr_number}" --delete-branch || true
+          fi
+
+      - name: Guard candidate release PR against empty major bumps
+        if: ${{ steps.release.outputs.releases_created != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
+        run: |
+          pr_json="$(gh pr list --head "release-please--branches--main--components--terraform-provider-seerr" --json number,title --jq '.[0]' 2>/dev/null || true)"
+          if [[ -z "${pr_json}" || "${pr_json}" == "null" ]]; then
+            exit 0
+          fi
+
+          pr_num="$(echo "${pr_json}" | jq -r '.number')"
+          pr_title="$(echo "${pr_json}" | jq -r '.title')"
+
+          if [[ ! "${pr_title}" =~ release[[:space:]]+([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+            exit 0
+          fi
+
+          new_major="${BASH_REMATCH[1]}"
+          latest_stable="$(gh api "repos/${GITHUB_REPOSITORY}/releases" --jq '[.[] | select(.draft == false and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")))] | .[0].tag_name' 2>/dev/null || true)"
+          if [[ -z "${latest_stable}" ]]; then
+            exit 0
+          fi
+
+          latest_major="${latest_stable#v}"
+          latest_major="${latest_major%%.*}"
+
+          if (( new_major > latest_major )); then
+            compare_breaking="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${latest_stable}...${DEFAULT_BRANCH}" \
+              --jq '[.commits[].commit.message | select(test("(BREAKING CHANGE:|^[a-zA-Z]+(\\([^)]+\\))?!:)"))] | length' 2>/dev/null || echo "0")"
+
+            if [[ "${compare_breaking}" -eq 0 ]]; then
+              echo "Detected empty major release PR #${pr_num} (${pr_title}) with 0 breaking changes since ${latest_stable}."
+              echo "Closing premature empty major PR..."
+              gh pr close "${pr_num}" \
+                --comment "Automatically closed: candidate major release PR proposed without any breaking changes since ${latest_stable}." \
+                --delete-branch || true
+            fi
+          fi

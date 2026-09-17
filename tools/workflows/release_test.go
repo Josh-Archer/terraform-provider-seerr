@@ -3,6 +3,7 @@ package workflows
 import (
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -54,12 +55,26 @@ func TestReleasePleaseSurvivesSuppressedBotPush(t *testing.T) {
 	var dispatchesRelease bool
 	for _, step := range job.Steps {
 		require.NotContains(t, step.Uses, "actions/checkout", "privileged completion handler must not execute PR code")
-		if step.Run != "" {
-			require.Contains(t, step.Run, "gh workflow run release.yml")
+		if step.Run != "" && strings.Contains(step.Run, "gh workflow run release.yml") {
 			dispatchesRelease = true
 		}
 	}
 	require.True(t, dispatchesRelease, "GITHUB_TOKEN-created releases need explicit publication dispatch")
+}
+
+func TestReleasePleaseGuardsAgainstDraftReleasePRRace(t *testing.T) {
+	raw, err := os.ReadFile("../../.github/workflows/release-please.yml")
+	require.NoError(t, err)
+	content := string(raw)
+	require.Contains(t, content, "skip-github-pull-request:")
+	require.Contains(t, content, "has_draft=")
+	require.Contains(t, content, "Closing premature candidate release PR")
+	require.Contains(t, content, "Guard candidate release PR against empty major bumps")
+
+	releaseRaw, err := os.ReadFile("../../.github/workflows/release.yml")
+	require.NoError(t, err)
+	releaseContent := string(releaseRaw)
+	require.Contains(t, releaseContent, "Clean up premature candidate release PRs")
 }
 
 // GoReleaser owns publication, after signed assets have been uploaded.

@@ -5,7 +5,8 @@ on:
     types: [opened, synchronize, reopened, edited]
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 jobs:
   guard:
@@ -21,4 +22,6 @@ jobs:
       - name: Require a new breaking commit for major bumps
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash ./scripts/guard-empty-major-release.sh
