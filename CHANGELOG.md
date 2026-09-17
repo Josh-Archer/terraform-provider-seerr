@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.6](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.5...v2.0.6) (2026-09-17)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump the github-actions group with 3 updates ([#300](https://github.com/Josh-Archer/terraform-provider-seerr/issues/300)) ([0b5fd3b](https://github.com/Josh-Archer/terraform-provider-seerr/commit/0b5fd3b4d340090546faece304b2861c122a0061))
+
 ## [2.0.5](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.4...v2.0.5) (2026-09-17)
 
 
