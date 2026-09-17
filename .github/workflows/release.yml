@@ -25,6 +25,7 @@ jobs:
     runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
     permissions:
       contents: write
+      pull-requests: write
     timeout-minutes: 60
     env:
       RELEASE_TAG: ${{ inputs.release_tag }}
@@ -199,4 +200,16 @@ jobs:
 
           if [[ "${indexed}" != "true" ]]; then
             echo "Note: OpenTofu registry indexing is still pending for ${RELEASE_TAG}. It usually finishes within 10-15 minutes."
+          fi
+
+      - name: Clean up premature candidate release PRs
+        if: steps.release_state.outputs.published != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          pr_number="$(gh pr list --head "release-please--branches--main--components--terraform-provider-seerr" --json number --jq '.[0].number' 2>/dev/null || true)"
+          if [[ -n "${pr_number}" ]]; then
+            echo "Closing stale candidate release PR #${pr_number} created before release was published..."
+            gh pr close "${pr_number}" --delete-branch || true
           fi
