@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.5](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.4...v2.0.5) (2026-09-17)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump google.golang.org/grpc from 1.83.1 to 1.83.2 ([#279](https://github.com/Josh-Archer/terraform-provider-seerr/issues/279)) ([ad86097](https://github.com/Josh-Archer/terraform-provider-seerr/commit/ad860970bf0407130f336c175ad125d7f559d339))
+
 ## [2.0.4](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.3...v2.0.4) (2026-09-16)
 
 
