@@ -2,6 +2,10 @@ package provider
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -18,7 +22,7 @@ import (
 func TestWatchlistResource_Schema(t *testing.T) {
 	r := NewWatchlistResource()
 	var resp resource.SchemaResponse
-	r.Schema(context.Background(), resource.SchemaRequest{}, &resp)
+	r.Schema(t.Context(), resource.SchemaRequest{}, &resp)
 
 	if resp.Diagnostics.HasError() {
 		t.Fatalf("Schema diagnostics error: %v", resp.Diagnostics)
@@ -35,7 +39,7 @@ func TestWatchlistResource_Schema(t *testing.T) {
 func TestWatchlistResource_Metadata(t *testing.T) {
 	r := NewWatchlistResource()
 	var metaResp resource.MetadataResponse
-	r.Metadata(context.Background(), resource.MetadataRequest{ProviderTypeName: "seerr"}, &metaResp)
+	r.Metadata(t.Context(), resource.MetadataRequest{ProviderTypeName: "seerr"}, &metaResp)
 	if metaResp.TypeName != "seerr_watchlist" {
 		t.Errorf("Expected type name seerr_watchlist, got %s", metaResp.TypeName)
 	}
@@ -125,4 +129,299 @@ func TestWatchlistResourceSchemaRequiresReplace(t *testing.T) {
 		mod.PlanModifyString(ctx, stringReqSame, &stringRespSame)
 	}
 	assert.False(t, stringRespSame.RequiresReplace, "unchanged media_type should not require replacement")
+}
+
+func TestWatchlistResource_Read_FindsItemOnSubsequentPage(t *testing.T) {
+	var requestedPages []int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/v1/watchlist", r.URL.Path)
+		page, err := strconv.Atoi(r.URL.Query().Get("page"))
+		if err != nil {
+			page = 1
+		}
+		requestedPages = append(requestedPages, page)
+
+		w.Header().Set("Content-Type", "application/json")
+		switch page {
+		case 1:
+			_, _ = w.Write([]byte(`{
+				"page": 1,
+				"totalPages": 2,
+				"totalResults": 2,
+				"results": [
+					{"tmdbId": 100, "mediaType": "movie", "title": "Movie 100", "overview": "First page movie"}
+				]
+			}`))
+		case 2:
+			_, _ = w.Write([]byte(`{
+				"page": 2,
+				"totalPages": 2,
+				"totalResults": 2,
+				"results": [
+					{"tmdbId": 200, "mediaType": "movie", "title": "Target Movie", "overview": "Found on page two"}
+				]
+			}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	client := NewClient(baseURL, "REDACTED_TEST_VALUE", "test-agent", false, defaultRequestTimeout, 0, 0)
+	r := &WatchlistResource{client: client}
+
+	ctx := t.Context()
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	state := tfsdk.State{Schema: schemaResp.Schema}
+
+	initial := WatchlistResourceModel{
+		ID:        types.StringValue("200:movie"),
+		TMDBID:    types.Int64Value(200),
+		MediaType: types.StringValue("movie"),
+	}
+	require.False(t, state.Set(ctx, &initial).HasError())
+
+	readResp := resource.ReadResponse{State: state}
+	r.Read(ctx, resource.ReadRequest{State: state}, &readResp)
+
+	require.False(t, readResp.Diagnostics.HasError())
+	assert.Equal(t, []int{1, 2}, requestedPages, "expected both pages to be queried")
+
+	var updated WatchlistResourceModel
+	require.False(t, readResp.State.Get(ctx, &updated).HasError())
+	assert.False(t, updated.ID.IsNull(), "resource should not be removed from state")
+	assert.Equal(t, "200:movie", updated.ID.ValueString())
+	assert.Equal(t, "Target Movie", updated.Title.ValueString())
+	assert.Equal(t, "Found on page two", updated.Overview.ValueString())
+}
+
+func TestWatchlistResource_Read_FindsItemOnFirstPageStopsPaginating(t *testing.T) {
+	var requestedPages []int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/v1/watchlist", r.URL.Path)
+		page, err := strconv.Atoi(r.URL.Query().Get("page"))
+		if err != nil {
+			page = 1
+		}
+		requestedPages = append(requestedPages, page)
+
+		w.Header().Set("Content-Type", "application/json")
+		switch page {
+		case 1:
+			_, _ = w.Write([]byte(`{
+				"page": 1,
+				"totalPages": 3,
+				"totalResults": 3,
+				"results": [
+					{"tmdbId": 100, "mediaType": "tv", "name": "TV 100", "overview": "First page TV"}
+				]
+			}`))
+		default:
+			t.Fatalf("unexpected request for page %d", page)
+		}
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	client := NewClient(baseURL, "REDACTED_TEST_VALUE", "test-agent", false, defaultRequestTimeout, 0, 0)
+	r := &WatchlistResource{client: client}
+
+	ctx := t.Context()
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	state := tfsdk.State{Schema: schemaResp.Schema}
+
+	initial := WatchlistResourceModel{
+		ID:        types.StringValue("100:tv"),
+		TMDBID:    types.Int64Value(100),
+		MediaType: types.StringValue("tv"),
+	}
+	require.False(t, state.Set(ctx, &initial).HasError())
+
+	readResp := resource.ReadResponse{State: state}
+	r.Read(ctx, resource.ReadRequest{State: state}, &readResp)
+
+	require.False(t, readResp.Diagnostics.HasError())
+	assert.Equal(t, []int{1}, requestedPages, "expected only first page to be queried")
+
+	var updated WatchlistResourceModel
+	require.False(t, readResp.State.Get(ctx, &updated).HasError())
+	assert.False(t, updated.ID.IsNull())
+	assert.Equal(t, "TV 100", updated.Title.ValueString())
+	assert.Equal(t, "First page TV", updated.Overview.ValueString())
+}
+
+func TestWatchlistResource_Read_NotFoundAcrossPagesRemovesState(t *testing.T) {
+	var requestedPages []int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/v1/watchlist", r.URL.Path)
+		page, err := strconv.Atoi(r.URL.Query().Get("page"))
+		if err != nil {
+			page = 1
+		}
+		requestedPages = append(requestedPages, page)
+
+		w.Header().Set("Content-Type", "application/json")
+		switch page {
+		case 1:
+			_, _ = w.Write([]byte(`{
+				"page": 1,
+				"totalPages": 2,
+				"totalResults": 2,
+				"results": [
+					{"tmdbId": 100, "mediaType": "movie", "title": "Movie 100"}
+				]
+			}`))
+		case 2:
+			_, _ = w.Write([]byte(`{
+				"page": 2,
+				"totalPages": 2,
+				"totalResults": 2,
+				"results": [
+					{"tmdbId": 200, "mediaType": "movie", "title": "Movie 200"}
+				]
+			}`))
+		default:
+			_, _ = w.Write([]byte(`{"page": 3, "totalPages": 2, "totalResults": 2, "results": []}`))
+		}
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	client := NewClient(baseURL, "REDACTED_TEST_VALUE", "test-agent", false, defaultRequestTimeout, 0, 0)
+	r := &WatchlistResource{client: client}
+
+	ctx := t.Context()
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	state := tfsdk.State{Schema: schemaResp.Schema}
+
+	initial := WatchlistResourceModel{
+		ID:        types.StringValue("999:movie"),
+		TMDBID:    types.Int64Value(999),
+		MediaType: types.StringValue("movie"),
+	}
+	require.False(t, state.Set(ctx, &initial).HasError())
+
+	readResp := resource.ReadResponse{State: state}
+	r.Read(ctx, resource.ReadRequest{State: state}, &readResp)
+
+	require.False(t, readResp.Diagnostics.HasError())
+	assert.Equal(t, []int{1, 2}, requestedPages, "expected both pages to be checked")
+
+	var updated WatchlistResourceModel
+	_ = readResp.State.Get(ctx, &updated)
+	assert.True(t, updated.ID.IsNull(), "resource should be removed from state when not found")
+}
+
+func TestWatchlistResource_Read_404RemovesState(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	client := NewClient(baseURL, "REDACTED_TEST_VALUE", "test-agent", false, defaultRequestTimeout, 0, 0)
+	r := &WatchlistResource{client: client}
+
+	ctx := t.Context()
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	state := tfsdk.State{Schema: schemaResp.Schema}
+
+	initial := WatchlistResourceModel{
+		ID:        types.StringValue("100:movie"),
+		TMDBID:    types.Int64Value(100),
+		MediaType: types.StringValue("movie"),
+	}
+	require.False(t, state.Set(ctx, &initial).HasError())
+
+	readResp := resource.ReadResponse{State: state}
+	r.Read(ctx, resource.ReadRequest{State: state}, &readResp)
+
+	require.False(t, readResp.Diagnostics.HasError())
+	var updated WatchlistResourceModel
+	_ = readResp.State.Get(ctx, &updated)
+	assert.True(t, updated.ID.IsNull(), "resource should be removed from state on 404")
+}
+
+func TestWatchlistResource_Read_ServerErrorPreservesState(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"message": "internal error"}`))
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	client := NewClient(baseURL, "REDACTED_TEST_VALUE", "test-agent", false, defaultRequestTimeout, 0, 0)
+	r := &WatchlistResource{client: client}
+
+	ctx := t.Context()
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	state := tfsdk.State{Schema: schemaResp.Schema}
+
+	initial := WatchlistResourceModel{
+		ID:        types.StringValue("100:movie"),
+		TMDBID:    types.Int64Value(100),
+		MediaType: types.StringValue("movie"),
+	}
+	require.False(t, state.Set(ctx, &initial).HasError())
+
+	readResp := resource.ReadResponse{State: state}
+	r.Read(ctx, resource.ReadRequest{State: state}, &readResp)
+
+	assert.True(t, readResp.Diagnostics.HasError(), "expected error diagnostics on 500")
+	var updated WatchlistResourceModel
+	_ = readResp.State.Get(ctx, &updated)
+	assert.False(t, updated.ID.IsNull(), "resource should be preserved in state on server error")
+}
+
+func TestWatchlistResource_Read_RawArrayFallback(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[
+			{"tmdbId": 100, "mediaType": "movie", "title": "Array Movie", "overview": "Array overview"}
+		]`))
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	client := NewClient(baseURL, "REDACTED_TEST_VALUE", "test-agent", false, defaultRequestTimeout, 0, 0)
+	r := &WatchlistResource{client: client}
+
+	ctx := t.Context()
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	state := tfsdk.State{Schema: schemaResp.Schema}
+
+	initial := WatchlistResourceModel{
+		ID:        types.StringValue("100:movie"),
+		TMDBID:    types.Int64Value(100),
+		MediaType: types.StringValue("movie"),
+	}
+	require.False(t, state.Set(ctx, &initial).HasError())
+
+	readResp := resource.ReadResponse{State: state}
+	r.Read(ctx, resource.ReadRequest{State: state}, &readResp)
+
+	require.False(t, readResp.Diagnostics.HasError())
+	var updated WatchlistResourceModel
+	require.False(t, readResp.State.Get(ctx, &updated).HasError())
+	assert.Equal(t, "Array Movie", updated.Title.ValueString())
+	assert.Equal(t, "Array overview", updated.Overview.ValueString())
 }

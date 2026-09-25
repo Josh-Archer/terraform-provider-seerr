@@ -151,44 +151,103 @@ func (r *WatchlistResource) Read(ctx context.Context, req resource.ReadRequest, 
 	tmdbID := state.TMDBID.ValueInt64()
 	mediaType := state.MediaType.ValueString()
 
-	res, err := r.client.Request(ctx, "GET", "/api/v1/watchlist", "", nil)
-	if err != nil {
-		resp.Diagnostics.AddError("Read Failed", err.Error())
-		return
-	}
-	if res.StatusCode == 404 {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if !HandleAPIResponse(ctx, res, &resp.Diagnostics, "Read") {
-		return
-	}
-
-	var raw struct {
-		Results []struct {
-			TMDBID    int64  `json:"tmdbId"`
-			MediaType string `json:"mediaType"`
-			Title     string `json:"title"`
-			Name      string `json:"name"`
-			Overview  string `json:"overview"`
-		} `json:"results"`
-	}
-
-	if err := json.Unmarshal(res.Body, &raw); err != nil {
-		resp.Diagnostics.AddError("Error Parsing Watchlist", err.Error())
-		return
-	}
-
 	found := false
-	for _, item := range raw.Results {
-		if item.TMDBID == tmdbID && strings.EqualFold(item.MediaType, mediaType) {
-			found = true
-			if item.Title != "" {
-				state.Title = types.StringValue(item.Title)
-			} else if item.Name != "" {
-				state.Title = types.StringValue(item.Name)
+	totalFetched := 0
+	const maxWatchlistPages = 500
+
+	for page := 1; page <= maxWatchlistPages; page++ {
+		endpoint := fmt.Sprintf("/api/v1/watchlist?page=%d", page)
+		res, err := r.client.Request(ctx, "GET", endpoint, "", nil)
+		if err != nil {
+			resp.Diagnostics.AddError("Read Failed", err.Error())
+			return
+		}
+		if res.StatusCode == 404 {
+			if page == 1 {
+				resp.State.RemoveResource(ctx)
 			}
-			state.Overview = types.StringValue(item.Overview)
+			break
+		}
+		if !HandleAPIResponse(ctx, res, &resp.Diagnostics, "Read") {
+			return
+		}
+
+		var raw struct {
+			Page         int `json:"page"`
+			TotalPages   int `json:"totalPages"`
+			TotalResults int `json:"totalResults"`
+			PageInfo     *struct {
+				Page  int `json:"page"`
+				Pages int `json:"pages"`
+				Total int `json:"total"`
+			} `json:"pageInfo"`
+			Results []struct {
+				TMDBID    int64  `json:"tmdbId"`
+				MediaType string `json:"mediaType"`
+				Title     string `json:"title"`
+				Name      string `json:"name"`
+				Overview  string `json:"overview"`
+			} `json:"results"`
+		}
+
+		isRawArray := false
+		if err := json.Unmarshal(res.Body, &raw); err != nil {
+			var rawArray []struct {
+				TMDBID    int64  `json:"tmdbId"`
+				MediaType string `json:"mediaType"`
+				Title     string `json:"title"`
+				Name      string `json:"name"`
+				Overview  string `json:"overview"`
+			}
+			if errArr := json.Unmarshal(res.Body, &rawArray); errArr == nil {
+				raw.Results = rawArray
+				isRawArray = true
+			} else {
+				resp.Diagnostics.AddError("Error Parsing Watchlist", err.Error())
+				return
+			}
+		}
+
+		for _, item := range raw.Results {
+			if item.TMDBID == tmdbID && strings.EqualFold(item.MediaType, mediaType) {
+				found = true
+				if item.Title != "" {
+					state.Title = types.StringValue(item.Title)
+				} else if item.Name != "" {
+					state.Title = types.StringValue(item.Name)
+				}
+				state.Overview = types.StringValue(item.Overview)
+				break
+			}
+		}
+
+		if found {
+			break
+		}
+
+		if isRawArray || len(raw.Results) == 0 {
+			break
+		}
+
+		totalPages := raw.TotalPages
+		if totalPages == 0 && raw.PageInfo != nil {
+			totalPages = raw.PageInfo.Pages
+		}
+		if totalPages > 0 && page >= totalPages {
+			break
+		}
+
+		totalResults := raw.TotalResults
+		if totalResults == 0 && raw.PageInfo != nil {
+			totalResults = raw.PageInfo.Total
+		}
+		totalFetched += len(raw.Results)
+		if totalResults > 0 && totalFetched >= totalResults {
+			break
+		}
+
+		// If no pagination metadata at all was provided, stop after the first page
+		if totalPages == 0 && totalResults == 0 && raw.Page == 0 && raw.PageInfo == nil {
 			break
 		}
 	}
