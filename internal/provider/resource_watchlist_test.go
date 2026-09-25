@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -424,4 +425,91 @@ func TestWatchlistResource_Read_RawArrayFallback(t *testing.T) {
 	require.False(t, readResp.State.Get(ctx, &updated).HasError())
 	assert.Equal(t, "Array Movie", updated.Title.ValueString())
 	assert.Equal(t, "Array overview", updated.Overview.ValueString())
+}
+
+func TestWatchlistResource_Delete_IncludesMediaTypeQuery(t *testing.T) {
+	cases := []struct {
+		name      string
+		tmdbID    int64
+		mediaType string
+	}{
+		{name: "movie", tmdbID: 550, mediaType: "movie"},
+		{name: "tv", tmdbID: 550, mediaType: "tv"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotMethod, gotPath, gotRawQuery string
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotMethod = r.Method
+				gotPath = r.URL.Path
+				gotRawQuery = r.URL.RawQuery
+				w.WriteHeader(http.StatusNoContent)
+			}))
+			defer srv.Close()
+
+			baseURL, err := url.Parse(srv.URL)
+			require.NoError(t, err)
+
+			client := NewClient(baseURL, "REDACTED_TEST_VALUE", "test-agent", false, defaultRequestTimeout, 0, 0)
+			r := &WatchlistResource{client: client}
+
+			ctx := t.Context()
+			var schemaResp resource.SchemaResponse
+			r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+			state := tfsdk.State{Schema: schemaResp.Schema}
+
+			initial := WatchlistResourceModel{
+				ID:        types.StringValue(fmt.Sprintf("%d:%s", tc.tmdbID, tc.mediaType)),
+				TMDBID:    types.Int64Value(tc.tmdbID),
+				MediaType: types.StringValue(tc.mediaType),
+			}
+			require.False(t, state.Set(ctx, &initial).HasError())
+
+			deleteResp := resource.DeleteResponse{}
+			r.Delete(ctx, resource.DeleteRequest{State: state}, &deleteResp)
+			require.False(t, deleteResp.Diagnostics.HasError(), deleteResp.Diagnostics.Errors())
+
+			assert.Equal(t, http.MethodDelete, gotMethod)
+			assert.Equal(t, fmt.Sprintf("/api/v1/watchlist/%d", tc.tmdbID), gotPath)
+			q, err := url.ParseQuery(gotRawQuery)
+			require.NoError(t, err)
+			assert.Equal(t, tc.mediaType, q.Get("mediaType"), "Delete must send mediaType query (got RawQuery %q)", gotRawQuery)
+		})
+	}
+}
+
+func TestWatchlistResource_Delete_RejectsMissingMediaTypeInRequest(t *testing.T) {
+	// Guard against regressions that drop mediaType from the delete URL.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("mediaType") == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"message":"Invalid mediaType query parameter."}`))
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	client := NewClient(baseURL, "REDACTED_TEST_VALUE", "test-agent", false, defaultRequestTimeout, 0, 0)
+	r := &WatchlistResource{client: client}
+
+	ctx := t.Context()
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	state := tfsdk.State{Schema: schemaResp.Schema}
+
+	initial := WatchlistResourceModel{
+		ID:        types.StringValue("1396:tv"),
+		TMDBID:    types.Int64Value(1396),
+		MediaType: types.StringValue("tv"),
+	}
+	require.False(t, state.Set(ctx, &initial).HasError())
+
+	deleteResp := resource.DeleteResponse{}
+	r.Delete(ctx, resource.DeleteRequest{State: state}, &deleteResp)
+	require.False(t, deleteResp.Diagnostics.HasError(), "delete with mediaType must succeed against API that requires it")
 }

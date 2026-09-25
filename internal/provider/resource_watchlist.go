@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -272,7 +273,10 @@ func (r *WatchlistResource) Delete(ctx context.Context, req resource.DeleteReque
 	}
 
 	tmdbID := state.TMDBID.ValueInt64()
-	endpoint := fmt.Sprintf("/api/v1/watchlist/%d", tmdbID)
+	mediaType := state.MediaType.ValueString()
+	q := url.Values{}
+	q.Set("mediaType", mediaType)
+	endpoint := fmt.Sprintf("/api/v1/watchlist/%d?%s", tmdbID, q.Encode())
 
 	res, err := r.client.Request(ctx, "DELETE", endpoint, "", nil)
 	if err != nil {
