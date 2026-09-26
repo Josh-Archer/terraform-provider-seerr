@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.7](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.6...v2.0.7) (2026-09-26)
+
+
+### Bug Fixes
+
+* paginate watchlist read to avoid dropping items past first page ([#310](https://github.com/Josh-Archer/terraform-provider-seerr/issues/310)) ([33ae29f](https://github.com/Josh-Archer/terraform-provider-seerr/commit/33ae29fb3ed24ff9cfb4315af00c65e85fe6908c))
+* **watchlist:** pass mediaType query on delete ([#312](https://github.com/Josh-Archer/terraform-provider-seerr/issues/312)) ([5c75f1d](https://github.com/Josh-Archer/terraform-provider-seerr/commit/5c75f1d650c25778a358d8f760d86d67efd1afbb)), closes [#307](https://github.com/Josh-Archer/terraform-provider-seerr/issues/307)
+* **watchlist:** require replace on tmdb_id and media_type changes ([#309](https://github.com/Josh-Archer/terraform-provider-seerr/issues/309)) ([9dad1cf](https://github.com/Josh-Archer/terraform-provider-seerr/commit/9dad1cf37e56d936e9a372af392bf334853bbab6))
+
 ## [2.0.6](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.5...v2.0.6) (2026-09-17)
 
 
