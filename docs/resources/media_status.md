@@ -26,7 +26,7 @@ resource "seerr_media_status" "manual_override" {
 ### Required
 
 - `media_id` (String) The positive Seerr internal media ID. Changing it replaces this action.
-- `status` (String) The status to set. `partial` is only supported for TV series. The current Seerr route does not implement the OpenAPI `deleted` enum, so it is excluded.
+- `status` (String) The status to set. `partial` is only supported for TV series. Seerr can also report `blocklisted` and `deleted` on read, but its current update route does not implement either status for writes.
 
 ### Optional
 
@@ -36,14 +36,3 @@ resource "seerr_media_status" "manual_override" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-
-Removing this action from configuration does not restore the previous Seerr status or delete the media item.
-
-## Import
-
-Import a regular media status with the Seerr media ID. Add `:4k` to import the 4K status instead.
-
-```shell
-terraform import seerr_media_status.manual_override 42
-terraform import seerr_media_status.manual_override_4k 42:4k
-```

@@ -45,7 +45,7 @@ func (r *MediaStatusResource) Schema(_ context.Context, _ resource.SchemaRequest
 		Attributes: map[string]schema.Attribute{
 			"id":       schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"media_id": schema.StringAttribute{MarkdownDescription: "The positive Seerr internal media ID. Changing it replaces this action.", Required: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}, Validators: []validator.String{stringvalidator.RegexMatches(mediaIDPattern, "must be a positive Seerr media ID")}},
-			"status":   schema.StringAttribute{MarkdownDescription: "The status to set. `partial` is only supported for TV series. The current Seerr route does not implement the OpenAPI `deleted` enum, so it is excluded.", Required: true, Validators: []validator.String{stringvalidator.OneOf("available", "partial", "processing", "pending", "unknown")}},
+			"status":   schema.StringAttribute{MarkdownDescription: "The status to set. `partial` is only supported for TV series. Seerr can also report `blocklisted` and `deleted` on read, but its current update route does not implement either status for writes.", Required: true, Validators: []validator.String{stringvalidator.OneOf("available", "partial", "processing", "pending", "unknown")}},
 			"is4k":     schema.BoolAttribute{MarkdownDescription: "When true, updates the 4K status field. Otherwise updates the regular status field.", Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 			"triggers": schema.MapAttribute{Optional: true, ElementType: types.StringType, MarkdownDescription: "Changing a value re-applies the requested status."},
 		},
@@ -162,6 +162,12 @@ func mediaStatusName(status int64) (string, bool) {
 		return "partial", true
 	case 5:
 		return "available", true
+	case 6:
+		// The API may report these statuses even though the update route does
+		// not implement write operations for them.
+		return "blocklisted", true
+	case 7:
+		return "deleted", true
 	default:
 		return "", false
 	}
