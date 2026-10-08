@@ -67,7 +67,9 @@ data "seerr_api_request" "private" {
 		t.Fatal(err)
 	}
 	providerBinary := filepath.Join(providerDir, "terraform-provider-seerr")
-	buildCmd := exec.Command("go", "build", "-o", providerBinary, ".")
+	buildCtx, buildCancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer buildCancel()
+	buildCmd := exec.CommandContext(buildCtx, "go", "build", "-o", providerBinary, ".")
 	buildCmd.Dir = repoRoot
 	if output, err := buildCmd.CombinedOutput(); err != nil {
 		t.Fatalf("building local provider failed: %v\n%s", err, output)
@@ -95,13 +97,6 @@ data "seerr_api_request" "private" {
 			if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
 				t.Fatal(err)
 			}
-			initCmd := exec.CommandContext(ctx, cliTool, "init", "-backend=false", "-input=false")
-			initCmd.Dir = workDir
-			initCmd.Env = env
-			if output, err := initCmd.CombinedOutput(); err != nil {
-				t.Fatalf("%s init failed: %v\n%s", cliTool, err, output)
-			}
-
 			unsafeOutputConfig := config + `
 output "raw_response" {
   value = data.seerr_api_request.private.response_body_json
