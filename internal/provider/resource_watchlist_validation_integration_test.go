@@ -68,12 +68,16 @@ func TestWatchlistInputsRejectedBeforeRequest(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name      string
-		tmdbID    int
-		mediaType string
+		name           string
+		tmdbID         int
+		mediaType      string
+		wantDiagnostic string
 	}{
-		{name: "zero TMDB ID", tmdbID: 0, mediaType: "movie"},
-		{name: "unknown media type", tmdbID: 123, mediaType: "episode"},
+		{name: "zero TMDB ID", tmdbID: 0, mediaType: "movie", wantDiagnostic: "value must be at least 1"},
+		{name: "negative TMDB ID", tmdbID: -1, mediaType: "movie", wantDiagnostic: "value must be at least 1"},
+		{name: "unknown media type", tmdbID: 123, mediaType: "episode", wantDiagnostic: `value must be one of: ["movie" "tv"]`},
+		{name: "valid movie", tmdbID: 123, mediaType: "movie"},
+		{name: "valid tv", tmdbID: 456, mediaType: "tv"},
 	}
 	for _, cliTool := range cliTools {
 		t.Run(cliTool, func(t *testing.T) {
@@ -82,6 +86,10 @@ func TestWatchlistInputsRejectedBeforeRequest(t *testing.T) {
 					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 					defer cancel()
 					workDir := t.TempDir()
+					resourceName := "valid"
+					if testCase.wantDiagnostic != "" {
+						resourceName = "invalid"
+					}
 					config := fmt.Sprintf(`terraform {
   required_providers {
     seerr = {
@@ -96,11 +104,11 @@ provider "seerr" {
   api_key = "fixture-key"
 }
 
-resource "seerr_watchlist" "invalid" {
+resource "seerr_watchlist" %q {
   tmdb_id = %d
   media_type = %q
 }
-`, server.URL, testCase.tmdbID, testCase.mediaType)
+`, server.URL, resourceName, testCase.tmdbID, testCase.mediaType)
 					if err := os.WriteFile(filepath.Join(workDir, "main.tf"), []byte(config), 0o600); err != nil {
 						t.Fatal(err)
 					}
@@ -110,14 +118,20 @@ resource "seerr_watchlist" "invalid" {
 					planCmd.Dir = workDir
 					planCmd.Env = env
 					output, err := planCmd.CombinedOutput()
-					if err == nil {
-						t.Fatalf("%s accepted invalid watchlist configuration:\n%s", cliTool, output)
-					}
-					if !strings.Contains(strings.ToLower(string(output)), "invalid") {
-						t.Fatalf("%s failed for an unexpected reason:\n%s", cliTool, output)
+					if testCase.wantDiagnostic == "" {
+						if err != nil {
+							t.Fatalf("%s rejected valid watchlist configuration: %v\n%s", cliTool, err, output)
+						}
+					} else {
+						if err == nil {
+							t.Fatalf("%s accepted invalid watchlist configuration:\n%s", cliTool, output)
+						}
+						if !strings.Contains(string(output), testCase.wantDiagnostic) {
+							t.Fatalf("%s missing validator diagnostic %q:\n%s", cliTool, testCase.wantDiagnostic, output)
+						}
 					}
 					if got := requestCount.Load(); got != 0 {
-						t.Fatalf("invalid configuration made %d API request(s), want none", got)
+						t.Fatalf("configuration made %d API request(s), want none", got)
 					}
 				})
 			}

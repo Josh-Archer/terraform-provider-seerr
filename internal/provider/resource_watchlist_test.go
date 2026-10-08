@@ -10,9 +10,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -43,6 +45,43 @@ func TestWatchlistResource_Metadata(t *testing.T) {
 	r.Metadata(t.Context(), resource.MetadataRequest{ProviderTypeName: "seerr"}, &metaResp)
 	if metaResp.TypeName != "seerr_watchlist" {
 		t.Errorf("Expected type name seerr_watchlist, got %s", metaResp.TypeName)
+	}
+}
+
+func TestWatchlistInputValidators(t *testing.T) {
+	watchlist := NewWatchlistResource()
+	var schemaResponse resource.SchemaResponse
+	watchlist.Schema(t.Context(), resource.SchemaRequest{}, &schemaResponse)
+	require.False(t, schemaResponse.Diagnostics.HasError())
+
+	tmdbIDAttr, ok := schemaResponse.Schema.Attributes["tmdb_id"].(schema.Int64Attribute)
+	require.True(t, ok)
+	require.Len(t, tmdbIDAttr.Validators, 1)
+	for _, testCase := range []struct {
+		value       int64
+		wantInvalid bool
+	}{{value: 1}, {value: 123}, {value: 0, wantInvalid: true}, {value: -1, wantInvalid: true}} {
+		response := validator.Int64Response{}
+		tmdbIDAttr.Validators[0].ValidateInt64(t.Context(), validator.Int64Request{
+			Path:        path.Root("tmdb_id"),
+			ConfigValue: types.Int64Value(testCase.value),
+		}, &response)
+		assert.Equal(t, testCase.wantInvalid, response.Diagnostics.HasError(), "tmdb_id=%d", testCase.value)
+	}
+
+	mediaTypeAttr, ok := schemaResponse.Schema.Attributes["media_type"].(schema.StringAttribute)
+	require.True(t, ok)
+	require.Len(t, mediaTypeAttr.Validators, 1)
+	for _, testCase := range []struct {
+		value       string
+		wantInvalid bool
+	}{{value: "movie"}, {value: "tv"}, {value: "episode", wantInvalid: true}} {
+		response := validator.StringResponse{}
+		mediaTypeAttr.Validators[0].ValidateString(t.Context(), validator.StringRequest{
+			Path:        path.Root("media_type"),
+			ConfigValue: types.StringValue(testCase.value),
+		}, &response)
+		assert.Equal(t, testCase.wantInvalid, response.Diagnostics.HasError(), "media_type=%s", testCase.value)
 	}
 }
 
