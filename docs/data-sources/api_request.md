@@ -3,12 +3,12 @@
 page_title: "seerr_api_request Data Source - seerr"
 subcategory: ""
 description: |-
-  Execute arbitrary Seerr API requests and return the response.
+  Execute arbitrary Seerr API requests and return the response. The response body is marked sensitive because arbitrary endpoints can include credentials or other private data.
 ---
 
 # seerr_api_request (Data Source)
 
-Execute arbitrary Seerr API requests and return the response.
+Execute arbitrary Seerr API requests and return the response. The response body is marked sensitive because arbitrary endpoints can include credentials or other private data.
 
 ## Example Usage
 
@@ -19,7 +19,8 @@ data "seerr_api_request" "status" {
 }
 
 output "status_body" {
-  value = data.seerr_api_request.status.response_body_json
+  value     = data.seerr_api_request.status.response_body_json
+  sensitive = true
 }
 ```
 
@@ -38,5 +39,5 @@ output "status_body" {
 
 ### Read-Only
 
-- `response_body_json` (String) Raw JSON response body.
+- `response_body_json` (String, Sensitive) Raw JSON response body.
 - `status_code` (Number) HTTP status code.

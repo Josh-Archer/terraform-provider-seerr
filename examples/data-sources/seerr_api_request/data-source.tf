@@ -4,6 +4,6 @@ data "seerr_api_request" "status" {
 }
 
 output "status_body" {
-  value = data.seerr_api_request.status.response_body_json
+  value     = data.seerr_api_request.status.response_body_json
+  sensitive = true
 }
-
