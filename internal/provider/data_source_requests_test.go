@@ -9,6 +9,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+func TestRequestMediaTypeFromMedia(t *testing.T) {
+	mediaType := requestMediaTypeFromMedia(map[string]any{
+		"id":        float64(9),
+		"tmdbId":    float64(550),
+		"mediaType": "movie",
+	})
+	if mediaType.IsNull() || mediaType.ValueString() != "movie" {
+		t.Fatalf("expected nested mediaType movie, got %v", mediaType)
+	}
+
+	if missing := requestMediaTypeFromMedia(map[string]any{"type": "tv"}); !missing.IsNull() {
+		t.Fatalf("expected missing nested mediaType to remain null, got %v", missing)
+	}
+}
+
 // TestRequestsDataSourceMediaTypeAgainstTerraformCLI covers the complete Terraform
 // provider path against an API response shaped like Seerr's MediaRequest model.
 func TestRequestsDataSourceMediaTypeAgainstTerraformCLI(t *testing.T) {
