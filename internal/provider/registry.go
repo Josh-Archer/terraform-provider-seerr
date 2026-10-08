@@ -33,6 +33,7 @@ var RegisteredResources = []func() resource.Resource{
 	NewTautulliSettingsResource,
 	NewUserSettingsPermissionsResource,
 	NewRequestResource,
+	NewMediaStatusResource,
 	NewRequestRetryResource,
 	NewIssueResource,
 	NewBackupSettingsResource,

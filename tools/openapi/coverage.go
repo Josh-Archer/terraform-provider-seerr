@@ -198,7 +198,7 @@ func DefaultRules() []PathRule {
 		{PathPattern: "/media/{mediaId}", Classification: ClassCovered, MappedResource: "seerr_media_item", Notes: "Media item data source"},
 		{PathPattern: "/media/{mediaId}/file", Classification: ClassIntentionallyOutOfScope, Notes: "Media file info"},
 		{PathPattern: "/media/{mediaId}/watch_data", Classification: ClassIntentionallyOutOfScope, Notes: "Media watch stats query"},
-		{PathPattern: "/media/{mediaId}/{status}", Classification: ClassIntentionallyOutOfScope, Notes: "Media status update action (available/processing/pending)"},
+		{PathPattern: "/media/{mediaId}/{status}", Classification: ClassCovered, MappedResource: "seerr_media_status", Notes: "Media availability status action resource"},
 		{PathPattern: "/media/{mediaId}/file/{fileId}", Classification: ClassIntentionallyOutOfScope, Notes: "Media file deletion action"},
 		{PathPattern: "/collection/{collectionId}", Classification: ClassIntentionallyOutOfScope, Notes: "TMDB collection details query"},
 		{PathPattern: "/service/radarr", Classification: ClassIntentionallyOutOfScope, Notes: "Service health probe for Radarr"},
