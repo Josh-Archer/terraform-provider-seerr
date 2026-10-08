@@ -70,6 +70,33 @@ func TestClientDoesNotForwardSessionCookieAcrossRedirectOrigins(t *testing.T) {
 	}
 }
 
+func TestClientRejectsHTTPSDowngradeRedirect(t *testing.T) {
+	var targetRequests int
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		targetRequests++
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer target.Close()
+
+	source := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL+"/collect", http.StatusFound)
+	}))
+	defer source.Close()
+
+	baseURL, err := url.Parse(source.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := NewClient(baseURL, "secret-api-key", "test-agent", true, 5*time.Second, 0, 0)
+	_, err = client.Request(context.Background(), http.MethodGet, "/redirect", "", nil)
+	if err == nil {
+		t.Fatal("expected HTTPS-to-HTTP redirect to be rejected")
+	}
+	if targetRequests != 0 {
+		t.Fatalf("expected downgrade target to receive no request, got %d", targetRequests)
+	}
+}
+
 func TestClientFollowsSameOriginRedirect(t *testing.T) {
 	var redirectedRequestReceived bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
