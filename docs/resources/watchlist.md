@@ -17,8 +17,8 @@ Manage media watchlist items in Seerr.
 
 ### Required
 
-- `media_type` (String) Media type (`movie` or `tv`).
-- `tmdb_id` (Number) The TMDB numeric ID of the movie or TV show.
+- `media_type` (String) Media type: `movie` or `tv`.
+- `tmdb_id` (Number) The positive TMDB numeric ID of the movie or TV show.
 
 ### Read-Only
 
