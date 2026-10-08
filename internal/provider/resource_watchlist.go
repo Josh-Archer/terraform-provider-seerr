@@ -8,12 +8,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -52,15 +55,21 @@ func (r *WatchlistResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				},
 			},
 			"tmdb_id": schema.Int64Attribute{
-				MarkdownDescription: "The TMDB numeric ID of the movie or TV show.",
+				MarkdownDescription: "The positive TMDB numeric ID of the movie or TV show.",
 				Required:            true,
+				Validators: []validator.Int64{
+					int64validator.AtLeast(1),
+				},
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
 			},
 			"media_type": schema.StringAttribute{
-				MarkdownDescription: "Media type (`movie` or `tv`).",
+				MarkdownDescription: "Media type: `movie` or `tv`.",
 				Required:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("movie", "tv"),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
