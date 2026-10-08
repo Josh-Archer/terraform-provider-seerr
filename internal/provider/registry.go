@@ -24,6 +24,7 @@ var RegisteredResources = []func() resource.Resource{
 	NewNotificationGotifyResource,
 	NewNotificationWebpushResource,
 	NewRadarrServerResource,
+	NewARRConnectionTestResource,
 	NewSonarrServerResource,
 	NewUserPermissionsResource,
 	NewUserWatchlistSettingsResource,
