@@ -13,5 +13,6 @@ data "seerr_api_request" "test" {
 }
 
 output "response" {
-  value = data.seerr_api_request.test.response_body_json
+  value     = data.seerr_api_request.test.response_body_json
+  sensitive = true
 }
