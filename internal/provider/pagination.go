@@ -38,6 +38,7 @@ func fetchAllPaginatedResults(ctx context.Context, client *APIClient, basePath s
 			skip = initialSkip
 		}
 	}
+	initialSkip := skip
 
 	for {
 		pageQuery := cloneURLValues(query)
@@ -70,12 +71,12 @@ func fetchAllPaginatedResults(ctx context.Context, client *APIClient, basePath s
 
 		// Stop when we know we are on the last page, when the page is short of effective pageSize,
 		// or when we have accumulated the reported total.
-		if shouldStopPagination(pageInfo, len(pageResults), pageSize, len(all)) {
+		if shouldStopPagination(pageInfo, len(pageResults), pageSize, initialSkip+len(all)) {
 			break
 		}
 
-		// Advance skip by the number of results returned so far.
-		skip = len(all)
+		// Advance from the caller's initial offset by the number of results fetched.
+		skip = initialSkip + len(all)
 	}
 
 	return all, nil

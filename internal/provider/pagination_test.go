@@ -142,6 +142,39 @@ func TestFetchAllPaginatedResultsPreservesExistingQuery(t *testing.T) {
 	}
 }
 
+func TestFetchAllPaginatedResultsContinuesFromInitialSkip(t *testing.T) {
+	var callSkips []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		skip := r.URL.Query().Get("skip")
+		callSkips = append(callSkips, skip)
+		w.Header().Set("Content-Type", "application/json")
+		if skip == "100" {
+			_, _ = w.Write([]byte(`{"results":[{"id":101},{"id":102}],"pageInfo":{"total":103}}`))
+			return
+		}
+		if skip == "102" {
+			_, _ = w.Write([]byte(`{"results":[{"id":103}],"pageInfo":{"total":103}}`))
+			return
+		}
+		http.Error(w, "unexpected skip", http.StatusBadRequest)
+	}))
+	defer srv.Close()
+
+	results, err := fetchAllPaginatedResults(context.Background(), testPaginationClient(t, srv.URL), "/api/v1/request?skip=100", 2)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got, want := len(results), 3; got != want {
+		t.Fatalf("expected %d results, got %d", want, got)
+	}
+	if got, want := intFromAny(results[2]["id"]), 103; got != want {
+		t.Fatalf("last result id: got %d, want %d", got, want)
+	}
+	if got, want := fmt.Sprint(callSkips), "[100 102]"; got != want {
+		t.Fatalf("expected page offsets %s, got %s", want, got)
+	}
+}
+
 func TestFetchAllPaginatedResultsDefaultPageSize(t *testing.T) {
 	var take string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
