@@ -35,7 +35,7 @@ func (d *APIRequestDataSource) Metadata(_ context.Context, req datasource.Metada
 
 func (d *APIRequestDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Execute arbitrary Seerr API requests and return the response.",
+		MarkdownDescription: "Execute arbitrary Seerr API requests and return the response. The response body is marked sensitive because arbitrary endpoints can include credentials or other private data.",
 		Attributes: map[string]schema.Attribute{
 			"path": schema.StringAttribute{
 				MarkdownDescription: "Endpoint path or same-origin absolute URL.",
@@ -57,6 +57,7 @@ func (d *APIRequestDataSource) Schema(_ context.Context, _ datasource.SchemaRequ
 			"response_body_json": schema.StringAttribute{
 				MarkdownDescription: "Raw JSON response body.",
 				Computed:            true,
+				Sensitive:           true,
 			},
 			"status_code": schema.Int64Attribute{
 				MarkdownDescription: "HTTP status code.",
