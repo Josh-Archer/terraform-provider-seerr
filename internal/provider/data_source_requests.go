@@ -142,9 +142,7 @@ func (d *RequestsDataSource) Read(ctx context.Context, req datasource.ReadReques
 			if mediaId, ok := mediaRaw["id"].(float64); ok {
 				request.MediaID = types.Int64Value(int64(mediaId))
 			}
-			if mediaType, ok := stringValueFromAny(mediaRaw["mediaType"]); ok {
-				request.MediaType = types.StringValue(mediaType)
-			}
+			request.MediaType = requestMediaTypeFromMedia(mediaRaw)
 		}
 
 		if requestedByRaw, ok := u["requestedBy"].(map[string]any); ok {
@@ -193,4 +191,11 @@ func (d *RequestsDataSource) Read(ctx context.Context, req datasource.ReadReques
 	data.ID = types.StringValue(idStr)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func requestMediaTypeFromMedia(media map[string]any) types.String {
+	if mediaType, ok := stringValueFromAny(media["mediaType"]); ok {
+		return types.StringValue(mediaType)
+	}
+	return types.StringNull()
 }
