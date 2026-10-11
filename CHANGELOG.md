@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.6...v2.1.0) (2026-10-11)
+
+
+### Features
+
+* manage regular and 4K media status ([#321](https://github.com/Josh-Archer/terraform-provider-seerr/issues/321)) ([c6f131b](https://github.com/Josh-Archer/terraform-provider-seerr/commit/c6f131b70179d4bcb8b2d8435c1be3d472e59f61))
+* mark arbitrary API responses sensitive ([#319](https://github.com/Josh-Archer/terraform-provider-seerr/issues/319)) ([3484156](https://github.com/Josh-Archer/terraform-provider-seerr/commit/34841568eeb49fcc9c75c0b4ef7e9c61f92de1bb))
+* validate watchlist inputs before API calls ([#320](https://github.com/Josh-Archer/terraform-provider-seerr/issues/320)) ([2ad6db5](https://github.com/Josh-Archer/terraform-provider-seerr/commit/2ad6db51a08ed9353ac38b7dbcf2df1f37aea75c))
+
+
+### Bug Fixes
+
+* block credential forwarding across redirect origins ([#317](https://github.com/Josh-Archer/terraform-provider-seerr/issues/317)) ([8f9617d](https://github.com/Josh-Archer/terraform-provider-seerr/commit/8f9617d24e16e5e06ca3de6e04b038cae7a6b589))
+* **importer:** target current provider major ([#318](https://github.com/Josh-Archer/terraform-provider-seerr/issues/318)) ([1a16c1a](https://github.com/Josh-Archer/terraform-provider-seerr/commit/1a16c1addd453c09cf70dfa761c03c5777322141))
+* paginate watchlist read to avoid dropping items past first page ([#310](https://github.com/Josh-Archer/terraform-provider-seerr/issues/310)) ([33ae29f](https://github.com/Josh-Archer/terraform-provider-seerr/commit/33ae29fb3ed24ff9cfb4315af00c65e85fe6908c))
+* preserve starting offset across pagination ([#316](https://github.com/Josh-Archer/terraform-provider-seerr/issues/316)) ([bfa56d4](https://github.com/Josh-Archer/terraform-provider-seerr/commit/bfa56d4198d7b8145807b48da8501ff228a009ab))
+* read request media type from nested media object ([#315](https://github.com/Josh-Archer/terraform-provider-seerr/issues/315)) ([fc81b4a](https://github.com/Josh-Archer/terraform-provider-seerr/commit/fc81b4a67bd16f291f19fc7f8f3a7b2be7792d8b))
+* **watchlist:** pass mediaType query on delete ([#312](https://github.com/Josh-Archer/terraform-provider-seerr/issues/312)) ([5c75f1d](https://github.com/Josh-Archer/terraform-provider-seerr/commit/5c75f1d650c25778a358d8f760d86d67efd1afbb)), closes [#307](https://github.com/Josh-Archer/terraform-provider-seerr/issues/307)
+* **watchlist:** require replace on tmdb_id and media_type changes ([#309](https://github.com/Josh-Archer/terraform-provider-seerr/issues/309)) ([9dad1cf](https://github.com/Josh-Archer/terraform-provider-seerr/commit/9dad1cf37e56d936e9a372af392bf334853bbab6))
+
+
+### Miscellaneous Chores
+
+* **deps:** bump the github-actions group across 1 directory with 3 updates ([#308](https://github.com/Josh-Archer/terraform-provider-seerr/issues/308)) ([2c83273](https://github.com/Josh-Archer/terraform-provider-seerr/commit/2c83273fdb35a9277e353dd2eac2d4bd0111f845))
+
 ## [2.0.6](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.5...v2.0.6) (2026-09-17)
 
 
