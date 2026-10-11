@@ -3,12 +3,12 @@
 page_title: "seerr_metadata_settings Data Source - seerr"
 subcategory: ""
 description: |-
-  Read Seerr metadata provider settings via /api/v1/settings/metadata.
+  Read Seerr metadata provider settings via /api/v1/settings/metadatas.
 ---
 
 # seerr_metadata_settings (Data Source)
 
-Read Seerr metadata provider settings via `/api/v1/settings/metadata`.
+Read Seerr metadata provider settings via `/api/v1/settings/metadatas`.
 
 ## Example Usage
 

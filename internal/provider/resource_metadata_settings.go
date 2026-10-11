@@ -41,7 +41,7 @@ func metadataProviderValidators() []validator.String {
 
 func metadataSettingsResourceSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Manage Seerr metadata provider settings via `/api/v1/settings/metadata`.",
+		MarkdownDescription: "Manage Seerr metadata provider settings via `/api/v1/settings/metadatas`.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
@@ -147,7 +147,7 @@ func (r *MetadataSettingsResource) applyMetadataSettings(ctx context.Context, da
 	if err != nil {
 		return err
 	}
-	res, err := r.client.Request(ctx, "PUT", "/api/v1/settings/metadata", string(body), nil)
+	res, err := r.client.Request(ctx, "PUT", "/api/v1/settings/metadatas", string(body), nil)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (r *MetadataSettingsResource) applyMetadataSettings(ctx context.Context, da
 }
 
 func (r *MetadataSettingsResource) readMetadataSettings(ctx context.Context, data *MetadataSettingsModel) error {
-	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/metadata", "", nil)
+	res, err := r.client.Request(ctx, "GET", "/api/v1/settings/metadatas", "", nil)
 	if err != nil {
 		return err
 	}
