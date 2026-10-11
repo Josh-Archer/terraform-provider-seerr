@@ -55,7 +55,7 @@ func TestMediaStatusReadPreservesReadOnlyStatuses(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(fmt.Sprintf(`{"id":7,"status":%d,"status4k":%d}`, tt.status, tt.status)))
+				_, _ = fmt.Fprintf(w, `{"id":7,"status":%d,"status4k":%d}`, tt.status, tt.status)
 			}))
 			defer srv.Close()
 			baseURL, err := url.Parse(srv.URL)
