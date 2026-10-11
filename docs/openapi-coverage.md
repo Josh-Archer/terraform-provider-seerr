@@ -6,8 +6,8 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 
 - **Total OpenAPI Paths**: 167
 - **Total Endpoints (Methods)**: 216
-- **Covered Paths**: 77 (46.1%)
-- **Intentionally Out of Scope**: 90 (53.9%)
+- **Covered Paths**: 78 (46.7%)
+- **Intentionally Out of Scope**: 89 (53.3%)
 - **Uncovered Settings/User Backlog**: 0 (0.0%)
 
 ## Classification Legend
@@ -68,7 +68,7 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/media/{mediaId}` | DELETE | `covered` | `seerr_media_item` - Media item data source |
 | `/media/{mediaId}/file` | DELETE | `intentionally-out-of-scope` | Media file info |
 | `/media/{mediaId}/watch_data` | GET | `intentionally-out-of-scope` | Media watch stats query |
-| `/media/{mediaId}/{status}` | POST | `intentionally-out-of-scope` | Media status update action (available/processing/pending) |
+| `/media/{mediaId}/{status}` | POST | `covered` | `seerr_media_status` - Media availability status action resource |
 | `/movie/{movieId}` | GET | `intentionally-out-of-scope` | TMDB movie details query |
 | `/movie/{movieId}/ratings` | GET | `intentionally-out-of-scope` | TMDB movie ratings query |
 | `/movie/{movieId}/ratingscombined` | GET | `intentionally-out-of-scope` | TMDB movie combined ratings query |
