@@ -99,6 +99,15 @@ func NewClient(baseURL *url.URL, apiKey, userAgent string, insecureSkipVerify bo
 		client: &http.Client{
 			Transport: at,
 			Timeout:   normalizeRequestTimeout(timeout),
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				if len(via) >= 10 {
+					return errors.New("stopped after 10 redirects")
+				}
+				if !sameOriginURL(baseURL, req.URL) {
+					return errors.New("refusing cross-origin redirect to protect provider credentials")
+				}
+				return nil
+			},
 		},
 	}
 }
