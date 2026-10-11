@@ -24,7 +24,7 @@ func (d *MetadataSettingsDataSource) Metadata(_ context.Context, req datasource.
 
 func (d *MetadataSettingsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Read Seerr metadata provider settings via `/api/v1/settings/metadata`.",
+		MarkdownDescription: "Read Seerr metadata provider settings via `/api/v1/settings/metadatas`.",
 		Attributes: map[string]schema.Attribute{
 			"id":            schema.StringAttribute{Computed: true},
 			"tv":            schema.StringAttribute{Computed: true},
@@ -52,7 +52,7 @@ func (d *MetadataSettingsDataSource) Read(ctx context.Context, req datasource.Re
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	res, err := d.client.Request(ctx, "GET", "/api/v1/settings/metadata", "", nil)
+	res, err := d.client.Request(ctx, "GET", "/api/v1/settings/metadatas", "", nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return

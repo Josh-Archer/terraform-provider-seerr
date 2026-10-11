@@ -3,12 +3,12 @@
 page_title: "seerr_metadata_settings Resource - seerr"
 subcategory: ""
 description: |-
-  Manage Seerr metadata provider settings via /api/v1/settings/metadata.
+  Manage Seerr metadata provider settings via /api/v1/settings/metadatas.
 ---
 
 # seerr_metadata_settings (Resource)
 
-Manage Seerr metadata provider settings via `/api/v1/settings/metadata`.
+Manage Seerr metadata provider settings via `/api/v1/settings/metadatas`.
 
 ## Example Usage
 
