@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.1.0...v2.1.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* use the Seerr metadata settings route ([#328](https://github.com/Josh-Archer/terraform-provider-seerr/issues/328)) ([c9c4ff3](https://github.com/Josh-Archer/terraform-provider-seerr/commit/c9c4ff333691b311b27e46cabc670b90093a7e86))
+
 ## [2.1.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.0.6...v2.1.0) (2026-10-11)
 
 
