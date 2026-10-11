@@ -121,6 +121,9 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 
 	// Verify HCL Generation.
 	hcl := GenerateHCL(resources, true)
+	if !strings.Contains(hcl, `version = "~> 2.0"`) {
+		t.Errorf("Expected generated provider configuration to target the current v2 release line, got:\n%s", hcl)
+	}
 	if !strings.Contains(hcl, `resource "seerr_main_settings" "main"`) {
 		t.Errorf("Expected seerr_main_settings in HCL, got:\n%s", hcl)
 	}
