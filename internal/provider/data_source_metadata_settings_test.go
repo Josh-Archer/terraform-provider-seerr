@@ -28,7 +28,8 @@ func TestMetadataSettingsDataSourceReadUsesMetadatasEndpoint(t *testing.T) {
 	d := &MetadataSettingsDataSource{client: testAPIClient(t, srv.URL)}
 	var schemaResp datasource.SchemaResponse
 	d.Schema(ctx, datasource.SchemaRequest{}, &schemaResp)
-	typ := schemaResp.Schema.Type().TerraformType(ctx).(tftypes.Object)
+	typ, ok := schemaResp.Schema.Type().TerraformType(ctx).(tftypes.Object)
+	require.True(t, ok)
 	vals := map[string]tftypes.Value{}
 	for name, attrType := range typ.AttributeTypes {
 		vals[name] = tftypes.NewValue(attrType, nil)
