@@ -3,12 +3,12 @@
 page_title: "seerr_watchlist Resource - seerr"
 subcategory: ""
 description: |-
-  Manage media watchlist items in Seerr.
+  Manage media watchlist items in Seerr. Refresh reads all pages of the authenticated user's watchlist and removes state only when a complete read confirms the item is absent.
 ---
 
 # seerr_watchlist (Resource)
 
-Manage media watchlist items in Seerr.
+Manage media watchlist items in Seerr. Refresh reads all pages of the authenticated user's watchlist and removes state only when a complete read confirms the item is absent.
 
 
 

@@ -3,12 +3,12 @@
 page_title: "seerr_watchlist Data Source - seerr"
 subcategory: ""
 description: |-
-  Fetch watchlist items for the authenticated user or a specific user in Seerr.
+  Fetch all pages of watchlist items for the authenticated user or a specific user in Seerr via /api/v1/user/{id}/watchlist.
 ---
 
 # seerr_watchlist (Data Source)
 
-Fetch watchlist items for the authenticated user or a specific user in Seerr.
+Fetch all pages of watchlist items for the authenticated user or a specific user in Seerr via `/api/v1/user/{id}/watchlist`.
 
 
 
@@ -22,7 +22,7 @@ Fetch watchlist items for the authenticated user or a specific user in Seerr.
 ### Read-Only
 
 - `id` (String) Data source identifier.
-- `total` (Number) Total number of watchlist items found.
+- `total` (Number) Total number of watchlist items reported by Seerr (`totalResults`).
 - `watchlist` (Attributes List) List of watchlist items. (see [below for nested schema](#nestedatt--watchlist))
 
 <a id="nestedatt--watchlist"></a>

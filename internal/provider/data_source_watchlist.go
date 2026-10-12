@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -41,7 +40,7 @@ func (d *WatchlistDataSource) Metadata(_ context.Context, req datasource.Metadat
 
 func (d *WatchlistDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Fetch watchlist items for the authenticated user or a specific user in Seerr.",
+		MarkdownDescription: "Fetch all pages of watchlist items for the authenticated user or a specific user in Seerr via `/api/v1/user/{id}/watchlist`.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Data source identifier.",
@@ -52,7 +51,7 @@ func (d *WatchlistDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 				Optional:            true,
 			},
 			"total": schema.Int64Attribute{
-				MarkdownDescription: "Total number of watchlist items found.",
+				MarkdownDescription: "Total number of watchlist items reported by Seerr (`totalResults`).",
 				Computed:            true,
 			},
 			"watchlist": schema.ListNestedAttribute{
@@ -95,20 +94,6 @@ func (d *WatchlistDataSource) Configure(_ context.Context, req datasource.Config
 	d.client = client
 }
 
-type rawWatchlistItemResponse struct {
-	TMDBID    int64  `json:"tmdbId"`
-	MediaType string `json:"mediaType"`
-	Title     string `json:"title"`
-	Name      string `json:"name"`
-	Overview  string `json:"overview"`
-}
-
-type rawWatchlistPageResponse struct {
-	Page    int                        `json:"page"`
-	Total   int                        `json:"totalResults"`
-	Results []rawWatchlistItemResponse `json:"results"`
-}
-
 func (d *WatchlistDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var config WatchlistDataSourceModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
@@ -116,34 +101,35 @@ func (d *WatchlistDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	endpoint := "/api/v1/watchlist"
+	userID := int64(0)
 	if !config.UserID.IsNull() && !config.UserID.IsUnknown() {
-		endpoint = fmt.Sprintf("/api/v1/user/%d/watchlist", config.UserID.ValueInt64())
+		userID = config.UserID.ValueInt64()
+		if userID <= 0 {
+			resp.Diagnostics.AddError("Read Failed", "user_id must be a positive integer")
+			return
+		}
+	} else {
+		var err error
+		userID, err = authenticatedUserID(ctx, d.client)
+		if err != nil {
+			resp.Diagnostics.AddError("Read Failed", err.Error())
+			return
+		}
 	}
-
-	res, err := d.client.Request(ctx, "GET", endpoint, "", nil)
+	items, total, err := fetchWatchlist(ctx, d.client, userID)
 	if err != nil {
 		resp.Diagnostics.AddError("Read Failed", err.Error())
 		return
 	}
-	if !HandleAPIResponse(ctx, res, &resp.Diagnostics, "Read") {
-		return
-	}
 
-	var raw rawWatchlistPageResponse
-	if err := json.Unmarshal(res.Body, &raw); err != nil {
-		resp.Diagnostics.AddError("Error Parsing Watchlist Response", fmt.Sprintf("Failed to parse response: %s", err))
-		return
-	}
-
-	items := make([]WatchlistItemModel, 0, len(raw.Results))
-	for _, r := range raw.Results {
+	watchlist := make([]WatchlistItemModel, 0, len(items))
+	for _, r := range items {
 		title := r.Title
 		if title == "" {
 			title = r.Name
 		}
-		items = append(items, WatchlistItemModel{
-			TMDBID:    types.Int64Value(r.TMDBID),
+		watchlist = append(watchlist, WatchlistItemModel{
+			TMDBID:    types.Int64Value(*r.TMDBID),
 			MediaType: types.StringValue(r.MediaType),
 			Title:     types.StringValue(title),
 			Overview:  types.StringValue(r.Overview),
@@ -157,15 +143,15 @@ func (d *WatchlistDataSource) Read(ctx context.Context, req datasource.ReadReque
 			"title":      types.StringType,
 			"overview":   types.StringType,
 		},
-	}, items)
+	}, watchlist)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	config.ID = types.StringValue(endpoint)
+	config.ID = types.StringValue(fmt.Sprintf("/api/v1/user/%d/watchlist", userID))
 	config.Watchlist = watchlistVal
-	config.Total = types.Int64Value(int64(len(raw.Results)))
+	config.Total = types.Int64Value(total)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
 }
