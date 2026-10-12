@@ -1,0 +1,13 @@
+services:
+  seerr:
+    image: ghcr.io/seerr-team/seerr:v3.5.0
+    environment:
+      LOG_LEVEL: debug
+      PORT: 5055
+    ports:
+      - "127.0.0.1::5055"
+    volumes:
+      - watchlist_seerr_config:/app/config
+
+volumes:
+  watchlist_seerr_config:

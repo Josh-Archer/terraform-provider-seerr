@@ -150,6 +150,53 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  watchlist-live:
+    name: Watchlist Live Integration (Seerr 3.5.0)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Validate integration path filter
+        run: python3 -m unittest discover -s tests -p test_watchlist_ci_filter.py
+      - name: Select watchlist integration
+        id: watchlist_filter
+        env:
+          WATCHLIST_EVENT: ${{ github.event_name }}
+        run: |
+          run_integration="$(python3 ./scripts/watchlist_ci_filter.py "${WATCHLIST_EVENT}")"
+          echo "run=${run_integration}" >> "$GITHUB_OUTPUT"
+          echo "Watchlist live integration selected: ${run_integration}"
+      - if: steps.watchlist_filter.outputs.run == 'true'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Setup OpenTofu
+        if: steps.watchlist_filter.outputs.run == 'true'
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.8.0
+          tofu_wrapper: false
+      - name: Run isolated Seerr 3.5.0 watchlist integration
+        if: steps.watchlist_filter.outputs.run == 'true'
+        run: python3 ./scripts/test_watchlist_live.py
+        env:
+          SEERR_WATCHLIST_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/watchlist-live
+      - name: Upload watchlist integration diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: watchlist-live-seerr-3.5.0
+          path: test-artifacts/watchlist-live/
+          if-no-files-found: ignore
+          retention-days: 7
+
   tofu-test-stable-trusted:
     name: OpenTofu Stable Integration Trusted (${{ matrix.tofu_version }})
     runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
@@ -299,7 +346,7 @@ jobs:
 
   auto-merge:
     name: Auto Merge
-    needs: [build-test, tofu-test-stable]
+    needs: [build-test, tofu-test-stable, watchlist-live]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -317,4 +364,3 @@ jobs:
         run: |
           echo "Enabling auto-merge for ${PR_URL} authored by ${GITHUB_ACTOR}..."
           gh pr merge "${PR_URL}" --auto --squash
-

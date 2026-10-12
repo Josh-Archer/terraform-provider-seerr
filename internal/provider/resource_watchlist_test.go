@@ -174,7 +174,11 @@ func TestWatchlistResourceSchemaRequiresReplace(t *testing.T) {
 func TestWatchlistResource_Read_FindsItemOnSubsequentPage(t *testing.T) {
 	var requestedPages []int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/api/v1/watchlist", r.URL.Path)
+		if r.URL.Path == "/api/v1/auth/me" {
+			_, _ = w.Write([]byte(`{"id":17}`))
+			return
+		}
+		assert.Equal(t, "/api/v1/user/17/watchlist", r.URL.Path)
 		page, err := strconv.Atoi(r.URL.Query().Get("page"))
 		if err != nil {
 			page = 1
@@ -239,10 +243,14 @@ func TestWatchlistResource_Read_FindsItemOnSubsequentPage(t *testing.T) {
 	assert.Equal(t, "Found on page two", updated.Overview.ValueString())
 }
 
-func TestWatchlistResource_Read_FindsItemOnFirstPageStopsPaginating(t *testing.T) {
+func TestWatchlistResource_Read_FindsItemOnFirstPageAfterEnumeratingList(t *testing.T) {
 	var requestedPages []int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/api/v1/watchlist", r.URL.Path)
+		if r.URL.Path == "/api/v1/auth/me" {
+			_, _ = w.Write([]byte(`{"id":17}`))
+			return
+		}
+		assert.Equal(t, "/api/v1/user/17/watchlist", r.URL.Path)
 		page, err := strconv.Atoi(r.URL.Query().Get("page"))
 		if err != nil {
 			page = 1
@@ -254,8 +262,8 @@ func TestWatchlistResource_Read_FindsItemOnFirstPageStopsPaginating(t *testing.T
 		case 1:
 			_, _ = w.Write([]byte(`{
 				"page": 1,
-				"totalPages": 3,
-				"totalResults": 3,
+				"totalPages": 1,
+				"totalResults": 1,
 				"results": [
 					{"tmdbId": 100, "mediaType": "tv", "name": "TV 100", "overview": "First page TV"}
 				]
@@ -300,7 +308,11 @@ func TestWatchlistResource_Read_FindsItemOnFirstPageStopsPaginating(t *testing.T
 func TestWatchlistResource_Read_NotFoundAcrossPagesRemovesState(t *testing.T) {
 	var requestedPages []int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/api/v1/watchlist", r.URL.Path)
+		if r.URL.Path == "/api/v1/auth/me" {
+			_, _ = w.Write([]byte(`{"id":17}`))
+			return
+		}
+		assert.Equal(t, "/api/v1/user/17/watchlist", r.URL.Path)
 		page, err := strconv.Atoi(r.URL.Query().Get("page"))
 		if err != nil {
 			page = 1
@@ -362,8 +374,12 @@ func TestWatchlistResource_Read_NotFoundAcrossPagesRemovesState(t *testing.T) {
 	assert.True(t, updated.ID.IsNull(), "resource should be removed from state when not found")
 }
 
-func TestWatchlistResource_Read_404RemovesState(t *testing.T) {
+func TestWatchlistResource_Read_404PreservesState(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/auth/me" {
+			_, _ = w.Write([]byte(`{"id":17}`))
+			return
+		}
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer srv.Close()
@@ -389,14 +405,18 @@ func TestWatchlistResource_Read_404RemovesState(t *testing.T) {
 	readResp := resource.ReadResponse{State: state}
 	r.Read(ctx, resource.ReadRequest{State: state}, &readResp)
 
-	require.False(t, readResp.Diagnostics.HasError())
+	require.True(t, readResp.Diagnostics.HasError())
 	var updated WatchlistResourceModel
-	_ = readResp.State.Get(ctx, &updated)
-	assert.True(t, updated.ID.IsNull(), "resource should be removed from state on 404")
+	require.False(t, readResp.State.Get(ctx, &updated).HasError())
+	assert.Equal(t, "100:movie", updated.ID.ValueString(), "endpoint 404 must not be treated as a missing item")
 }
 
 func TestWatchlistResource_Read_ServerErrorPreservesState(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/auth/me" {
+			_, _ = w.Write([]byte(`{"id":17}`))
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte(`{"message": "internal error"}`))
 	}))
@@ -429,8 +449,12 @@ func TestWatchlistResource_Read_ServerErrorPreservesState(t *testing.T) {
 	assert.False(t, updated.ID.IsNull(), "resource should be preserved in state on server error")
 }
 
-func TestWatchlistResource_Read_RawArrayFallback(t *testing.T) {
+func TestWatchlistResource_Read_RawArrayPreservesStateWithError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/auth/me" {
+			_, _ = w.Write([]byte(`{"id":17}`))
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`[
 			{"tmdbId": 100, "mediaType": "movie", "title": "Array Movie", "overview": "Array overview"}
@@ -459,11 +483,10 @@ func TestWatchlistResource_Read_RawArrayFallback(t *testing.T) {
 	readResp := resource.ReadResponse{State: state}
 	r.Read(ctx, resource.ReadRequest{State: state}, &readResp)
 
-	require.False(t, readResp.Diagnostics.HasError())
+	require.True(t, readResp.Diagnostics.HasError())
 	var updated WatchlistResourceModel
 	require.False(t, readResp.State.Get(ctx, &updated).HasError())
-	assert.Equal(t, "Array Movie", updated.Title.ValueString())
-	assert.Equal(t, "Array overview", updated.Overview.ValueString())
+	assert.Equal(t, "100:movie", updated.ID.ValueString(), "malformed response must preserve existing state")
 }
 
 func TestWatchlistResource_Delete_IncludesMediaTypeQuery(t *testing.T) {
