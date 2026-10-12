@@ -314,6 +314,16 @@ def run_terraform_flow(work_dir: pathlib.Path, base_url: str, expected_ids: set[
     print("PASS: both read modes returned 42 items; final-page import stayed unchanged; refresh removed only the deleted item and retained 41 others.")
 
 
+def service_url(compose: list[str]) -> str:
+    result = run(compose + ["port", "seerr", "5055"], capture=True)
+    host = result.stdout.strip().splitlines()[-1]
+    host_port = int(host.rsplit(":", 1)[-1])
+    require(0 < host_port < 65536, "Docker did not publish a valid Seerr port")
+    base_url = f"http://127.0.0.1:{host_port}"
+    print(f"Disposable Seerr endpoint: {base_url}", flush=True)
+    return base_url
+
+
 def main() -> int:
     if "SEERR_URL" in os.environ or "SEERR_API_KEY" in os.environ:
         print("Refusing to run with external Seerr target variables; this integration owns its disposable Docker stack.", file=sys.stderr)
@@ -337,10 +347,7 @@ def main() -> int:
         result = run(compose + ["ps", "-q", "seerr"], capture=True)
         container_id = result.stdout.strip()
         require(container_id != "", "Compose did not return the Seerr container ID")
-        result = run(compose + ["port", "seerr", "5055"], capture=True)
-        host = result.stdout.strip().splitlines()[-1]
-        host_port = host.rsplit(":", 1)[-1]
-        base_url = f"http://127.0.0.1:{host_port}"
+        base_url = service_url(compose)
         wait_for_server(base_url, container_id)
 
         print("Installing the SQLite bootstrap tools in the disposable container...")
@@ -349,7 +356,9 @@ def main() -> int:
              "if [ \"$attempt\" -ge 10 ]; then exit 1; fi; "
              "attempt=$((attempt + 1)); sleep 2; done"])
         seed_database(container_id)
-        run(["docker", "compose", "-p", project, "-f", str(COMPOSE_FILE), "restart", "seerr"])
+        run(compose + ["restart", "seerr"])
+        # Docker can allocate a new random host port when the container restarts.
+        base_url = service_url(compose)
         wait_for_server(base_url, container_id)
         authenticated = False
         for _ in range(30):
