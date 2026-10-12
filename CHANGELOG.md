@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.1.1...v2.1.2) (2026-10-12)
+
+
+### Bug Fixes
+
+* read complete user watchlists without dropping state ([#330](https://github.com/Josh-Archer/terraform-provider-seerr/issues/330)) ([a16d71b](https://github.com/Josh-Archer/terraform-provider-seerr/commit/a16d71b4c9e911619c9a38afef41bd058b22eb0f))
+
 ## [2.1.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.1.0...v2.1.1) (2026-10-11)
 
 
