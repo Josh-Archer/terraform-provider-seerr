@@ -1,24 +1,34 @@
 package provider
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/stretchr/testify/require"
 )
 
-func TestAccUserInvitationsDataSource(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		Steps: []resource.TestStep{
-			{
-				Config: `
-data "seerr_user_invitations" "all" {}
-`,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.seerr_user_invitations.all", "id"),
-					resource.TestCheckResourceAttrSet("data.seerr_user_invitations.all", "invitations.#"),
-				),
-			},
-		},
-	})
+func TestUserInvitationsDataSourceUnsupported(t *testing.T) {
+	ctx := context.Background()
+	var requests atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		requests.Add(1)
+		http.NotFound(w, req)
+	}))
+	defer srv.Close()
+	d, ok := NewUserInvitationsDataSource().(*UserInvitationsDataSource)
+	require.True(t, ok)
+	var configured datasource.ConfigureResponse
+	d.Configure(ctx, datasource.ConfigureRequest{ProviderData: testAPIClient(t, srv.URL)}, &configured)
+	require.False(t, configured.Diagnostics.HasError())
+	var schema datasource.SchemaResponse
+	d.Schema(ctx, datasource.SchemaRequest{}, &schema)
+	require.Equal(t, invitationUnsupportedMessage, schema.Schema.DeprecationMessage)
+	var resp datasource.ReadResponse
+	d.Read(ctx, datasource.ReadRequest{}, &resp)
+	assertInvitationsUnsupported(t, resp.Diagnostics)
+	require.Zero(t, requests.Load(), "unsupported operations must not make HTTP requests")
 }

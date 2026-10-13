@@ -51,7 +51,6 @@ var resources = []ResourceImport{
 	{Name: "seerr_sonarr_server", ExampleID: "0", Hint: "The ID of the server. For the first server, the ID is `0`."},
 	{Name: "seerr_tautulli_settings", ExampleID: "tautulli"},
 	{Name: "seerr_user", ExampleID: "1", Hint: "You can also import by username or email, e.g., `jdoe` or `jdoe@example.com`."},
-	{Name: "seerr_user_invitation", ExampleID: "1", Hint: "The invitation ID."},
 	{Name: "seerr_user_notification_settings", ExampleID: "1", Hint: "The ID of the user."},
 	{Name: "seerr_user_permissions", ExampleID: "1", Hint: "The ID of the user."},
 	{Name: "seerr_user_quota", ExampleID: "1", Hint: "The ID of the user."},
