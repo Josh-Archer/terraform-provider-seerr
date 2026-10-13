@@ -30,7 +30,8 @@ func TestUserInvitationResourceUnsupported(t *testing.T) {
 		http.NotFound(w, req)
 	}))
 	defer srv.Close()
-	r := NewUserInvitationResource().(*UserInvitationResource)
+	r, ok := NewUserInvitationResource().(*UserInvitationResource)
+	require.True(t, ok)
 	var configured resource.ConfigureResponse
 	r.Configure(ctx, resource.ConfigureRequest{ProviderData: testAPIClient(t, srv.URL)}, &configured)
 	require.False(t, configured.Diagnostics.HasError())

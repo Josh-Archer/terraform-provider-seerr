@@ -19,7 +19,8 @@ func TestUserInvitationsDataSourceUnsupported(t *testing.T) {
 		http.NotFound(w, req)
 	}))
 	defer srv.Close()
-	d := NewUserInvitationsDataSource().(*UserInvitationsDataSource)
+	d, ok := NewUserInvitationsDataSource().(*UserInvitationsDataSource)
+	require.True(t, ok)
 	var configured datasource.ConfigureResponse
 	d.Configure(ctx, datasource.ConfigureRequest{ProviderData: testAPIClient(t, srv.URL)}, &configured)
 	require.False(t, configured.Diagnostics.HasError())
