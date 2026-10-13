@@ -3,17 +3,21 @@
 page_title: "seerr_user_invitations Data Source - seerr"
 subcategory: ""
 description: |-
-  Get information about all existing Seerr user invitations.
+  Deprecated and unsupported. Seerr does not expose an invitation API; use seerr_user to create local users. Reading this data source fails without making API requests. Retained for compatibility with existing configurations.
 ---
 
 # seerr_user_invitations (Data Source)
 
-Get information about all existing Seerr user invitations.
+Deprecated and unsupported. Seerr does not expose an invitation API; use seerr_user to create local users. Reading this data source fails without making API requests. Retained for compatibility with existing configurations.
 
 ## Example Usage
 
 ```terraform
-data "seerr_user_invitations" "example" {
+# Deprecated and unsupported: Seerr does not expose an invitation API.
+# Use seerr_user to create local users instead.
+resource "seerr_user" "example" {
+  username = "jdoe"
+  email    = "jdoe@example.com"
 }
 ```
 

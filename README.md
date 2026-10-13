@@ -16,7 +16,7 @@
 - **Typed Notification Integrations**: First-class support for 11 notification agents (Discord, Email, Gotify, LunaSea, Ntfy, Pushbullet, Pushover, Slack, Telegram, Webhook, Webpush) with live test triggers (`seerr_notification_agent_test`).
 - **Dynamic Servarr Resolvers**: Real-time lookups for Radarr & Sonarr quality profiles, root folders, tags, and language profiles (`seerr_radarr_quality_profile`, `seerr_sonarr_quality_profile`, `seerr_radarr_root_folders`, etc.) eliminating hardcoded IDs.
 - **Media Server Integrations**: Plex, Jellyfin, and Emby server configuration, library scan triggers (`seerr_plex_library_sync`, etc.), and batch user import workflows.
-- **Filterable Queries & Bulk Data Sources**: Query and filter requests, media items, issues, user lists, invitations, and background job schedules.
+- **Filterable Queries & Bulk Data Sources**: Query and filter requests, media items, issues, user lists and background job schedules.
 - **Drift Protection & Schema Fidelity**: Double-apply drift protection, schema normalization, and generic fallback primitives (`seerr_api_object`, `seerr_api_request`) for arbitrary endpoints.
 - **API Stability & Breaking-Change Policy**: Formal SemVer 2.0 commitments, schema breaking-change taxonomy, and transparent deprecation lifecycles (see [Stability Policy](docs/guides/stability-and-breaking-changes.md)).
 
@@ -279,9 +279,11 @@ See the [module usage guide](docs/guides/modules.md) for simple family, ARR, and
 | **Media Servers** | `seerr_plex_settings`, `seerr_plex_library_settings`, `seerr_plex_library_sync`, `seerr_jellyfin_settings`, `seerr_jellyfin_library_settings`, `seerr_jellyfin_library_sync`, `seerr_emby_settings`, `seerr_emby_library_settings`, `seerr_emby_library_sync`, `seerr_tautulli_settings` |
 | **Servarr & Routing** | `seerr_radarr_server`, `seerr_sonarr_server`, `seerr_override_rule`, `seerr_blocklist` |
 | **Notifications** | `seerr_notification_discord`, `seerr_notification_email`, `seerr_notification_gotify`, `seerr_notification_lunasea`, `seerr_notification_ntfy`, `seerr_notification_pushbullet`, `seerr_notification_pushover`, `seerr_notification_slack`, `seerr_notification_telegram`, `seerr_notification_webhook`, `seerr_notification_webpush`, `seerr_notification_agent_test` |
-| **Users & Permissions** | `seerr_user`, `seerr_user_invitation`, `seerr_user_permissions`, `seerr_user_settings_permissions`, `seerr_user_quota`, `seerr_user_watchlist_settings`, `seerr_user_notification_settings`, `seerr_user_import_plex`, `seerr_user_import_jellyfin` |
+| **Users & Permissions** | `seerr_user`, `seerr_user_permissions`, `seerr_user_settings_permissions`, `seerr_user_quota`, `seerr_user_watchlist_settings`, `seerr_user_notification_settings`, `seerr_user_import_plex`, `seerr_user_import_jellyfin` |
 | **Media & Requests** | `seerr_request`, `seerr_request_approval`, `seerr_request_retry`, `seerr_issue`, `seerr_issue_comment`, `seerr_watchlist`, `seerr_discover_slider` |
 | **Generic Primitives** | `seerr_api_object` |
+
+`seerr_user_invitation` and `data.seerr_user_invitations` are deprecated and unsupported. Seerr does not expose an invitation API; use `seerr_user` to create local users. Their registrations remain for compatibility, but all operations fail with a diagnostic without making API requests.
 
 ### Data Sources (69)
 | Category | Data Sources |
@@ -290,7 +292,7 @@ See the [module usage guide](docs/guides/modules.md) for simple family, ARR, and
 | **Dynamic Resolvers** | `seerr_radarr_quality_profile`, `seerr_radarr_root_folders`, `seerr_radarr_tags`, `seerr_radarr_server`, `seerr_sonarr_quality_profile`, `seerr_sonarr_root_folders`, `seerr_sonarr_tags`, `seerr_sonarr_language_profiles`, `seerr_sonarr_server` |
 | **Media Server Lookups** | `seerr_plex_settings`, `seerr_plex_devices`, `seerr_plex_users`, `seerr_plex_library_settings`, `seerr_jellyfin_settings`, `seerr_jellyfin_users`, `seerr_jellyfin_library_settings`, `seerr_emby_settings`, `seerr_emby_library_settings`, `seerr_tautulli_settings`, `seerr_user_import_plex`, `seerr_user_import_jellyfin` |
 | **Notifications** | `seerr_notification_agents`, `seerr_notification_discord`, `seerr_notification_email`, `seerr_notification_gotify`, `seerr_notification_lunasea`, `seerr_notification_ntfy`, `seerr_notification_pushbullet`, `seerr_notification_pushover`, `seerr_notification_slack`, `seerr_notification_telegram`, `seerr_notification_webhook`, `seerr_notification_webpush`, `seerr_email_settings`, `seerr_pushbullet_settings`, `seerr_pushover_sounds` |
-| **Users & Permissions** | `seerr_user`, `seerr_users`, `seerr_current_user`, `seerr_user_permissions`, `seerr_permission_set`, `seerr_user_quota`, `seerr_user_watchlist_settings`, `seerr_user_notification_settings`, `seerr_user_invitations` |
+| **Users & Permissions** | `seerr_user`, `seerr_users`, `seerr_current_user`, `seerr_user_permissions`, `seerr_permission_set`, `seerr_user_quota`, `seerr_user_watchlist_settings`, `seerr_user_notification_settings` |
 | **Media, Requests & Issues** | `seerr_media`, `seerr_media_item`, `seerr_request`, `seerr_requests`, `seerr_issue`, `seerr_issues`, `seerr_blocklist`, `seerr_override_rule`, `seerr_watchlist` |
 | **Generic Primitives** | `seerr_api_key`, `seerr_api_request` |
 

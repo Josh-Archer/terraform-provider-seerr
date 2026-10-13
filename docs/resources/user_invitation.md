@@ -3,19 +3,21 @@
 page_title: "seerr_user_invitation Resource - seerr"
 subcategory: ""
 description: |-
-  Manage Seerr user invitations.
+  Deprecated and unsupported. Seerr does not expose an invitation API; use seerr_user to create local users. Create, update and import fail; refresh drops any existing state and delete succeeds, both with a warning. No API requests are made.
 ---
 
 # seerr_user_invitation (Resource)
 
-Manage Seerr user invitations.
+Deprecated and unsupported. Seerr does not expose an invitation API; use seerr_user to create local users. Create, update and import fail; refresh drops any existing state and delete succeeds, both with a warning. No API requests are made.
 
 ## Example Usage
 
 ```terraform
-resource "seerr_user_invitation" "example" {
-  email       = "invitee@example.com"
-  permissions = 32
+# Deprecated and unsupported: Seerr does not expose an invitation API.
+# Use seerr_user to create local users instead.
+resource "seerr_user" "example" {
+  username = "jdoe"
+  email    = "jdoe@example.com"
 }
 ```
 
@@ -32,19 +34,6 @@ resource "seerr_user_invitation" "example" {
 
 ## Import
 
-Import is supported using the following syntax:
+Import is unsupported and returns the same diagnostic. Use `seerr_user` to create local users instead.
 
-The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
-
-```shell
-# In Terraform 1.5.0 and later, use an import block to import seerr_user_invitation. For example:
-#
-# import {
-#   to = seerr_user_invitation.example
-#   id = "1"
-# }
-
-# The invitation ID.
-# Otherwise, use the terraform import command:
-terraform import seerr_user_invitation.example 1
-```
+If an invitation resource is already in state, the next refresh drops it with a warning; remove its configuration (or run `terraform state rm`). This only removes Terraform's state entry; it does not delete or create a Seerr user. Define a separate `seerr_user` resource for a local user; invitation IDs cannot be migrated to user IDs.

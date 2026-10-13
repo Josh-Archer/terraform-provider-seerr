@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Bug Fixes
+
+- Deprecate unsupported `seerr_user_invitation` and `data.seerr_user_invitations` (#324). Keep registrations and schemas for compatibility, but fail create, update and import with guidance to use `seerr_user`; refresh drops stale state and delete succeeds with a warning, without calling nonexistent invitation routes. Remove invitation acceptance tests and sweeper, and correct documentation and API coverage claims.
+
 ## [2.1.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.1.1...v2.1.2) (2026-10-12)
 
 

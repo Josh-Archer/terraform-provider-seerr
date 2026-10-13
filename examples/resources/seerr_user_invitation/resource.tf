@@ -1,4 +1,6 @@
-resource "seerr_user_invitation" "example" {
-  email       = "invitee@example.com"
-  permissions = 32
+# Deprecated and unsupported: Seerr does not expose an invitation API.
+# Use seerr_user to create local users instead.
+resource "seerr_user" "example" {
+  username = "jdoe"
+  email    = "jdoe@example.com"
 }

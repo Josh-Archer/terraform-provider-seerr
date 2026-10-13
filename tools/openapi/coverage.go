@@ -83,10 +83,6 @@ func DefaultRules() []PathRule {
 
 		// --- Covered Users, Permissions, Watchlist, Requests, Issues, Blocklist, Backup ---
 		{PathPattern: "/user", Classification: ClassCovered, MappedResource: "seerr_user", Notes: "User list/create resource & data source"},
-		{PathPattern: "/user/invitable-users", Classification: ClassCovered, MappedResource: "seerr_user_invitations", Notes: "User invitations data source"},
-		{PathPattern: "/user/invitations", Classification: ClassCovered, MappedResource: "seerr_user_invitations", Notes: "User invitations data source"},
-		{PathPattern: "/user/invitations/create", Classification: ClassCovered, MappedResource: "seerr_user_invitation", Notes: "User invitation resource"},
-		{PathPattern: "/user/invitations/{invitationId}", Classification: ClassCovered, MappedResource: "seerr_user_invitation", Notes: "User invitation resource"},
 		{PathPattern: "/user/{userId}", Classification: ClassCovered, MappedResource: "seerr_user", Notes: "User resource & data source"},
 		{PathPattern: "/user/{userId}/settings/permissions", Classification: ClassCovered, MappedResource: "seerr_user_permissions", Notes: "User permissions resource & data source"},
 		{PathPattern: "/user/{userId}/settings/main", Classification: ClassCovered, MappedResource: "seerr_user", Notes: "User main settings"},

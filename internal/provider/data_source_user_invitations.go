@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -36,7 +35,8 @@ func (d *UserInvitationsDataSource) Metadata(_ context.Context, req datasource.M
 
 func (d *UserInvitationsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Get information about all existing Seerr user invitations.",
+		MarkdownDescription: "Deprecated and unsupported. " + invitationUnsupportedMessage + ". Reading this data source fails without making API requests. Retained for compatibility with existing configurations.",
+		DeprecationMessage:  invitationUnsupportedMessage,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Placeholder ID for the data source.",
@@ -74,45 +74,6 @@ func (d *UserInvitationsDataSource) Configure(_ context.Context, req datasource.
 	d.client = c
 }
 
-func (d *UserInvitationsDataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data UserInvitationsDataSourceModel
-
-	// Fetch invitations
-	res, err := d.client.Request(ctx, "GET", "/api/v1/user/invites", "", nil)
-	if err != nil {
-		resp.Diagnostics.AddError("Read Failed", err.Error())
-		return
-	}
-	if !StatusIsOK(res.StatusCode) {
-		resp.Diagnostics.AddError("Read Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
-		return
-	}
-
-	var results []map[string]any
-	if err := json.Unmarshal(res.Body, &results); err != nil {
-		resp.Diagnostics.AddError("Read Failed", "Failed to parse API response: "+err.Error())
-		return
-	}
-
-	for _, inv := range results {
-		invitation := UserInvitationSummaryModel{}
-
-		idRaw := inv["id"]
-		switch v := idRaw.(type) {
-		case float64:
-			invitation.ID = types.StringValue(fmt.Sprintf("%.0f", v))
-		case string:
-			invitation.ID = types.StringValue(v)
-		}
-
-		if e, ok := inv["email"].(string); ok {
-			invitation.Email = types.StringValue(e)
-		}
-
-		data.Invitations = append(data.Invitations, invitation)
-	}
-
-	data.ID = types.StringValue("all_invitations")
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+func (d *UserInvitationsDataSource) Read(_ context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
+	resp.Diagnostics.AddError("Invitations Unsupported", invitationUnsupportedMessage)
 }
