@@ -112,6 +112,7 @@ var RegisteredDataSources = []func() datasource.DataSource{
 	NewJellyfinLibrarySettingsDataSource,
 	NewEmbyLibrarySettingsDataSource,
 	NewUserQuotaDataSource,
+	NewUserRequestsDataSource,
 	NewUserImportPlexDataSource,
 	NewUserImportJellyfinDataSource,
 	NewEmailSettingsDataSource,

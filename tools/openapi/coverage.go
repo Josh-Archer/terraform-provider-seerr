@@ -150,7 +150,7 @@ func DefaultRules() []PathRule {
 		{PathPattern: "/user/me", Classification: ClassIntentionallyOutOfScope, Notes: "Session profile endpoint (covered by data source seerr_current_user)"},
 		{PathPattern: "/user/register", Classification: ClassIntentionallyOutOfScope, Notes: "Interactive user registration endpoint"},
 		{PathPattern: "/user/{userId}/settings/password", Classification: ClassIntentionallyOutOfScope, Notes: "Interactive password update action"},
-		{PathPattern: "/user/{userId}/requests", Classification: ClassIntentionallyOutOfScope, Notes: "Per-user request history query endpoint"},
+		{PathPattern: "/user/{userId}/requests", Classification: ClassCovered, MappedResource: "seerr_user_requests", Notes: "Per-user request history data source"},
 		{PathPattern: "/auth/me", Classification: ClassIntentionallyOutOfScope, Notes: "Session authentication status"},
 		{PathPattern: "/auth/local", Classification: ClassIntentionallyOutOfScope, Notes: "Interactive login endpoint"},
 		{PathPattern: "/auth/plex", Classification: ClassIntentionallyOutOfScope, Notes: "Interactive Plex OAuth login endpoint"},
