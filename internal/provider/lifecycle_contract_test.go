@@ -183,9 +183,9 @@ func lifecycleImport(t *testing.T, res resource.Resource, id string) resource.Im
 	return resp
 }
 
-func writeJSON(w http.ResponseWriter, status int, body string) {
+func writeJSON(w http.ResponseWriter, body string) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
+	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(body))
 }
 
@@ -197,18 +197,18 @@ func okHandler(t *testing.T, path, body string) func(http.ResponseWriter, *http.
 			http.NotFound(w, r)
 			return
 		}
-		writeJSON(w, http.StatusOK, body)
+		writeJSON(w, body)
 	}
 }
 
-func configureRead(t *testing.T, res resource.Resource, model any, path, body string) (resource.ReadResponse, *lifecycleServer) {
+func configureRead(t *testing.T, res resource.Resource, model any, path, body string) resource.ReadResponse {
 	t.Helper()
 	srv := newLifecycleServer(t, okHandler(t, path, body))
 	lifecycleConfigure(t, res, srv.client(0))
 	resp := lifecycleRead(t, res, lifecycleState(t, res, model))
 	requireNoErrors(t, resp.Diagnostics)
 	srv.requireProviderKey(t)
-	return resp, srv
+	return resp
 }
 
 func importThenRead(t *testing.T, res resource.Resource, importID, path, body string, mutate func(*testing.T, *tfsdk.State)) resource.ReadResponse {
@@ -346,7 +346,8 @@ func requestPrior(id string) *RequestModel {
 	}
 }
 
-func sonarrPrior(id int64, apiKey types.String) *SonarrServerModel {
+func sonarrPrior(apiKey types.String) *SonarrServerModel {
+	const id int64 = 4
 	return &SonarrServerModel{
 		ID:        types.StringValue(fmt.Sprintf("%d", id)),
 		ServerID:  types.Int64Value(id),
@@ -356,7 +357,8 @@ func sonarrPrior(id int64, apiKey types.String) *SonarrServerModel {
 	}
 }
 
-func radarrPrior(id int64, apiKey types.String) *RadarrServerModel {
+func radarrPrior(apiKey types.String) *RadarrServerModel {
+	const id int64 = 3
 	return &RadarrServerModel{
 		ID:       types.StringValue(fmt.Sprintf("%d", id)),
 		ServerID: types.Int64Value(id),
@@ -461,8 +463,8 @@ func TestLifecycleContractExternalDeletion(t *testing.T) {
 		{name: "emby_settings", new: NewEmbySettingsResource, model: &EmbySettingsModel{ID: types.StringValue("emby"), APIKey: types.StringValue("emby-secret")}, wantRemoved: true},
 		{name: "tautulli_settings", new: NewTautulliSettingsResource, model: &TautulliSettingsModel{ID: types.StringValue("tautulli"), APIKey: types.StringValue("tautulli-secret")}, wantRemoved: true},
 		{name: "network_settings", new: NewNetworkSettingsResource, model: &NetworkSettingsModel{ID: types.StringValue("network")}, wantRemoved: true},
-		{name: "sonarr_server", new: NewSonarrServerResource, model: sonarrPrior(4, types.StringValue("sonarr-secret")), wantRemoved: true},
-		{name: "radarr_server", new: NewRadarrServerResource, model: radarrPrior(3, types.StringValue("radarr-secret")), wantRemoved: true},
+		{name: "sonarr_server", new: NewSonarrServerResource, model: sonarrPrior(types.StringValue("sonarr-secret")), wantRemoved: true},
+		{name: "radarr_server", new: NewRadarrServerResource, model: radarrPrior(types.StringValue("radarr-secret")), wantRemoved: true},
 		{name: "job_schedule", new: NewJobScheduleResource, model: &JobScheduleModel{ID: types.StringValue("plex-scan"), JobID: types.StringValue("plex-scan")}, wantRemoved: true},
 		{name: "issue", new: NewIssueResource, model: issuePrior("11"), wantRemoved: true},
 		{name: "request", new: NewRequestResource, model: requestPrior("42"), wantRemoved: true},
@@ -503,19 +505,19 @@ func TestLifecycleContractMissingArrServerRemovesState(t *testing.T) {
 		model any
 		path  string
 	}{
-		{name: "sonarr", new: NewSonarrServerResource, model: sonarrPrior(4, types.StringValue("sonarr-secret")), path: "/api/v1/settings/sonarr"},
-		{name: "radarr", new: NewRadarrServerResource, model: radarrPrior(3, types.StringValue("radarr-secret")), path: "/api/v1/settings/radarr"},
+		{name: "sonarr", new: NewSonarrServerResource, model: sonarrPrior(types.StringValue("sonarr-secret")), path: "/api/v1/settings/sonarr"},
+		{name: "radarr", new: NewRadarrServerResource, model: radarrPrior(types.StringValue("radarr-secret")), path: "/api/v1/settings/radarr"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			res := tc.new()
-			resp, _ := configureRead(t, res, tc.model, tc.path, body)
+			resp := configureRead(t, res, tc.model, tc.path, body)
 			assertRemoved(t, resp)
 		})
 	}
 
 	t.Run("job_schedule", func(t *testing.T) {
 		res := NewJobScheduleResource()
-		resp, _ := configureRead(t, res, &JobScheduleModel{
+		resp := configureRead(t, res, &JobScheduleModel{
 			ID:       types.StringValue("plex-scan"),
 			JobID:    types.StringValue("plex-scan"),
 			Schedule: types.StringValue("0 1 * * *"),
@@ -664,9 +666,9 @@ func TestLifecycleContractImportAndRefresh(t *testing.T) {
 		srv := newLifecycleServer(t, func(w http.ResponseWriter, r *http.Request, _ int) {
 			switch r.URL.Path {
 			case "/api/v1/auth/me":
-				writeJSON(w, http.StatusOK, `{"id":17}`)
+				writeJSON(w, `{"id":17}`)
 			case "/api/v1/user/17/watchlist":
-				writeJSON(w, http.StatusOK, `{"page":1,"totalPages":1,"totalResults":1,"results":[{"tmdbId":550,"mediaType":"movie","title":"Fight Club","overview":""}]}`)
+				writeJSON(w, `{"page":1,"totalPages":1,"totalResults":1,"results":[{"tmdbId":550,"mediaType":"movie","title":"Fight Club","overview":""}]}`)
 			default:
 				t.Errorf("unexpected path %s", r.URL.Path)
 				http.NotFound(w, r)
@@ -723,7 +725,7 @@ func TestLifecycleContractNullVersusEmpty(t *testing.T) {
 	t.Run("backup_settings", func(t *testing.T) {
 		res := NewBackupSettingsResource()
 		prior := &BackupSettingsModel{ID: types.StringValue("backups"), Schedule: types.StringValue("0 0 * * *"), Retention: types.Int64Value(10), StoragePath: types.StringValue("/backups")}
-		omitted, _ := configureRead(t, res, prior, "/api/v1/settings/backups", `{"schedule":"0 1 * * *"}`)
+		omitted := configureRead(t, res, prior, "/api/v1/settings/backups", `{"schedule":"0 1 * * *"}`)
 		got := decodeState[BackupSettingsModel](t, omitted.State)
 		assertString(t, got.Schedule, false, "0 1 * * *")
 		if !got.Retention.IsNull() || !got.StoragePath.IsNull() {
@@ -731,7 +733,7 @@ func TestLifecycleContractNullVersusEmpty(t *testing.T) {
 		}
 
 		res = NewBackupSettingsResource()
-		empty, _ := configureRead(t, res, prior, "/api/v1/settings/backups", `{"schedule":"","retention":0,"storage_path":""}`)
+		empty := configureRead(t, res, prior, "/api/v1/settings/backups", `{"schedule":"","retention":0,"storage_path":""}`)
 		got = decodeState[BackupSettingsModel](t, empty.State)
 		assertString(t, got.Schedule, false, "")
 		assertString(t, got.StoragePath, false, "")
@@ -742,12 +744,12 @@ func TestLifecycleContractNullVersusEmpty(t *testing.T) {
 
 	t.Run("metadata_settings", func(t *testing.T) {
 		prior := &MetadataSettingsModel{ID: types.StringValue("metadata"), TV: types.StringValue("tmdb"), Anime: types.StringValue("tvdb")}
-		omitted, _ := configureRead(t, NewMetadataSettingsResource(), prior, "/api/v1/settings/metadatas", `{"tv":"tvdb"}`)
+		omitted := configureRead(t, NewMetadataSettingsResource(), prior, "/api/v1/settings/metadatas", `{"tv":"tvdb"}`)
 		got := decodeState[MetadataSettingsModel](t, omitted.State)
 		assertString(t, got.TV, false, "tvdb")
 		assertString(t, got.Anime, true, "")
 
-		empty, _ := configureRead(t, NewMetadataSettingsResource(), prior, "/api/v1/settings/metadatas", `{"tv":"","anime":null}`)
+		empty := configureRead(t, NewMetadataSettingsResource(), prior, "/api/v1/settings/metadatas", `{"tv":"","anime":null}`)
 		got = decodeState[MetadataSettingsModel](t, empty.State)
 		assertString(t, got.TV, false, "")
 		assertString(t, got.Anime, true, "")
@@ -755,12 +757,12 @@ func TestLifecycleContractNullVersusEmpty(t *testing.T) {
 
 	t.Run("main_settings", func(t *testing.T) {
 		prior := &MainSettingsModel{ID: types.StringValue("main"), AppTitle: types.StringValue("Old"), Locale: types.StringValue("en")}
-		omitted, _ := configureRead(t, NewMainSettingsResource(), prior, "/api/v1/settings/main", `{"applicationTitle":"Seerr"}`)
+		omitted := configureRead(t, NewMainSettingsResource(), prior, "/api/v1/settings/main", `{"applicationTitle":"Seerr"}`)
 		got := decodeState[MainSettingsModel](t, omitted.State)
 		assertString(t, got.AppTitle, false, "Seerr")
 		assertString(t, got.Locale, true, "")
 
-		empty, _ := configureRead(t, NewMainSettingsResource(), prior, "/api/v1/settings/main", `{"applicationTitle":"","locale":""}`)
+		empty := configureRead(t, NewMainSettingsResource(), prior, "/api/v1/settings/main", `{"applicationTitle":"","locale":""}`)
 		got = decodeState[MainSettingsModel](t, empty.State)
 		assertString(t, got.AppTitle, false, "")
 		assertString(t, got.Locale, false, "")
@@ -768,23 +770,23 @@ func TestLifecycleContractNullVersusEmpty(t *testing.T) {
 
 	t.Run("plex_settings", func(t *testing.T) {
 		prior := &PlexSettingsModel{ID: types.StringValue("plex"), Name: types.StringValue("Old"), IP: types.StringValue("127.0.0.1"), Port: types.Int64Value(32400)}
-		omitted, _ := configureRead(t, NewPlexSettingsResource(), prior, "/api/v1/settings/plex", `{"ip":"10.0.0.5","port":32400}`)
+		omitted := configureRead(t, NewPlexSettingsResource(), prior, "/api/v1/settings/plex", `{"ip":"10.0.0.5","port":32400}`)
 		got := decodeState[PlexSettingsModel](t, omitted.State)
 		assertString(t, got.Name, true, "")
 		assertString(t, got.IP, false, "10.0.0.5")
 
-		empty, _ := configureRead(t, NewPlexSettingsResource(), prior, "/api/v1/settings/plex", `{"name":"","ip":"10.0.0.5","port":32400}`)
+		empty := configureRead(t, NewPlexSettingsResource(), prior, "/api/v1/settings/plex", `{"name":"","ip":"10.0.0.5","port":32400}`)
 		got = decodeState[PlexSettingsModel](t, empty.State)
 		assertString(t, got.Name, false, "")
 	})
 
 	t.Run("jellyfin_url_base", func(t *testing.T) {
 		prior := &JellyfinSettingsModel{ID: types.StringValue("jellyfin"), IP: types.StringValue("127.0.0.1"), Port: types.Int64Value(8096), URLBase: types.StringValue("/old"), APIKey: types.StringValue("jf-secret")}
-		omitted, _ := configureRead(t, NewJellyfinSettingsResource(), prior, "/api/v1/settings/jellyfin", `{"ip":"127.0.0.1","port":8096,"apiKey":"jf-secret"}`)
+		omitted := configureRead(t, NewJellyfinSettingsResource(), prior, "/api/v1/settings/jellyfin", `{"ip":"127.0.0.1","port":8096,"apiKey":"jf-secret"}`)
 		got := decodeState[JellyfinSettingsModel](t, omitted.State)
 		assertString(t, got.URLBase, true, "")
 
-		empty, _ := configureRead(t, NewJellyfinSettingsResource(), prior, "/api/v1/settings/jellyfin", `{"ip":"127.0.0.1","port":8096,"urlBase":"","apiKey":"jf-secret"}`)
+		empty := configureRead(t, NewJellyfinSettingsResource(), prior, "/api/v1/settings/jellyfin", `{"ip":"127.0.0.1","port":8096,"urlBase":"","apiKey":"jf-secret"}`)
 		got = decodeState[JellyfinSettingsModel](t, empty.State)
 		assertString(t, got.URLBase, false, "")
 	})
@@ -797,21 +799,21 @@ func TestLifecycleContractNullVersusEmpty(t *testing.T) {
 				Password: types.StringValue("proxy-secret"),
 			},
 		}
-		omitted, _ := configureRead(t, NewNetworkSettingsResource(), prior, "/api/v1/settings/network", `{"proxy":{"enabled":true,"port":8080}}`)
+		omitted := configureRead(t, NewNetworkSettingsResource(), prior, "/api/v1/settings/network", `{"proxy":{"enabled":true,"port":8080}}`)
 		got := decodeState[NetworkSettingsModel](t, omitted.State)
 		if got.Proxy == nil {
 			t.Fatal("managed proxy block was dropped")
 		}
 		assertString(t, got.Proxy.Hostname, true, "")
 
-		empty, _ := configureRead(t, NewNetworkSettingsResource(), prior, "/api/v1/settings/network", `{"proxy":{"hostname":"","port":8080}}`)
+		empty := configureRead(t, NewNetworkSettingsResource(), prior, "/api/v1/settings/network", `{"proxy":{"hostname":"","port":8080}}`)
 		got = decodeState[NetworkSettingsModel](t, empty.State)
 		assertString(t, got.Proxy.Hostname, false, "")
 	})
 
 	t.Run("sonarr_tags", func(t *testing.T) {
 		bodyNull := `[{"id":4,"name":"sonarr","tags":null,"animeTags":[]}]`
-		resp, _ := configureRead(t, NewSonarrServerResource(), sonarrPrior(4, types.StringNull()), "/api/v1/settings/sonarr", bodyNull)
+		resp := configureRead(t, NewSonarrServerResource(), sonarrPrior(types.StringNull()), "/api/v1/settings/sonarr", bodyNull)
 		got := decodeState[SonarrServerModel](t, resp.State)
 		if !got.Tags.IsNull() {
 			t.Fatal("json null tags should stay null")
@@ -821,7 +823,7 @@ func TestLifecycleContractNullVersusEmpty(t *testing.T) {
 		}
 
 		bodyEmpty := `[{"id":4,"name":"sonarr","tags":[],"animeTags":null}]`
-		resp, _ = configureRead(t, NewSonarrServerResource(), sonarrPrior(4, types.StringNull()), "/api/v1/settings/sonarr", bodyEmpty)
+		resp = configureRead(t, NewSonarrServerResource(), sonarrPrior(types.StringNull()), "/api/v1/settings/sonarr", bodyEmpty)
 		got = decodeState[SonarrServerModel](t, resp.State)
 		if got.Tags.IsNull() || len(got.Tags.Elements()) != 0 {
 			t.Fatalf("empty tags = %#v", got.Tags)
@@ -832,12 +834,12 @@ func TestLifecycleContractNullVersusEmpty(t *testing.T) {
 	})
 
 	t.Run("radarr_tags", func(t *testing.T) {
-		nullResp, _ := configureRead(t, NewRadarrServerResource(), radarrPrior(3, types.StringNull()), "/api/v1/settings/radarr", `[{"id":3,"name":"radarr","tags":null}]`)
+		nullResp := configureRead(t, NewRadarrServerResource(), radarrPrior(types.StringNull()), "/api/v1/settings/radarr", `[{"id":3,"name":"radarr","tags":null}]`)
 		got := decodeState[RadarrServerModel](t, nullResp.State)
 		if !got.Tags.IsNull() {
 			t.Fatal("json null tags should stay null")
 		}
-		emptyResp, _ := configureRead(t, NewRadarrServerResource(), radarrPrior(3, types.StringNull()), "/api/v1/settings/radarr", `[{"id":3,"name":"radarr","tags":[]}]`)
+		emptyResp := configureRead(t, NewRadarrServerResource(), radarrPrior(types.StringNull()), "/api/v1/settings/radarr", `[{"id":3,"name":"radarr","tags":[]}]`)
 		got = decodeState[RadarrServerModel](t, emptyResp.State)
 		if got.Tags.IsNull() || len(got.Tags.Elements()) != 0 {
 			t.Fatalf("empty tags = %#v", got.Tags)
@@ -846,14 +848,14 @@ func TestLifecycleContractNullVersusEmpty(t *testing.T) {
 
 	t.Run("issue_created_at", func(t *testing.T) {
 		prior := issuePrior("11")
-		omitted, _ := configureRead(t, NewIssueResource(), prior, "/api/v1/issue/11", `{"issueType":1,"status":1,"comments":[]}`)
+		omitted := configureRead(t, NewIssueResource(), prior, "/api/v1/issue/11", `{"issueType":1,"status":1,"comments":[]}`)
 		got := decodeState[IssueModel](t, omitted.State)
 		assertString(t, got.CreatedAt, true, "")
 		if got.CommentsCount.ValueInt64() != 0 {
 			t.Fatalf("comments_count = %d", got.CommentsCount.ValueInt64())
 		}
 
-		empty, _ := configureRead(t, NewIssueResource(), prior, "/api/v1/issue/11", `{"issueType":1,"status":1,"createdAt":"","comments":null}`)
+		empty := configureRead(t, NewIssueResource(), prior, "/api/v1/issue/11", `{"issueType":1,"status":1,"createdAt":"","comments":null}`)
 		got = decodeState[IssueModel](t, empty.State)
 		assertString(t, got.CreatedAt, false, "")
 		if got.CommentsCount.ValueInt64() != 0 {
@@ -864,34 +866,34 @@ func TestLifecycleContractNullVersusEmpty(t *testing.T) {
 	t.Run("request_created_at", func(t *testing.T) {
 		prior := requestPrior("42")
 		body := `{"status":1,"media":{"id":7,"mediaType":"movie","tmdbId":550},"requestedBy":{"id":1,"displayName":"User"}}`
-		omitted, _ := configureRead(t, NewRequestResource(), prior, "/api/v1/request/42", body)
+		omitted := configureRead(t, NewRequestResource(), prior, "/api/v1/request/42", body)
 		got := decodeState[RequestModel](t, omitted.State)
 		assertString(t, got.CreatedAt, true, "")
 
 		emptyBody := `{"status":1,"createdAt":"","media":{"id":7,"mediaType":"movie","tmdbId":550},"requestedBy":{"id":1,"displayName":"User"}}`
-		empty, _ := configureRead(t, NewRequestResource(), prior, "/api/v1/request/42", emptyBody)
+		empty := configureRead(t, NewRequestResource(), prior, "/api/v1/request/42", emptyBody)
 		got = decodeState[RequestModel](t, empty.State)
 		assertString(t, got.CreatedAt, false, "")
 	})
 
 	t.Run("blocklist_title", func(t *testing.T) {
 		prior := &BlocklistModel{ID: types.StringValue("movie:99"), TMDBID: types.Int64Value(99), MediaType: types.StringValue("movie"), Title: types.StringValue("Old")}
-		omitted, _ := configureRead(t, NewBlocklistResource(), prior, "/api/v1/blocklist/99", `{"tmdbId":99,"mediaType":"movie"}`)
+		omitted := configureRead(t, NewBlocklistResource(), prior, "/api/v1/blocklist/99", `{"tmdbId":99,"mediaType":"movie"}`)
 		got := decodeState[BlocklistModel](t, omitted.State)
 		assertString(t, got.Title, true, "")
 
-		empty, _ := configureRead(t, NewBlocklistResource(), prior, "/api/v1/blocklist/99", `{"tmdbId":99,"mediaType":"movie","title":""}`)
+		empty := configureRead(t, NewBlocklistResource(), prior, "/api/v1/blocklist/99", `{"tmdbId":99,"mediaType":"movie","title":""}`)
 		got = decodeState[BlocklistModel](t, empty.State)
 		assertString(t, got.Title, false, "")
 	})
 
 	t.Run("api_object_body", func(t *testing.T) {
 		prior := apiObjectPrior(false)
-		empty, _ := configureRead(t, NewAPIObjectResource(), prior, "/api/v1/settings/main", "")
+		empty := configureRead(t, NewAPIObjectResource(), prior, "/api/v1/settings/main", "")
 		got := decodeState[APIObjectModel](t, empty.State)
 		assertString(t, got.ResponseBodyJSON, false, "")
 
-		object, _ := configureRead(t, NewAPIObjectResource(), prior, "/api/v1/settings/main", `{}`)
+		object := configureRead(t, NewAPIObjectResource(), prior, "/api/v1/settings/main", `{}`)
 		got = decodeState[APIObjectModel](t, object.State)
 		assertString(t, got.ResponseBodyJSON, false, `{}`)
 	})
@@ -903,7 +905,7 @@ func TestLifecycleContractNullVersusEmpty(t *testing.T) {
 			`[{"id":"plex-scan","schedule":null}]`,
 			`[{"id":"plex-scan"}]`,
 		} {
-			resp, _ := configureRead(t, NewJobScheduleResource(), prior, "/api/v1/settings/jobs", body)
+			resp := configureRead(t, NewJobScheduleResource(), prior, "/api/v1/settings/jobs", body)
 			got := decodeState[JobScheduleModel](t, resp.State)
 			assertString(t, got.Schedule, false, "0 1 * * *")
 		}
@@ -915,13 +917,13 @@ func TestLifecycleContractNullVersusEmpty(t *testing.T) {
 			UserID:            types.Int64Value(9),
 			NotificationTypes: &UserNotificationTypesModel{Email: types.Int64Value(4)},
 		}
-		omitted, _ := configureRead(t, NewUserNotificationSettingsResource(), prior, "/api/v1/user/9/settings/notifications", `{}`)
+		omitted := configureRead(t, NewUserNotificationSettingsResource(), prior, "/api/v1/user/9/settings/notifications", `{}`)
 		got := decodeState[UserNotificationSettingsResourceModel](t, omitted.State)
 		if got.NotificationTypes == nil || got.NotificationTypes.Email.ValueInt64() != 4 {
 			t.Fatalf("omitted notification_types = %#v", got.NotificationTypes)
 		}
 
-		empty, _ := configureRead(t, NewUserNotificationSettingsResource(), prior, "/api/v1/user/9/settings/notifications", `{"notificationTypes":{}}`)
+		empty := configureRead(t, NewUserNotificationSettingsResource(), prior, "/api/v1/user/9/settings/notifications", `{"notificationTypes":{}}`)
 		got = decodeState[UserNotificationSettingsResourceModel](t, empty.State)
 		if got.NotificationTypes == nil {
 			t.Fatal("empty notificationTypes object should still produce a block")
@@ -940,19 +942,19 @@ func TestLifecycleContractSecrets(t *testing.T) {
 			`{"ip":"127.0.0.1","port":8096,"apiKey":null}`,
 			`{"ip":"127.0.0.1","port":8096,"apiKey":""}`,
 		} {
-			resp, _ := configureRead(t, NewJellyfinSettingsResource(), prior, "/api/v1/settings/jellyfin", body)
+			resp := configureRead(t, NewJellyfinSettingsResource(), prior, "/api/v1/settings/jellyfin", body)
 			got := decodeState[JellyfinSettingsModel](t, resp.State)
 			assertString(t, got.APIKey, false, "jf-secret")
 			requireNoSecretLeak(t, resp.Diagnostics, "jf-secret")
 		}
-		replaced, _ := configureRead(t, NewJellyfinSettingsResource(), prior, "/api/v1/settings/jellyfin", `{"ip":"127.0.0.1","port":8096,"apiKey":"jf-rotated"}`)
+		replaced := configureRead(t, NewJellyfinSettingsResource(), prior, "/api/v1/settings/jellyfin", `{"ip":"127.0.0.1","port":8096,"apiKey":"jf-rotated"}`)
 		got := decodeState[JellyfinSettingsModel](t, replaced.State)
 		assertString(t, got.APIKey, false, "jf-rotated")
 	})
 
 	t.Run("emby_preserves_empty_api_key", func(t *testing.T) {
 		prior := &EmbySettingsModel{ID: types.StringValue("emby"), IP: types.StringValue("127.0.0.1"), Port: types.Int64Value(8096), APIKey: types.StringValue("emby-secret")}
-		resp, _ := configureRead(t, NewEmbySettingsResource(), prior, "/api/v1/settings/emby", `{"ip":"127.0.0.1","port":8096,"apiKey":""}`)
+		resp := configureRead(t, NewEmbySettingsResource(), prior, "/api/v1/settings/emby", `{"ip":"127.0.0.1","port":8096,"apiKey":""}`)
 		got := decodeState[EmbySettingsModel](t, resp.State)
 		assertString(t, got.APIKey, false, "emby-secret")
 		requireNoSecretLeak(t, resp.Diagnostics, "emby-secret")
@@ -960,7 +962,7 @@ func TestLifecycleContractSecrets(t *testing.T) {
 
 	t.Run("tautulli_preserves_empty_api_key", func(t *testing.T) {
 		prior := &TautulliSettingsModel{ID: types.StringValue("tautulli"), Hostname: types.StringValue("tautulli.local"), APIKey: types.StringValue("tautulli-secret")}
-		resp, _ := configureRead(t, NewTautulliSettingsResource(), prior, "/api/v1/settings/tautulli", `{"hostname":"tautulli.local","apiKey":""}`)
+		resp := configureRead(t, NewTautulliSettingsResource(), prior, "/api/v1/settings/tautulli", `{"hostname":"tautulli.local","apiKey":""}`)
 		got := decodeState[TautulliSettingsModel](t, resp.State)
 		assertString(t, got.APIKey, false, "tautulli-secret")
 		assertString(t, got.Hostname, false, "tautulli.local")
@@ -972,22 +974,22 @@ func TestLifecycleContractSecrets(t *testing.T) {
 			ID:    types.StringValue("network"),
 			Proxy: &NetworkProxyModel{Hostname: types.StringValue("proxy.internal"), Password: types.StringValue("proxy-secret")},
 		}
-		omitted, _ := configureRead(t, NewNetworkSettingsResource(), prior, "/api/v1/settings/network", `{"proxy":{"hostname":"proxy.internal","port":8080}}`)
+		omitted := configureRead(t, NewNetworkSettingsResource(), prior, "/api/v1/settings/network", `{"proxy":{"hostname":"proxy.internal","port":8080}}`)
 		got := decodeState[NetworkSettingsModel](t, omitted.State)
 		assertString(t, got.Proxy.Password, false, "proxy-secret")
 
-		empty, _ := configureRead(t, NewNetworkSettingsResource(), prior, "/api/v1/settings/network", `{"proxy":{"hostname":"proxy.internal","password":""}}`)
+		empty := configureRead(t, NewNetworkSettingsResource(), prior, "/api/v1/settings/network", `{"proxy":{"hostname":"proxy.internal","password":""}}`)
 		got = decodeState[NetworkSettingsModel](t, empty.State)
 		assertString(t, got.Proxy.Password, false, "")
 		requireNoSecretLeak(t, empty.Diagnostics, "proxy-secret")
 	})
 
 	t.Run("arr_servers_keep_state_api_key", func(t *testing.T) {
-		sonarr, _ := configureRead(t, NewSonarrServerResource(), sonarrPrior(4, types.StringValue("sonarr-secret")), "/api/v1/settings/sonarr", `[{"id":4,"name":"sonarr","apiKey":"upstream-secret","tags":[]}]`)
+		sonarr := configureRead(t, NewSonarrServerResource(), sonarrPrior(types.StringValue("sonarr-secret")), "/api/v1/settings/sonarr", `[{"id":4,"name":"sonarr","apiKey":"upstream-secret","tags":[]}]`)
 		gotSonarr := decodeState[SonarrServerModel](t, sonarr.State)
 		assertString(t, gotSonarr.APIKey, false, "sonarr-secret")
 
-		radarr, _ := configureRead(t, NewRadarrServerResource(), radarrPrior(3, types.StringValue("radarr-secret")), "/api/v1/settings/radarr", `[{"id":3,"name":"radarr","apiKey":"","tags":null}]`)
+		radarr := configureRead(t, NewRadarrServerResource(), radarrPrior(types.StringValue("radarr-secret")), "/api/v1/settings/radarr", `[{"id":3,"name":"radarr","apiKey":"","tags":null}]`)
 		gotRadarr := decodeState[RadarrServerModel](t, radarr.State)
 		assertString(t, gotRadarr.APIKey, false, "radarr-secret")
 		requireNoSecretLeak(t, sonarr.Diagnostics, "sonarr-secret", "upstream-secret")
@@ -1002,12 +1004,12 @@ func TestLifecycleContractSecrets(t *testing.T) {
 			PushoverApplicationToken: types.StringValue("po-app"),
 			PushoverUserKey:          types.StringValue("po-user"),
 		}
-		kept, _ := configureRead(t, NewUserNotificationSettingsResource(), prior, "/api/v1/user/9/settings/notifications", `{"pushbulletAccessToken":null,"discordEnabled":false}`)
+		kept := configureRead(t, NewUserNotificationSettingsResource(), prior, "/api/v1/user/9/settings/notifications", `{"pushbulletAccessToken":null,"discordEnabled":false}`)
 		got := decodeState[UserNotificationSettingsResourceModel](t, kept.State)
 		assertString(t, got.PushbulletAccessToken, false, "pb-secret")
 		assertString(t, got.PushoverUserKey, false, "po-user")
 
-		cleared, _ := configureRead(t, NewUserNotificationSettingsResource(), prior, "/api/v1/user/9/settings/notifications", `{"pushbulletAccessToken":"","pushoverApplicationToken":"","pushoverUserKey":""}`)
+		cleared := configureRead(t, NewUserNotificationSettingsResource(), prior, "/api/v1/user/9/settings/notifications", `{"pushbulletAccessToken":"","pushoverApplicationToken":"","pushoverUserKey":""}`)
 		got = decodeState[UserNotificationSettingsResourceModel](t, cleared.State)
 		assertString(t, got.PushbulletAccessToken, false, "")
 		assertString(t, got.PushoverApplicationToken, false, "")
@@ -1069,7 +1071,7 @@ func TestLifecycleContractRetries(t *testing.T) {
 		{name: "main_settings", new: NewMainSettingsResource, model: &MainSettingsModel{ID: types.StringValue("main")}, path: "/api/v1/settings/main", body: `{"applicationTitle":"Seerr"}`},
 		{name: "backup_settings", new: NewBackupSettingsResource, model: &BackupSettingsModel{ID: types.StringValue("backups")}, path: "/api/v1/settings/backups", body: `{"schedule":"0 2 * * *"}`},
 		{name: "jellyfin_settings", new: NewJellyfinSettingsResource, model: &JellyfinSettingsModel{ID: types.StringValue("jellyfin"), APIKey: types.StringValue("jf-secret")}, path: "/api/v1/settings/jellyfin", body: `{"ip":"127.0.0.1","port":8096,"apiKey":"jf-secret"}`},
-		{name: "sonarr_server", new: NewSonarrServerResource, model: sonarrPrior(4, types.StringValue("sonarr-secret")), path: "/api/v1/settings/sonarr", body: `[{"id":4,"name":"sonarr","tags":[]}]`},
+		{name: "sonarr_server", new: NewSonarrServerResource, model: sonarrPrior(types.StringValue("sonarr-secret")), path: "/api/v1/settings/sonarr", body: `[{"id":4,"name":"sonarr","tags":[]}]`},
 	}
 
 	for _, tc := range cases {
@@ -1085,7 +1087,7 @@ func TestLifecycleContractRetries(t *testing.T) {
 					_, _ = w.Write([]byte("unavailable"))
 					return
 				}
-				writeJSON(w, http.StatusOK, tc.body)
+				writeJSON(w, tc.body)
 			})
 			res := tc.new()
 			lifecycleConfigure(t, res, srv.client(1))
@@ -1123,7 +1125,7 @@ func TestLifecycleContractWatchlistDeletionAndRetry(t *testing.T) {
 	t.Run("endpoint_404_keeps_state", func(t *testing.T) {
 		srv := newLifecycleServer(t, func(w http.ResponseWriter, r *http.Request, _ int) {
 			if r.URL.Path == "/api/v1/auth/me" {
-				writeJSON(w, http.StatusOK, `{"id":17}`)
+				writeJSON(w, `{"id":17}`)
 				return
 			}
 			http.Error(w, "gone", http.StatusNotFound)
@@ -1142,10 +1144,10 @@ func TestLifecycleContractWatchlistDeletionAndRetry(t *testing.T) {
 	t.Run("complete_absence_removes_state", func(t *testing.T) {
 		srv := newLifecycleServer(t, func(w http.ResponseWriter, r *http.Request, _ int) {
 			if r.URL.Path == "/api/v1/auth/me" {
-				writeJSON(w, http.StatusOK, `{"id":17}`)
+				writeJSON(w, `{"id":17}`)
 				return
 			}
-			writeJSON(w, http.StatusOK, `{"page":1,"totalPages":0,"totalResults":0,"results":[]}`)
+			writeJSON(w, `{"page":1,"totalPages":0,"totalResults":0,"results":[]}`)
 		})
 		res := NewWatchlistResource()
 		lifecycleConfigure(t, res, srv.client(0))
@@ -1158,7 +1160,7 @@ func TestLifecycleContractWatchlistDeletionAndRetry(t *testing.T) {
 		srv := newLifecycleServer(t, func(w http.ResponseWriter, r *http.Request, _ int) {
 			switch r.URL.Path {
 			case "/api/v1/auth/me":
-				writeJSON(w, http.StatusOK, `{"id":17}`)
+				writeJSON(w, `{"id":17}`)
 			case "/api/v1/user/17/watchlist":
 				listHits++
 				if listHits == 1 {
@@ -1166,7 +1168,7 @@ func TestLifecycleContractWatchlistDeletionAndRetry(t *testing.T) {
 					_, _ = w.Write([]byte("unavailable"))
 					return
 				}
-				writeJSON(w, http.StatusOK, `{"page":1,"totalPages":1,"totalResults":1,"results":[{"tmdbId":999,"mediaType":"movie","title":"Retried","overview":"kept"}]}`)
+				writeJSON(w, `{"page":1,"totalPages":1,"totalResults":1,"results":[{"tmdbId":999,"mediaType":"movie","title":"Retried","overview":"kept"}]}`)
 			default:
 				t.Errorf("unexpected path %s", r.URL.Path)
 				http.NotFound(w, r)
