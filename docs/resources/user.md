@@ -40,12 +40,15 @@ resource "seerr_user" "example" {
 ### Optional
 
 - `discover_region` (String) User's preferred discovery region.
+- `jellyfin_password` (String, Sensitive) Jellyfin password used when linking the Jellyfin account.
+- `jellyfin_username` (String) Jellyfin username to link to this user via `/api/v1/user/{userId}/settings/linked-accounts/jellyfin`. Omit or set to null to unlink.
 - `locale` (String) User's preferred locale.
 - `movie_quota_days` (Number) Quota period in days for movie requests.
 - `movie_quota_limit` (Number) Maximum number of movie requests allowed for this user.
 - `notification_settings` (Block, Optional) User-specific notification settings. (see [below for nested schema](#nestedblock--notification_settings))
 - `original_language` (String) User's preferred original language.
 - `permissions` (Number) Permissions bitmask.
+- `plex_auth_token` (String, Sensitive) Plex auth token to link a Plex account to this user via `/api/v1/user/{userId}/settings/linked-accounts/plex`. Omit or set to null to unlink.
 - `plex_id` (String) Optional Plex ID to import a user directly from Plex.
 - `streaming_region` (String) User's preferred streaming region.
 - `tv_quota_days` (Number) Quota period in days for TV requests.
@@ -60,6 +63,8 @@ resource "seerr_user" "example" {
 - `global_tv_quota_days` (Number) Current global TV quota period in days reported by Seerr.
 - `global_tv_quota_limit` (Number) Current global TV quota limit reported by Seerr.
 - `id` (String) The ID of this resource.
+- `plex_username` (String) The linked Plex account username, if linked.
+- `user_type` (Number) User account type (1: Plex, 2: Local, 3: Jellyfin).
 
 <a id="nestedblock--notification_settings"></a>
 ### Nested Schema for `notification_settings`

@@ -220,9 +220,9 @@ func DefaultRules() []PathRule {
 		{PathPattern: "/auth/reset-password", Classification: ClassIntentionallyOutOfScope, Notes: "Interactive password reset"},
 		{PathPattern: "/auth/reset-password/{guid}", Classification: ClassIntentionallyOutOfScope, Notes: "Interactive password reset"},
 		{PathPattern: "/user/jellyfin/{jellyfinUserId}", Classification: ClassIntentionallyOutOfScope, Notes: "Jellyfin user lookup"},
-		{PathPattern: "/user/{userId}/settings/linked-accounts/jellyfin", Classification: ClassIntentionallyOutOfScope, Notes: "Jellyfin account linking"},
+		{PathPattern: "/user/{userId}/settings/linked-accounts/jellyfin", Classification: ClassCovered, MappedResource: "seerr_user", Notes: "Jellyfin account linking on user resource"},
 		{PathPattern: "/user/{userId}/settings/linked-accounts/jellyfin/quickconnect", Classification: ClassIntentionallyOutOfScope, Notes: "Jellyfin QuickConnect linking"},
-		{PathPattern: "/user/{userId}/settings/linked-accounts/plex", Classification: ClassIntentionallyOutOfScope, Notes: "Plex account linking"},
+		{PathPattern: "/user/{userId}/settings/linked-accounts/plex", Classification: ClassCovered, MappedResource: "seerr_user", Notes: "Plex account linking on user resource"},
 		{PathPattern: "/user/{userId}/settings/notifications", Classification: ClassCovered, MappedResource: "seerr_user_notification_settings", Notes: "User notification settings resource & data source"},
 		{PathPattern: "/user/{userId}/watch_data", Classification: ClassIntentionallyOutOfScope, Notes: "Per-user watch data query"},
 

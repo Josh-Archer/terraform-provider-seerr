@@ -18,10 +18,12 @@ type UserDataSource struct {
 }
 
 type UserDataSourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	Email       types.String `tfsdk:"email"`
-	Username    types.String `tfsdk:"username"`
-	Permissions types.Int64  `tfsdk:"permissions"`
+	ID           types.String `tfsdk:"id"`
+	Email        types.String `tfsdk:"email"`
+	Username     types.String `tfsdk:"username"`
+	PlexUsername types.String `tfsdk:"plex_username"`
+	UserType     types.Int64  `tfsdk:"user_type"`
+	Permissions  types.Int64  `tfsdk:"permissions"`
 }
 
 func NewUserDataSource() datasource.DataSource {
@@ -47,6 +49,14 @@ func (d *UserDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 			"username": schema.StringAttribute{
 				MarkdownDescription: "The username of the user to look up. Exactly one of `email` or `username` must be provided.",
 				Optional:            true,
+			},
+			"plex_username": schema.StringAttribute{
+				MarkdownDescription: "The username of the associated Plex account, if linked.",
+				Computed:            true,
+			},
+			"user_type": schema.Int64Attribute{
+				MarkdownDescription: "User account type (1: Plex, 2: Local, 3: Jellyfin).",
+				Computed:            true,
 			},
 			"permissions": schema.Int64Attribute{
 				MarkdownDescription: "Permissions bitmask for the user.",
@@ -153,6 +163,16 @@ func populateUserDataSourceModel(data *UserDataSourceModel, matchedUser map[stri
 	}
 	if un, ok := matchedUser["username"].(string); ok {
 		data.Username = types.StringValue(un)
+	}
+	if pu, ok := matchedUser["plexUsername"].(string); ok && pu != "" {
+		data.PlexUsername = types.StringValue(pu)
+	} else {
+		data.PlexUsername = types.StringNull()
+	}
+	if ut, ok := int64ValueFromAny(matchedUser["userType"]); ok {
+		data.UserType = types.Int64Value(ut)
+	} else {
+		data.UserType = types.Int64Null()
 	}
 	if p, ok := matchedUser["permissions"].(float64); ok {
 		data.Permissions = types.Int64Value(int64(p))

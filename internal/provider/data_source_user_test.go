@@ -11,10 +11,12 @@ import (
 func TestPopulateUserDataSourceModelPreservesAPICasing(t *testing.T) {
 	data := UserDataSourceModel{}
 	err := populateUserDataSourceModel(&data, map[string]any{
-		"id":          float64(42),
-		"email":       "Case.Sensitive@Example.COM",
-		"username":    "MixedCaseUser",
-		"permissions": "7",
+		"id":           float64(42),
+		"email":        "Case.Sensitive@Example.COM",
+		"username":     "MixedCaseUser",
+		"plexUsername": "PlexyUser",
+		"userType":     float64(1),
+		"permissions":  "7",
 	})
 	if err != nil {
 		t.Fatalf("populate user data source model: %v", err)
@@ -28,6 +30,12 @@ func TestPopulateUserDataSourceModelPreservesAPICasing(t *testing.T) {
 	}
 	if got, want := data.Username, types.StringValue("MixedCaseUser"); !got.Equal(want) {
 		t.Fatalf("username = %q, want %q", got.ValueString(), want.ValueString())
+	}
+	if got, want := data.PlexUsername, types.StringValue("PlexyUser"); !got.Equal(want) {
+		t.Fatalf("plex_username = %q, want %q", got.ValueString(), want.ValueString())
+	}
+	if got := data.UserType.ValueInt64(); got != 1 {
+		t.Fatalf("user_type = %d, want 1", got)
 	}
 	if got := data.Permissions.ValueInt64(); got != 7 {
 		t.Fatalf("permissions = %d, want 7", got)
