@@ -19,6 +19,7 @@ type MainSettingsDataSource struct {
 type MainSettingsDataSourceModel struct {
 	AppTitle              types.String `tfsdk:"app_title"`
 	ApplicationURL        types.String `tfsdk:"application_url"`
+	MediaServerType       types.String `tfsdk:"media_server_type"`
 	TrustProxy            types.Bool   `tfsdk:"trust_proxy"`
 	CSRFProtection        types.Bool   `tfsdk:"csrf_protection"`
 	ImageProxy            types.Bool   `tfsdk:"image_proxy"`
@@ -59,6 +60,10 @@ func (d *MainSettingsDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 			},
 			"application_url": schema.StringAttribute{
 				MarkdownDescription: "The application URL.",
+				Computed:            true,
+			},
+			"media_server_type": schema.StringAttribute{
+				MarkdownDescription: "The media server type (`plex`, `jellyfin`, or `emby`). Emby connection settings use the Jellyfin hostname and API key after `media_server_type = \"emby\"`.",
 				Computed:            true,
 			},
 			"trust_proxy": schema.BoolAttribute{
@@ -204,6 +209,7 @@ func (d *MainSettingsDataSource) Read(ctx context.Context, req datasource.ReadRe
 	values := decodeMainSettings(decoded)
 	data.AppTitle = values.AppTitle
 	data.ApplicationURL = values.ApplicationURL
+	data.MediaServerType = values.MediaServerType
 	data.TrustProxy = values.TrustProxy
 	data.CSRFProtection = values.CSRFProtection
 	data.ImageProxy = values.ImageProxy

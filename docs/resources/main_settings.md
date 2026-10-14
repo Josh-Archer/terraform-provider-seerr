@@ -38,6 +38,7 @@ resource "seerr_main_settings" "main" {
 - `local_login` (Boolean) Whether local login is enabled.
 - `locale` (String) The application locale.
 - `media_server_login` (Boolean) Whether media-server login is enabled.
+- `media_server_type` (String) The media server type (`plex`, `jellyfin`, or `emby`). Emby connection settings use the Jellyfin hostname and API key after `media_server_type = "emby"`.
 - `movie_request_limit` (Number, Deprecated) The movie request limit.
 - `movie_requests_enabled` (Boolean, Deprecated) Whether movie requests are enabled.
 - `new_plex_login` (Boolean) Whether the new Plex login is enabled.

@@ -8,9 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/stretchr/testify/require"
 )
 
@@ -62,10 +64,14 @@ func TestMainSettingsApplyDecodedSettingsReadsSeerrV3Keys(t *testing.T) {
 		"localLogin":             true,
 		"mediaServerLogin":       true,
 		"newPlexLogin":           true,
+		"mediaServerType":        float64(2),
 	})
 
 	if got := data.AppTitle.ValueString(); got != "Seerr" {
 		t.Fatalf("expected app title Seerr, got %q", got)
+	}
+	if got := data.MediaServerType.ValueString(); got != "jellyfin" {
+		t.Fatalf("expected media_server_type jellyfin, got %q", got)
 	}
 	if got := data.CacheImages.ValueBool(); !got {
 		t.Fatalf("expected cache_images true, got %v", got)
@@ -98,6 +104,7 @@ func TestMainSettingsBuildPayloadUsesSeerrV3Keys(t *testing.T) {
 	payload := r.buildPayload(&MainSettingsModel{
 		AppTitle:              types.StringValue("Seerr"),
 		ApplicationURL:        types.StringValue("https://seerr.example"),
+		MediaServerType:       types.StringValue("jellyfin"),
 		ImageProxy:            types.BoolValue(true),
 		Locale:                types.StringValue("fr"),
 		DiscoverRegion:        types.StringValue(""),
@@ -119,6 +126,9 @@ func TestMainSettingsBuildPayloadUsesSeerrV3Keys(t *testing.T) {
 	}
 	if _, ok := payload["appTitle"]; ok {
 		t.Fatalf("did not expect legacy appTitle key in payload")
+	}
+	if got := payload["mediaServerType"]; got != 2 {
+		t.Fatalf("expected mediaServerType 2, got %#v", got)
 	}
 	if got := payload["cacheImages"]; got != true {
 		t.Fatalf("expected cacheImages true from image_proxy alias, got %#v", got)
@@ -263,4 +273,129 @@ func TestMainSettingsCreateAndUpdateHoldEndpointLock(t *testing.T) {
 	updateResp := resource.UpdateResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
 	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: createResp.State}, &updateResp)
 	require.False(t, updateResp.Diagnostics.HasError(), updateResp.Diagnostics)
+}
+
+func TestMainSettingsMediaServerTypeDecoding(t *testing.T) {
+	r := &MainSettingsResource{}
+
+	cases := []struct {
+		name     string
+		input    any
+		expected string
+		isNull   bool
+	}{
+		{name: "number 1 plex", input: float64(1), expected: "plex"},
+		{name: "number 2 jellyfin", input: int(2), expected: "jellyfin"},
+		{name: "number 3 emby", input: int64(3), expected: "emby"},
+		{name: "number 4 not configured", input: float64(4), isNull: true},
+		{name: "number 0 unknown", input: float64(0), isNull: true},
+		{name: "string plex", input: "plex", expected: "plex"},
+		{name: "string uppercase PLEX", input: "PLEX", expected: "plex"},
+		{name: "string jellyfin", input: "jellyfin", expected: "jellyfin"},
+		{name: "string emby", input: "emby", expected: "emby"},
+		{name: "string unknown", input: "other", isNull: true},
+		{name: "nil omitted", input: nil, isNull: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var data MainSettingsModel
+			payload := map[string]any{}
+			if tc.input != nil {
+				payload["mediaServerType"] = tc.input
+			}
+			r.applyDecodedSettings(&data, payload)
+
+			if tc.isNull {
+				require.True(t, data.MediaServerType.IsNull(), "expected null for input %v, got %v", tc.input, data.MediaServerType)
+			} else {
+				require.False(t, data.MediaServerType.IsNull(), "expected non-null for input %v", tc.input)
+				require.Equal(t, tc.expected, data.MediaServerType.ValueString())
+			}
+		})
+	}
+}
+
+func TestMainSettingsMediaServerTypeBuildPayload(t *testing.T) {
+	r := &MainSettingsResource{}
+
+	cases := []struct {
+		name     string
+		input    types.String
+		expected any
+		omitted  bool
+	}{
+		{name: "plex", input: types.StringValue("plex"), expected: 1},
+		{name: "jellyfin", input: types.StringValue("jellyfin"), expected: 2},
+		{name: "emby", input: types.StringValue("emby"), expected: 3},
+		{name: "null omitted", input: types.StringNull(), omitted: true},
+		{name: "unknown omitted", input: types.StringUnknown(), omitted: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			data := &MainSettingsModel{MediaServerType: tc.input}
+			payload := r.buildPayload(data)
+			if tc.omitted {
+				_, ok := payload["mediaServerType"]
+				require.False(t, ok, "expected mediaServerType to be omitted from payload")
+			} else {
+				require.Equal(t, tc.expected, payload["mediaServerType"])
+			}
+		})
+	}
+}
+
+func TestMainSettingsRefreshStateMediaServerType(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method)
+		require.Equal(t, "/api/v1/settings/main", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+			"applicationTitle": "Seerr",
+			"applicationUrl": "https://seerr.example",
+			"mediaServerType": 3
+		}`))
+	}))
+	defer srv.Close()
+
+	r := &MainSettingsResource{client: testAPIClient(t, srv.URL)}
+	var data MainSettingsModel
+	err := r.refreshState(context.Background(), &data)
+	require.NoError(t, err)
+	require.Equal(t, "emby", data.MediaServerType.ValueString())
+}
+
+func TestMainSettingsDataSourceReadMediaServerType(t *testing.T) {
+	ctx := context.Background()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method)
+		require.Equal(t, "/api/v1/settings/main", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+			"applicationTitle": "Seerr",
+			"applicationUrl": "https://seerr.example",
+			"mediaServerType": 1
+		}`))
+	}))
+	defer srv.Close()
+
+	d := &MainSettingsDataSource{client: testAPIClient(t, srv.URL)}
+	var schemaResp datasource.SchemaResponse
+	d.Schema(ctx, datasource.SchemaRequest{}, &schemaResp)
+	typ, ok := schemaResp.Schema.Type().TerraformType(ctx).(tftypes.Object)
+	require.True(t, ok)
+	vals := map[string]tftypes.Value{}
+	for name, attrType := range typ.AttributeTypes {
+		vals[name] = tftypes.NewValue(attrType, nil)
+	}
+	req := datasource.ReadRequest{Config: tfsdk.Config{Schema: schemaResp.Schema, Raw: tftypes.NewValue(typ, vals)}}
+	resp := datasource.ReadResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
+	d.Read(ctx, req, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	var got MainSettingsDataSourceModel
+	require.False(t, resp.State.Get(ctx, &got).HasError())
+	require.Equal(t, "plex", got.MediaServerType.ValueString())
 }
