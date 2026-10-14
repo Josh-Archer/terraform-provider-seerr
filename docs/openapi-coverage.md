@@ -6,8 +6,8 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 
 - **Total OpenAPI Paths**: 167
 - **Total Endpoints (Methods)**: 216
-- **Covered Paths**: 81 (48.5%)
-- **Intentionally Out of Scope**: 86 (51.5%)
+- **Covered Paths**: 83 (49.7%)
+- **Intentionally Out of Scope**: 84 (50.3%)
 - **Uncovered Settings/User Backlog**: 0 (0.0%)
 
 ## Classification Legend
@@ -148,11 +148,11 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/settings/plex/users` | GET | `intentionally-out-of-scope` | Transient user lookup for Plex server configuration |
 | `/settings/public` | GET | `covered` | `seerr_public_settings` - Public settings data source |
 | `/settings/radarr` | GET, POST | `covered` | `seerr_radarr_server` - Radarr server resource & data source |
-| `/settings/radarr/test` | POST | `intentionally-out-of-scope` | Transient connection test action for Radarr |
+| `/settings/radarr/test` | POST | `covered` | `seerr_radarr_server_test` - Radarr server connection test action resource |
 | `/settings/radarr/{radarrId}` | DELETE, PUT | `covered` | `seerr_radarr_server` - Radarr server instance resource |
 | `/settings/radarr/{radarrId}/profiles` | GET | `covered` | `seerr_radarr_quality_profile` - Radarr quality profiles data source |
 | `/settings/sonarr` | GET, POST | `covered` | `seerr_sonarr_server` - Sonarr server resource & data source |
-| `/settings/sonarr/test` | POST | `intentionally-out-of-scope` | Transient connection test action for Sonarr |
+| `/settings/sonarr/test` | POST | `covered` | `seerr_sonarr_server_test` - Sonarr server connection test action resource |
 | `/settings/sonarr/{sonarrId}` | DELETE, PUT | `covered` | `seerr_sonarr_server` - Sonarr server instance resource |
 | `/settings/tautulli` | GET, POST | `covered` | `seerr_tautulli_settings` - Tautulli settings resource & data source |
 | `/status` | GET | `intentionally-out-of-scope` | Service health & version status endpoint |

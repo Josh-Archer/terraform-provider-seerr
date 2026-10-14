@@ -53,6 +53,8 @@ var RegisteredResources = []func() resource.Resource{
 	NewUserImportJellyfinResource,
 	NewJobRunResource,
 	NewNotificationAgentTestResource,
+	NewRadarrServerTestResource,
+	NewSonarrServerTestResource,
 	NewUserNotificationSettingsResource,
 	NewWatchlistResource,
 	NewRequestApprovalResource,
