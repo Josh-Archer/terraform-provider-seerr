@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 
 	boolvalidator "github.com/hashicorp/terraform-plugin-framework-validators/boolvalidator"
 	stringvalidator "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -28,6 +29,7 @@ type MainSettingsModel struct {
 	ID                    types.String `tfsdk:"id"`
 	AppTitle              types.String `tfsdk:"app_title"`
 	ApplicationURL        types.String `tfsdk:"application_url"`
+	MediaServerType       types.String `tfsdk:"media_server_type"`
 	TrustProxy            types.Bool   `tfsdk:"trust_proxy"`
 	CSRFProtection        types.Bool   `tfsdk:"csrf_protection"`
 	ImageProxy            types.Bool   `tfsdk:"image_proxy"`
@@ -79,6 +81,14 @@ func (r *MainSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 				Computed:            true,
 				Validators: []validator.String{
 					stringvalidator.RegexMatches(regexp.MustCompile(`^(https?://[^/](.*[^/])?)?$`), "must be a valid HTTP or HTTPS URL without a trailing slash (e.g., https://seerr.example.com)"),
+				},
+			},
+			"media_server_type": schema.StringAttribute{
+				MarkdownDescription: "The media server type (`plex`, `jellyfin`, or `emby`). Emby connection settings use the Jellyfin hostname and API key after `media_server_type = \"emby\"`.",
+				Optional:            true,
+				Computed:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("plex", "jellyfin", "emby"),
 				},
 			},
 			"trust_proxy": schema.BoolAttribute{
@@ -282,6 +292,16 @@ func (r *MainSettingsResource) buildPayload(data *MainSettingsModel) map[string]
 	if !data.NewPlexLogin.IsNull() && !data.NewPlexLogin.IsUnknown() {
 		payload["newPlexLogin"] = data.NewPlexLogin.ValueBool()
 	}
+	if !data.MediaServerType.IsNull() && !data.MediaServerType.IsUnknown() {
+		switch strings.ToLower(data.MediaServerType.ValueString()) {
+		case "plex":
+			payload["mediaServerType"] = 1
+		case "jellyfin":
+			payload["mediaServerType"] = 2
+		case "emby":
+			payload["mediaServerType"] = 3
+		}
+	}
 
 	return payload
 }
@@ -289,6 +309,7 @@ func (r *MainSettingsResource) buildPayload(data *MainSettingsModel) map[string]
 type mainSettingsDecodedValues struct {
 	AppTitle              types.String
 	ApplicationURL        types.String
+	MediaServerType       types.String
 	TrustProxy            types.Bool
 	CSRFProtection        types.Bool
 	ImageProxy            types.Bool
@@ -311,10 +332,39 @@ type mainSettingsDecodedValues struct {
 	SeriesRequestLimit    types.Int64
 }
 
+func mediaServerTypeToString(v any) (string, bool) {
+	if n, ok := int64ValueFromAny(v); ok {
+		switch n {
+		case 1:
+			return "plex", true
+		case 2:
+			return "jellyfin", true
+		case 3:
+			return "emby", true
+		default:
+			return "", false
+		}
+	}
+	if s, ok := stringValueFromAny(v); ok {
+		switch strings.ToLower(strings.TrimSpace(s)) {
+		case "plex":
+			return "plex", true
+		case "jellyfin":
+			return "jellyfin", true
+		case "emby":
+			return "emby", true
+		default:
+			return "", false
+		}
+	}
+	return "", false
+}
+
 func decodeMainSettings(decoded map[string]any) mainSettingsDecodedValues {
 	values := mainSettingsDecodedValues{
 		AppTitle:              types.StringNull(),
 		ApplicationURL:        types.StringNull(),
+		MediaServerType:       types.StringNull(),
 		TrustProxy:            types.BoolNull(),
 		CSRFProtection:        types.BoolNull(),
 		ImageProxy:            types.BoolNull(),
@@ -344,6 +394,9 @@ func decodeMainSettings(decoded map[string]any) mainSettingsDecodedValues {
 	}
 	if v, ok := stringValueFromAny(decoded["applicationUrl"]); ok {
 		values.ApplicationURL = types.StringValue(v)
+	}
+	if s, ok := mediaServerTypeToString(decoded["mediaServerType"]); ok {
+		values.MediaServerType = types.StringValue(s)
 	}
 	if v, ok := boolValueFromAny(decoded["trustProxy"]); ok {
 		values.TrustProxy = types.BoolValue(v)
@@ -419,6 +472,7 @@ func (r *MainSettingsResource) applyDecodedSettings(data *MainSettingsModel, dec
 	values := decodeMainSettings(decoded)
 	data.AppTitle = values.AppTitle
 	data.ApplicationURL = values.ApplicationURL
+	data.MediaServerType = values.MediaServerType
 	data.TrustProxy = values.TrustProxy
 	data.CSRFProtection = values.CSRFProtection
 	data.ImageProxy = values.ImageProxy
