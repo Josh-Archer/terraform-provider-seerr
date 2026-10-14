@@ -131,6 +131,9 @@ func TestNormalizeNotificationModelAllAgentsOmittedAndPartialFields(t *testing.T
 		if !data.Ntfy.Username.IsNull() {
 			t.Errorf("expected Username to be null when omitted, got %#v", data.Ntfy.Username)
 		}
+		if !data.Ntfy.Tags.IsNull() {
+			t.Errorf("expected Tags to be null when omitted, got %#v", data.Ntfy.Tags)
+		}
 	})
 
 	t.Run("Pushover Tokens and Sound Omission", func(t *testing.T) {

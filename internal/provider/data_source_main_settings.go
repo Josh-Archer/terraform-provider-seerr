@@ -30,6 +30,7 @@ type MainSettingsDataSourceModel struct {
 	Region                types.String `tfsdk:"region"`
 	OriginalLanguage      types.String `tfsdk:"original_language"`
 	HideAvailable         types.Bool   `tfsdk:"hide_available"`
+	HideRequested         types.Bool   `tfsdk:"hide_requested"`
 	PartialRequests       types.Bool   `tfsdk:"partial_requests"`
 	LocalLogin            types.Bool   `tfsdk:"local_login"`
 	MediaServerLogin      types.Bool   `tfsdk:"media_server_login"`
@@ -108,6 +109,10 @@ func (d *MainSettingsDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 			},
 			"hide_available": schema.BoolAttribute{
 				MarkdownDescription: "Whether to hide available media.",
+				Computed:            true,
+			},
+			"hide_requested": schema.BoolAttribute{
+				MarkdownDescription: "Whether to hide requested media.",
 				Computed:            true,
 			},
 			"partial_requests": schema.BoolAttribute{
@@ -220,6 +225,7 @@ func (d *MainSettingsDataSource) Read(ctx context.Context, req datasource.ReadRe
 	data.Region = values.Region
 	data.OriginalLanguage = values.OriginalLanguage
 	data.HideAvailable = values.HideAvailable
+	data.HideRequested = values.HideRequested
 	data.PartialRequests = values.PartialRequests
 	data.LocalLogin = values.LocalLogin
 	data.MediaServerLogin = values.MediaServerLogin

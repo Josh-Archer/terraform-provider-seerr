@@ -4,10 +4,10 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 
 ## Coverage Summary
 
-- **Total OpenAPI Paths**: 167
-- **Total Endpoints (Methods)**: 216
-- **Covered Paths**: 81 (48.5%)
-- **Intentionally Out of Scope**: 86 (51.5%)
+- **Total OpenAPI Paths**: 168
+- **Total Endpoints (Methods)**: 217
+- **Covered Paths**: 81 (48.2%)
+- **Intentionally Out of Scope**: 87 (51.8%)
 - **Uncovered Settings/User Backlog**: 0 (0.0%)
 
 ## Classification Legend
@@ -76,6 +76,7 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/movie/{movieId}/similar` | GET | `intentionally-out-of-scope` | TMDB movie similar query |
 | `/network/{networkId}` | GET | `intentionally-out-of-scope` | TMDB network details |
 | `/overrideRule` | GET, POST | `covered` | `seerr_override_rule` - Override rule resource |
+| `/overrideRule/advancedRequest` | POST | `intentionally-out-of-scope` | Interactive override rule evaluation for user media requests |
 | `/overrideRule/{ruleId}` | DELETE, PUT | `covered` | `seerr_override_rule` - Override rule item resource |
 | `/person/{personId}` | GET | `intentionally-out-of-scope` | TMDB person details query |
 | `/person/{personId}/combined_credits` | GET | `intentionally-out-of-scope` | TMDB person credits query |

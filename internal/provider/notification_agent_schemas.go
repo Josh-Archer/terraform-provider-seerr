@@ -85,6 +85,7 @@ func notificationAgentResourceOptionAttributes() map[string]schema.Attribute {
 				"auth_method_token":             schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 				"token":                         schema.StringAttribute{Optional: true, Sensitive: true, Computed: true},
 				"priority":                      schema.Int64Attribute{Optional: true, Computed: true},
+				"tags":                          schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Tags for Ntfy notification messages."},
 			},
 		},
 		"webhook": schema.SingleNestedAttribute{
@@ -185,6 +186,7 @@ func notificationAgentDataSourceOptionAttributes() map[string]dschema.Attribute 
 				"auth_method_token":             dschema.BoolAttribute{Computed: true},
 				"token":                         dschema.StringAttribute{Computed: true, Sensitive: true},
 				"priority":                      dschema.Int64Attribute{Computed: true},
+				"tags":                          dschema.StringAttribute{Computed: true, MarkdownDescription: "Tags for Ntfy notification messages."},
 			},
 		},
 		"webhook": dschema.SingleNestedAttribute{
