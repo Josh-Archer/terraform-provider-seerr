@@ -6,8 +6,8 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 
 - **Total OpenAPI Paths**: 167
 - **Total Endpoints (Methods)**: 216
-- **Covered Paths**: 79 (47.3%)
-- **Intentionally Out of Scope**: 88 (52.7%)
+- **Covered Paths**: 81 (48.5%)
+- **Intentionally Out of Scope**: 86 (51.5%)
 - **Uncovered Settings/User Backlog**: 0 (0.0%)
 
 ## Classification Legend
@@ -173,9 +173,9 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/user/{userId}/pushSubscriptions` | GET | `intentionally-out-of-scope` | Browser push notifications list |
 | `/user/{userId}/quota` | GET | `covered` | `seerr_user_quota` - User quota resource & data source |
 | `/user/{userId}/requests` | GET | `covered` | `seerr_user_requests` - Per-user request history data source |
-| `/user/{userId}/settings/linked-accounts/jellyfin` | DELETE, POST | `intentionally-out-of-scope` | Jellyfin account linking |
+| `/user/{userId}/settings/linked-accounts/jellyfin` | DELETE, POST | `covered` | `seerr_user` - Jellyfin account linking on user resource |
 | `/user/{userId}/settings/linked-accounts/jellyfin/quickconnect` | POST | `intentionally-out-of-scope` | Jellyfin QuickConnect linking |
-| `/user/{userId}/settings/linked-accounts/plex` | DELETE, POST | `intentionally-out-of-scope` | Plex account linking |
+| `/user/{userId}/settings/linked-accounts/plex` | DELETE, POST | `covered` | `seerr_user` - Plex account linking on user resource |
 | `/user/{userId}/settings/main` | GET, POST | `covered` | `seerr_user` - User main settings |
 | `/user/{userId}/settings/notifications` | GET, POST | `covered` | `seerr_user_notification_settings` - User notification settings resource & data source |
 | `/user/{userId}/settings/password` | GET, POST | `intentionally-out-of-scope` | Interactive password update action |

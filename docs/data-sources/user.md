@@ -34,3 +34,5 @@ data "seerr_user" "by_username" {
 
 - `id` (String) The ID of the user.
 - `permissions` (Number) Permissions bitmask for the user.
+- `plex_username` (String) The username of the associated Plex account, if linked.
+- `user_type` (Number) User account type (1: Plex, 2: Local, 3: Jellyfin).

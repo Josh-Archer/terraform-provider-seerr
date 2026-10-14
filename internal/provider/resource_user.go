@@ -64,6 +64,11 @@ type UserModel struct {
 	Email                 types.String                   `tfsdk:"email"`
 	Username              types.String                   `tfsdk:"username"`
 	PlexID                types.String                   `tfsdk:"plex_id"`
+	PlexUsername          types.String                   `tfsdk:"plex_username"`
+	PlexAuthToken         types.String                   `tfsdk:"plex_auth_token"`
+	JellyfinUsername      types.String                   `tfsdk:"jellyfin_username"`
+	JellyfinPassword      types.String                   `tfsdk:"jellyfin_password"`
+	UserType              types.Int64                    `tfsdk:"user_type"`
 	Permissions           types.Int64                    `tfsdk:"permissions"`
 	Locale                types.String                   `tfsdk:"locale"`
 	DiscoverRegion        types.String                   `tfsdk:"discover_region"`
@@ -117,6 +122,28 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+			},
+			"plex_username": schema.StringAttribute{
+				MarkdownDescription: "The linked Plex account username, if linked.",
+				Computed:            true,
+			},
+			"plex_auth_token": schema.StringAttribute{
+				MarkdownDescription: "Plex auth token to link a Plex account to this user via `/api/v1/user/{userId}/settings/linked-accounts/plex`. Omit or set to null to unlink.",
+				Optional:            true,
+				Sensitive:           true,
+			},
+			"jellyfin_username": schema.StringAttribute{
+				MarkdownDescription: "Jellyfin username to link to this user via `/api/v1/user/{userId}/settings/linked-accounts/jellyfin`. Omit or set to null to unlink.",
+				Optional:            true,
+			},
+			"jellyfin_password": schema.StringAttribute{
+				MarkdownDescription: "Jellyfin password used when linking the Jellyfin account.",
+				Optional:            true,
+				Sensitive:           true,
+			},
+			"user_type": schema.Int64Attribute{
+				MarkdownDescription: "User account type (1: Plex, 2: Local, 3: Jellyfin).",
+				Computed:            true,
 			},
 			"permissions": schema.Int64Attribute{
 				MarkdownDescription: "Permissions bitmask.",
@@ -343,6 +370,26 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 		}
 	}
 
+	// Link Plex account if requested
+	if !data.PlexAuthToken.IsNull() && !data.PlexAuthToken.IsUnknown() && data.PlexAuthToken.ValueString() != "" {
+		if err := r.linkPlexAccount(ctx, userIDStr, data.PlexAuthToken.ValueString()); err != nil {
+			resp.Diagnostics.AddError("Link Plex Account Failed", err.Error())
+			return
+		}
+	}
+
+	// Link Jellyfin account if requested
+	if !data.JellyfinUsername.IsNull() && !data.JellyfinUsername.IsUnknown() && data.JellyfinUsername.ValueString() != "" {
+		var password string
+		if !data.JellyfinPassword.IsNull() && !data.JellyfinPassword.IsUnknown() {
+			password = data.JellyfinPassword.ValueString()
+		}
+		if err := r.linkJellyfinAccount(ctx, userIDStr, data.JellyfinUsername.ValueString(), password); err != nil {
+			resp.Diagnostics.AddError("Link Jellyfin Account Failed", err.Error())
+			return
+		}
+	}
+
 	// Refresh state to populate computed fields
 	diags := r.readUser(ctx, userIDStr, &data)
 	resp.Diagnostics.Append(diags...)
@@ -410,12 +457,20 @@ func (r *UserResource) readUser(ctx context.Context, userID string, data *UserMo
 	data.WatchlistSyncMovies = types.BoolNull()
 	data.WatchlistSyncTv = types.BoolNull()
 	data.Permissions = types.Int64Null()
+	data.PlexUsername = types.StringNull()
+	data.UserType = types.Int64Null()
 
 	if email, ok := userMap["email"].(string); ok {
 		data.Email = types.StringValue(email)
 	}
 	if username, ok := userMap["username"].(string); ok {
 		data.Username = types.StringValue(username)
+	}
+	if plexUsername, ok := userMap["plexUsername"].(string); ok && plexUsername != "" {
+		data.PlexUsername = types.StringValue(plexUsername)
+	}
+	if ut, ok := int64ValueFromAny(userMap["userType"]); ok {
+		data.UserType = types.Int64Value(ut)
 	}
 	if p, ok := userMap["permissions"].(float64); ok {
 		data.Permissions = types.Int64Value(int64(p))
@@ -492,6 +547,12 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
+	var state UserModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	userID := data.ID.ValueString()
 
 	// Update Base Info
@@ -518,6 +579,39 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		if err := r.updateNotificationSettings(ctx, userID, data.NotificationSettings); err != nil {
 			resp.Diagnostics.AddError("Update Notification Settings Failed", err.Error())
 			return
+		}
+	}
+
+	// Update Linked Accounts
+	if !data.PlexAuthToken.Equal(state.PlexAuthToken) {
+		if !data.PlexAuthToken.IsNull() && !data.PlexAuthToken.IsUnknown() && data.PlexAuthToken.ValueString() != "" {
+			if err := r.linkPlexAccount(ctx, userID, data.PlexAuthToken.ValueString()); err != nil {
+				resp.Diagnostics.AddError("Link Plex Account Failed", err.Error())
+				return
+			}
+		} else if !state.PlexAuthToken.IsNull() && state.PlexAuthToken.ValueString() != "" {
+			if err := r.unlinkPlexAccount(ctx, userID); err != nil {
+				resp.Diagnostics.AddError("Unlink Plex Account Failed", err.Error())
+				return
+			}
+		}
+	}
+
+	if !data.JellyfinUsername.Equal(state.JellyfinUsername) || !data.JellyfinPassword.Equal(state.JellyfinPassword) {
+		if !data.JellyfinUsername.IsNull() && !data.JellyfinUsername.IsUnknown() && data.JellyfinUsername.ValueString() != "" {
+			var password string
+			if !data.JellyfinPassword.IsNull() && !data.JellyfinPassword.IsUnknown() {
+				password = data.JellyfinPassword.ValueString()
+			}
+			if err := r.linkJellyfinAccount(ctx, userID, data.JellyfinUsername.ValueString(), password); err != nil {
+				resp.Diagnostics.AddError("Link Jellyfin Account Failed", err.Error())
+				return
+			}
+		} else if !state.JellyfinUsername.IsNull() && state.JellyfinUsername.ValueString() != "" {
+			if err := r.unlinkJellyfinAccount(ctx, userID); err != nil {
+				resp.Diagnostics.AddError("Unlink Jellyfin Account Failed", err.Error())
+				return
+			}
 		}
 	}
 
@@ -830,4 +924,58 @@ func buildBaseUserUpdatePayload(data *UserModel) map[string]any {
 	}
 	setOptionalInt64(payload, "permissions", data.Permissions)
 	return payload
+}
+
+func (r *UserResource) linkPlexAccount(ctx context.Context, userID, authToken string) error {
+	payload, _ := json.Marshal(map[string]any{
+		"authToken": authToken,
+	})
+	res, err := r.client.Request(ctx, "POST", fmt.Sprintf("/api/v1/user/%s/settings/linked-accounts/plex", userID), string(payload), nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+	return nil
+}
+
+func (r *UserResource) unlinkPlexAccount(ctx context.Context, userID string) error {
+	res, err := r.client.Request(ctx, "DELETE", fmt.Sprintf("/api/v1/user/%s/settings/linked-accounts/plex", userID), "", nil)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != 404 && !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+	return nil
+}
+
+func (r *UserResource) linkJellyfinAccount(ctx context.Context, userID, username, password string) error {
+	payloadMap := map[string]any{
+		"username": username,
+	}
+	if password != "" {
+		payloadMap["password"] = password
+	}
+	payload, _ := json.Marshal(payloadMap)
+	res, err := r.client.Request(ctx, "POST", fmt.Sprintf("/api/v1/user/%s/settings/linked-accounts/jellyfin", userID), string(payload), nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+	return nil
+}
+
+func (r *UserResource) unlinkJellyfinAccount(ctx context.Context, userID string) error {
+	res, err := r.client.Request(ctx, "DELETE", fmt.Sprintf("/api/v1/user/%s/settings/linked-accounts/jellyfin", userID), "", nil)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != 404 && !StatusIsOK(res.StatusCode) {
+		return fmt.Errorf("status %d: %s", res.StatusCode, string(res.Body))
+	}
+	return nil
 }

@@ -296,3 +296,137 @@ func TestUserReadMapsQuotaFieldsAndWebpushEnabled(t *testing.T) {
 		t.Fatal("expected webpush_enabled to be mapped from API response")
 	}
 }
+
+func TestUserReadMapsLinkedAccounts(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/user/8":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+				"id": 8,
+				"email": "plexuser@example.com",
+				"username": "PlexUser",
+				"plexUsername": "plex_master",
+				"userType": 1,
+				"permissions": 0
+			}`))
+		case "/api/v1/user/8/settings/main":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"locale":"en"}`))
+		default:
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resource := &UserResource{
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
+	}
+	data := UserModel{
+		ID: types.StringValue("8"),
+	}
+
+	diags := resource.readUser(context.Background(), "8", &data)
+	if diags.HasError() {
+		t.Fatalf("expected no diagnostics, got %v", diags)
+	}
+	if got := data.PlexUsername.ValueString(); got != "plex_master" {
+		t.Fatalf("expected plex_username plex_master, got %q", got)
+	}
+	if got := data.UserType.ValueInt64(); got != 1 {
+		t.Fatalf("expected user_type 1, got %d", got)
+	}
+}
+
+func TestUserLinkAndUnlinkPlexAccount(t *testing.T) {
+	var postCalled, deleteCalled bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/user/10/settings/linked-accounts/plex" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		switch r.Method {
+		case http.MethodPost:
+			postCalled = true
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"id":10,"plexUsername":"linked_plex","userType":1}`))
+		case http.MethodDelete:
+			deleteCalled = true
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Fatalf("unexpected method %s", r.Method)
+		}
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resource := &UserResource{
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
+	}
+
+	if err := resource.linkPlexAccount(context.Background(), "10", "plex-token-123"); err != nil {
+		t.Fatalf("expected successful link, got %v", err)
+	}
+	if !postCalled {
+		t.Fatal("expected POST to be called for linking Plex account")
+	}
+
+	if err := resource.unlinkPlexAccount(context.Background(), "10"); err != nil {
+		t.Fatalf("expected successful unlink, got %v", err)
+	}
+	if !deleteCalled {
+		t.Fatal("expected DELETE to be called for unlinking Plex account")
+	}
+}
+
+func TestUserLinkAndUnlinkJellyfinAccount(t *testing.T) {
+	var postCalled, deleteCalled bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/user/10/settings/linked-accounts/jellyfin" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		switch r.Method {
+		case http.MethodPost:
+			postCalled = true
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"id":10,"userType":3}`))
+		case http.MethodDelete:
+			deleteCalled = true
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Fatalf("unexpected method %s", r.Method)
+		}
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resource := &UserResource{
+		client: NewClient(baseURL, "abc123", "test-agent", false, defaultRequestTimeout, 0, 0),
+	}
+
+	if err := resource.linkJellyfinAccount(context.Background(), "10", "jf_user", "jf_pass"); err != nil {
+		t.Fatalf("expected successful link, got %v", err)
+	}
+	if !postCalled {
+		t.Fatal("expected POST to be called for linking Jellyfin account")
+	}
+
+	if err := resource.unlinkJellyfinAccount(context.Background(), "10"); err != nil {
+		t.Fatalf("expected successful unlink, got %v", err)
+	}
+	if !deleteCalled {
+		t.Fatal("expected DELETE to be called for unlinking Jellyfin account")
+	}
+}
