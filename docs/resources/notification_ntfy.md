@@ -40,6 +40,7 @@ Optional:
 - `auth_method_username_password` (Boolean)
 - `password` (String, Sensitive)
 - `priority` (Number)
+- `tags` (String) Tags for Ntfy notification messages.
 - `token` (String, Sensitive)
 - `username` (String)
 

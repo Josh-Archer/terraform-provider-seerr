@@ -419,6 +419,9 @@ func buildPayload(ctx context.Context, data *NotificationAgentModel) (string, er
 			if isKnownNonNullInt64(data.Ntfy.Priority) {
 				payload.Options["priority"] = data.Ntfy.Priority.ValueInt64()
 			}
+			if isKnownNonNullString(data.Ntfy.Tags) {
+				payload.Options["tags"] = data.Ntfy.Tags.ValueString()
+			}
 		}
 	case "webhook":
 		if data.Webhook != nil {
@@ -644,6 +647,7 @@ func parsePayload(ctx context.Context, data *NotificationAgentModel, body []byte
 			AuthMethodToken:            getBool("authMethodToken"),
 			Token:                      getString("token"),
 			Priority:                   getInt64("priority"),
+			Tags:                       getString("tags"),
 		}
 	case "webhook":
 		data.Webhook = &NotificationAgentWebhookModel{WebhookUrl: getString("webhookUrl"), JsonPayload: getString("jsonPayload"), AuthHeader: getString("authHeader")}
@@ -924,7 +928,7 @@ func normalizeNotificationModel(data, source *NotificationAgentModel) {
 		}
 	case "ntfy":
 		if data.Ntfy != nil {
-			var srcUrl, srcTopic, srcUsername, srcPassword, srcToken types.String
+			var srcUrl, srcTopic, srcUsername, srcPassword, srcToken, srcTags types.String
 			var srcAuthUserPass, srcAuthToken types.Bool
 			var srcPriority types.Int64
 			if source != nil && source.Ntfy != nil {
@@ -936,6 +940,7 @@ func normalizeNotificationModel(data, source *NotificationAgentModel) {
 				srcAuthToken = source.Ntfy.AuthMethodToken
 				srcToken = source.Ntfy.Token
 				srcPriority = source.Ntfy.Priority
+				srcTags = source.Ntfy.Tags
 			}
 			normalizeStringField(&data.Ntfy.Url, srcUrl)
 			normalizeStringField(&data.Ntfy.Topic, srcTopic)
@@ -945,6 +950,7 @@ func normalizeNotificationModel(data, source *NotificationAgentModel) {
 			normalizeBoolField(&data.Ntfy.AuthMethodToken, srcAuthToken)
 			normalizeStringField(&data.Ntfy.Token, srcToken)
 			normalizeInt64Field(&data.Ntfy.Priority, srcPriority)
+			normalizeStringField(&data.Ntfy.Tags, srcTags)
 		}
 	case "webhook":
 		if data.Webhook != nil {

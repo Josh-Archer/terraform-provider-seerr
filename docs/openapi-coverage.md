@@ -4,10 +4,10 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 
 ## Coverage Summary
 
-- **Total OpenAPI Paths**: 167
-- **Total Endpoints (Methods)**: 216
-- **Covered Paths**: 83 (49.7%)
-- **Intentionally Out of Scope**: 84 (50.3%)
+- **Total OpenAPI Paths**: 168
+- **Total Endpoints (Methods)**: 217
+- **Covered Paths**: 87 (51.8%)
+- **Intentionally Out of Scope**: 81 (48.2%)
 - **Uncovered Settings/User Backlog**: 0 (0.0%)
 
 ## Classification Legend
@@ -76,6 +76,7 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/movie/{movieId}/similar` | GET | `intentionally-out-of-scope` | TMDB movie similar query |
 | `/network/{networkId}` | GET | `intentionally-out-of-scope` | TMDB network details |
 | `/overrideRule` | GET, POST | `covered` | `seerr_override_rule` - Override rule resource |
+| `/overrideRule/advancedRequest` | POST | `intentionally-out-of-scope` | Interactive override rule evaluation for user media requests |
 | `/overrideRule/{ruleId}` | DELETE, PUT | `covered` | `seerr_override_rule` - Override rule item resource |
 | `/person/{personId}` | GET | `intentionally-out-of-scope` | TMDB person details query |
 | `/person/{personId}/combined_credits` | GET | `intentionally-out-of-scope` | TMDB person credits query |
@@ -88,11 +89,11 @@ Inventory of Seerr OpenAPI endpoints classified by Terraform provider support an
 | `/search` | GET | `intentionally-out-of-scope` | Interactive search endpoint |
 | `/search/company` | GET | `intentionally-out-of-scope` | Interactive TMDB company search |
 | `/search/keyword` | GET | `intentionally-out-of-scope` | Interactive TMDB keyword search |
-| `/service/radarr` | GET | `intentionally-out-of-scope` | Service health probe for Radarr |
-| `/service/radarr/{radarrId}` | GET | `intentionally-out-of-scope` | Service instance probe for Radarr |
-| `/service/sonarr` | GET | `intentionally-out-of-scope` | Service health probe for Sonarr |
+| `/service/radarr` | GET | `covered` | `seerr_radarr_service` - Radarr service reachability data source |
+| `/service/radarr/{radarrId}` | GET | `covered` | `seerr_radarr_service` - Radarr service instance and profiles data source |
+| `/service/sonarr` | GET | `covered` | `seerr_sonarr_service` - Sonarr service reachability data source |
 | `/service/sonarr/lookup/{tmdbId}` | GET | `intentionally-out-of-scope` | Sonarr series lookup by TMDB ID |
-| `/service/sonarr/{sonarrId}` | GET | `intentionally-out-of-scope` | Service instance probe for Sonarr |
+| `/service/sonarr/{sonarrId}` | GET | `covered` | `seerr_sonarr_service` - Sonarr service instance and profiles data source |
 | `/settings/about` | GET | `covered` | `seerr_about` - System diagnostics and about data source |
 | `/settings/cache` | GET | `intentionally-out-of-scope` | Runtime cache status & flush controls |
 | `/settings/cache/dns/{dnsEntry}/flush` | POST | `intentionally-out-of-scope` | Runtime DNS cache flush endpoint |

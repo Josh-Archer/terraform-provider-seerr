@@ -62,6 +62,7 @@ type NotificationAgentNtfyModel struct {
 	AuthMethodToken            types.Bool   `tfsdk:"auth_method_token"`
 	Token                      types.String `tfsdk:"token"`
 	Priority                   types.Int64  `tfsdk:"priority"`
+	Tags                       types.String `tfsdk:"tags"`
 }
 
 type NotificationAgentWebhookModel struct {
