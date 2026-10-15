@@ -389,13 +389,15 @@ func TestLifecycleContractResourcesSupportImport(t *testing.T) {
 
 func TestLifecycleContractSensitiveSchema(t *testing.T) {
 	want := map[string][]string{
-		"seerr_api_key":           {"api_key"},
-		"seerr_emby_settings":     {"api_key"},
-		"seerr_jellyfin_settings": {"api_key"},
-		"seerr_tautulli_settings": {"api_key"},
-		"seerr_network_settings":  {"proxy.password"},
-		"seerr_radarr_server":     {"api_key"},
-		"seerr_sonarr_server":     {"api_key"},
+		"seerr_api_key":            {"api_key"},
+		"seerr_emby_settings":      {"api_key"},
+		"seerr_jellyfin_settings":  {"api_key"},
+		"seerr_tautulli_settings":  {"api_key"},
+		"seerr_network_settings":   {"proxy.password"},
+		"seerr_radarr_server":      {"api_key"},
+		"seerr_radarr_server_test": {"api_key"},
+		"seerr_sonarr_server":      {"api_key"},
+		"seerr_sonarr_server_test": {"api_key"},
 		"seerr_user": {
 			"jellyfin_password",
 			"notification_settings.pushbullet_access_token",
