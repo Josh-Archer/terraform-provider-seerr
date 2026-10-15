@@ -718,10 +718,12 @@ func (r *NotificationClientResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-	// Capture current state to preserve sensitive and optional fields
-	var state NotificationAgentModel
-	diags := req.State.Get(ctx, &state)
-	if !diags.HasError() {
+	// Capture current state to preserve sensitive and optional fields.
+	// Each agent resource schema only contains that agent's nested attribute,
+	// so unmarshalling the full NotificationAgentModel fails and would drop
+	// secrets. Read the active agent the same way create and plan do.
+	state, stateDiags := readNotificationClientModel(ctx, req.State, r.agent)
+	if !stateDiags.HasError() {
 		normalizeNotificationModel(&data, &state)
 	} else {
 		normalizeNotificationModel(&data, nil)
