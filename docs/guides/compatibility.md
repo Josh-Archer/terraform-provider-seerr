@@ -11,15 +11,15 @@ The `seerr` Terraform provider targets the Seerr / Jellyseerr / Overseerr REST A
 
 | Server Application | Supported Versions | Tested CI Baseline | Status |
 | :--- | :--- | :--- | :--- |
-| **Seerr (Unified)** | `v3.0.0` - `v3.4.1` | `seerr/seerr:v3.4.1` | **Tier 1 (Primary Target)** ✅ |
+| **Seerr (Unified)** | `v3.0.0` - `v3.5.0` | `seerr/seerr:v3.5.0` | **Tier 1 (Primary Target)** ✅ |
 | **Jellyseerr (legacy)** | `v1.7.0` - `v2.7.3` | `fallenbagel/jellyseerr:2.7.3` | **Tier 1 (Legacy Target)** ✅ |
 | **Overseerr** | `v1.33.2` - `v1.35.0` | `sctx/overseerr:1.35.0` | **Tier 2 (Supported)** ✅ |
 
-### Verified Release Snapshot (2026-08-29)
+### Verified Release Snapshot (2026-10-14)
 
 Pull requests run OpenTofu integration coverage against all three pinned images above. Seerr runs the stable provider suite. Legacy Jellyseerr runs the same suite except for the post-consolidation blocklist endpoint, which returns 404 on `v2.7.3`. Overseerr runs the common Plex, ARR, request, issue, job, settings, user, and discovery subset because it does not implement Jellyfin/Emby-specific endpoints.
 
-The Seerr `v3.4.1` release OpenAPI specification was compared with `tools/openapi/seerr-api.yml`. It adds no endpoints missing from the provider snapshot. The provider snapshot contains four forward-development library sync endpoints that are not present in the release specification, so no release-spec rollback is required.
+The Seerr `v3.5.0` release OpenAPI specification was compared with `tools/openapi/seerr-api.yml`. The provider's OpenAPI spec was updated to `v3.5.0`. Upstream added `POST /overrideRule/advancedRequest`, which was classified as intentionally out of scope as it is an interactive preview calculation endpoint for user request form UI. Upstream settings additions (`hide_requested` on `seerr_main_settings` and `tags` on `ntfy` in `seerr_notification_agent`) are fully mapped to the provider's resources and data sources.
 
 Jellyseerr's GitHub repository was consolidated into Seerr after `v2.7.3`. GitHub's redirected `releases/latest` response therefore reports the current Seerr release and must not be interpreted as a new Jellyseerr release. The pinned `fallenbagel/jellyseerr:2.7.3` image is the legacy compatibility baseline.
 

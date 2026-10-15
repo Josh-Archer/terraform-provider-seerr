@@ -40,6 +40,7 @@ type MainSettingsModel struct {
 	Region                types.String `tfsdk:"region"`
 	OriginalLanguage      types.String `tfsdk:"original_language"`
 	HideAvailable         types.Bool   `tfsdk:"hide_available"`
+	HideRequested         types.Bool   `tfsdk:"hide_requested"`
 	PartialRequests       types.Bool   `tfsdk:"partial_requests"`
 	LocalLogin            types.Bool   `tfsdk:"local_login"`
 	MediaServerLogin      types.Bool   `tfsdk:"media_server_login"`
@@ -153,6 +154,12 @@ func (r *MainSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 			},
 			"hide_available": schema.BoolAttribute{
 				MarkdownDescription: "Whether to hide available media.",
+				Optional:            true,
+				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
+			},
+			"hide_requested": schema.BoolAttribute{
+				MarkdownDescription: "Whether to hide requested media.",
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers:       useStateForUnknownBool(),
@@ -278,6 +285,9 @@ func (r *MainSettingsResource) buildPayload(data *MainSettingsModel) map[string]
 	if !data.HideAvailable.IsNull() && !data.HideAvailable.IsUnknown() {
 		payload["hideAvailable"] = data.HideAvailable.ValueBool()
 	}
+	if !data.HideRequested.IsNull() && !data.HideRequested.IsUnknown() {
+		payload["hideRequested"] = data.HideRequested.ValueBool()
+	}
 	if !data.PartialRequests.IsNull() && !data.PartialRequests.IsUnknown() {
 		payload["partialRequestsEnabled"] = data.PartialRequests.ValueBool()
 	}
@@ -320,6 +330,7 @@ type mainSettingsDecodedValues struct {
 	Region                types.String
 	OriginalLanguage      types.String
 	HideAvailable         types.Bool
+	HideRequested         types.Bool
 	PartialRequests       types.Bool
 	LocalLogin            types.Bool
 	MediaServerLogin      types.Bool
@@ -375,6 +386,7 @@ func decodeMainSettings(decoded map[string]any) mainSettingsDecodedValues {
 		Region:                types.StringNull(),
 		OriginalLanguage:      types.StringNull(),
 		HideAvailable:         types.BoolNull(),
+		HideRequested:         types.BoolNull(),
 		PartialRequests:       types.BoolNull(),
 		LocalLogin:            types.BoolNull(),
 		MediaServerLogin:      types.BoolNull(),
@@ -432,6 +444,9 @@ func decodeMainSettings(decoded map[string]any) mainSettingsDecodedValues {
 	if v, ok := boolValueFromAny(decoded["hideAvailable"]); ok {
 		values.HideAvailable = types.BoolValue(v)
 	}
+	if v, ok := boolValueFromAny(decoded["hideRequested"]); ok {
+		values.HideRequested = types.BoolValue(v)
+	}
 	if v, ok := boolValueFromAny(decoded["partialRequestsEnabled"]); ok {
 		values.PartialRequests = types.BoolValue(v)
 	} else if v, ok := boolValueFromAny(decoded["partialRequests"]); ok {
@@ -483,6 +498,7 @@ func (r *MainSettingsResource) applyDecodedSettings(data *MainSettingsModel, dec
 	data.Region = values.Region
 	data.OriginalLanguage = values.OriginalLanguage
 	data.HideAvailable = values.HideAvailable
+	data.HideRequested = values.HideRequested
 	data.PartialRequests = values.PartialRequests
 	data.LocalLogin = values.LocalLogin
 	data.MediaServerLogin = values.MediaServerLogin

@@ -29,6 +29,7 @@ data "seerr_main_settings" "example" {
 - `discover_region` (String) The Discover region used by Seerr.
 - `enable_report_an_issue` (Boolean, Deprecated) Whether the 'Report an Issue' feature is enabled.
 - `hide_available` (Boolean) Whether to hide available media.
+- `hide_requested` (Boolean) Whether to hide requested media.
 - `image_proxy` (Boolean, Deprecated) Whether the image proxy is enabled.
 - `local_login` (Boolean) Whether local login is enabled.
 - `locale` (String) The application locale.

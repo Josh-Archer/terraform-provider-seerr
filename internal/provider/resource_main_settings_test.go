@@ -60,6 +60,7 @@ func TestMainSettingsApplyDecodedSettingsReadsSeerrV3Keys(t *testing.T) {
 		"streamingRegion":        "FR",
 		"originalLanguage":       "",
 		"hideAvailable":          false,
+		"hideRequested":          true,
 		"partialRequestsEnabled": true,
 		"localLogin":             true,
 		"mediaServerLogin":       true,
@@ -88,6 +89,9 @@ func TestMainSettingsApplyDecodedSettingsReadsSeerrV3Keys(t *testing.T) {
 	if got := data.PartialRequests.ValueBool(); !got {
 		t.Fatalf("expected partial requests true, got %v", got)
 	}
+	if got := data.HideRequested.ValueBool(); !got {
+		t.Fatalf("expected hide requested true, got %v", got)
+	}
 	if got := data.MediaServerLogin.ValueBool(); !got {
 		t.Fatalf("expected media_server_login true, got %v", got)
 	}
@@ -111,6 +115,7 @@ func TestMainSettingsBuildPayloadUsesSeerrV3Keys(t *testing.T) {
 		Region:                types.StringValue("FR"),
 		OriginalLanguage:      types.StringValue(""),
 		HideAvailable:         types.BoolValue(false),
+		HideRequested:         types.BoolValue(true),
 		PartialRequests:       types.BoolValue(true),
 		LocalLogin:            types.BoolValue(true),
 		PlexLogin:             types.BoolValue(true),
@@ -138,6 +143,9 @@ func TestMainSettingsBuildPayloadUsesSeerrV3Keys(t *testing.T) {
 	}
 	if got := payload["partialRequestsEnabled"]; got != true {
 		t.Fatalf("expected partialRequestsEnabled true, got %#v", got)
+	}
+	if got := payload["hideRequested"]; got != true {
+		t.Fatalf("expected hideRequested true, got %#v", got)
 	}
 	if got := payload["mediaServerLogin"]; got != true {
 		t.Fatalf("expected mediaServerLogin true from plex_login alias, got %#v", got)

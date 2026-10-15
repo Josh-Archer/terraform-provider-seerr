@@ -233,6 +233,7 @@ func DefaultRules() []PathRule {
 		{PathPattern: "/blocklist/{tmdbId}", Classification: ClassCovered, MappedResource: "seerr_blocklist", Notes: "Blocklist item resource"},
 		{PathPattern: "/overrideRule", Classification: ClassCovered, MappedResource: "seerr_override_rule", Notes: "Override rule resource"},
 		{PathPattern: "/overrideRule/{ruleId}", Classification: ClassCovered, MappedResource: "seerr_override_rule", Notes: "Override rule item resource"},
+		{PathPattern: "/overrideRule/advancedRequest", Classification: ClassIntentionallyOutOfScope, Notes: "Interactive override rule evaluation for user media requests"},
 		{PathPattern: "/settings/discover/add", Classification: ClassCovered, MappedResource: "seerr_discover_slider", Notes: "Discover slider add action"},
 		{PathPattern: "/settings/discover/{sliderId}", Classification: ClassCovered, MappedResource: "seerr_discover_slider", Notes: "Discover slider item resource"},
 
