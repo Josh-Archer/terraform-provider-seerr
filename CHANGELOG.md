@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.1.2...v2.2.0) (2026-10-16)
+
+
+### Features
+
+* add radarr and sonarr server connection test resources ([#304](https://github.com/Josh-Archer/terraform-provider-seerr/issues/304)) ([#337](https://github.com/Josh-Archer/terraform-provider-seerr/issues/337)) ([c400a8b](https://github.com/Josh-Archer/terraform-provider-seerr/commit/c400a8bebab34b82489b1cba3907b2b6b611ca12))
+* add radarr and sonarr service reachability data sources ([#326](https://github.com/Josh-Archer/terraform-provider-seerr/issues/326)) ([#338](https://github.com/Josh-Archer/terraform-provider-seerr/issues/338)) ([8d94af0](https://github.com/Josh-Archer/terraform-provider-seerr/commit/8d94af09e0feff875c7093cbe6bf4597a6e57644))
+* add seerr_user_requests data source ([#327](https://github.com/Josh-Archer/terraform-provider-seerr/issues/327)) ([#336](https://github.com/Josh-Archer/terraform-provider-seerr/issues/336)) ([8ae986e](https://github.com/Josh-Archer/terraform-provider-seerr/commit/8ae986ebeffabf7546b0914b87036603052b63e8))
+* **compatibility:** verify Seerr v3.5.0 release and resolve OpenAPI drift ([#314](https://github.com/Josh-Archer/terraform-provider-seerr/issues/314), [#313](https://github.com/Josh-Archer/terraform-provider-seerr/issues/313)) ([#340](https://github.com/Josh-Archer/terraform-provider-seerr/issues/340)) ([69367c1](https://github.com/Josh-Archer/terraform-provider-seerr/commit/69367c1278fc7a38abcf1c5733bdd935dd334f8b))
+* link Plex and Jellyfin accounts on user resource ([#303](https://github.com/Josh-Archer/terraform-provider-seerr/issues/303)) ([#339](https://github.com/Josh-Archer/terraform-provider-seerr/issues/339)) ([08a9133](https://github.com/Josh-Archer/terraform-provider-seerr/commit/08a913360d148fadd6e298e02f1dc555b4005cf1))
+* manage media_server_type on main settings ([#325](https://github.com/Josh-Archer/terraform-provider-seerr/issues/325)) ([#335](https://github.com/Josh-Archer/terraform-provider-seerr/issues/335)) ([a1ad341](https://github.com/Josh-Archer/terraform-provider-seerr/commit/a1ad3410ebb4d611c0c379ace269c64af447b756))
+
+
+### Bug Fixes
+
+* deprecate unsupported user invitation resource/data source ([#324](https://github.com/Josh-Archer/terraform-provider-seerr/issues/324)) ([#332](https://github.com/Josh-Archer/terraform-provider-seerr/issues/332)) ([1e080f8](https://github.com/Josh-Archer/terraform-provider-seerr/commit/1e080f8af2e62d3185f40c3af2ba9b40203e1f5d))
+
+
+### Tests
+
+* add reusable lifecycle contract suite for seerr ([#334](https://github.com/Josh-Archer/terraform-provider-seerr/issues/334)) ([#341](https://github.com/Josh-Archer/terraform-provider-seerr/issues/341)) ([3821cbc](https://github.com/Josh-Archer/terraform-provider-seerr/commit/3821cbccc95c0b6547f97e6b90cd9c680e95378f))
+
 ## [Unreleased]
 
 ### Bug Fixes
