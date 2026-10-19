@@ -28,12 +28,12 @@ resource "seerr_blocklist" "example" {
 
 - `media_type` (String)
 - `tmdb_id` (Number)
-- `user_id` (Number) User ID recorded as the actor who manually blocklisted this media.
 
 ### Optional
 
 - `blocklisted_tags` (String)
 - `title` (String)
+- `user_id` (Number) User ID recorded as the actor who manually blocklisted this media.
 
 ### Read-Only
 
