@@ -33,7 +33,7 @@ resource "seerr_user_quota" "standard_user" {
 
 ### Required
 
-- `user_id` (Number) The numeric ID of the Seerr user whose quotas to manage.
+- `user_id` (Number) The numeric ID of the Seerr user whose quotas to manage. Changing this forces a new resource.
 
 ### Optional
 
