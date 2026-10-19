@@ -61,21 +61,65 @@ func TestApplyQuotaResponseMapsAllFields(t *testing.T) {
 	}
 }
 
-func TestApplyQuotaResponseDefaultsToZeroWhenAbsent(t *testing.T) {
-	// Seerr may return a response without quota fields for users that haven't
-	// been configured; they should default to 0 (inherit global).
-	body := []byte(`{"locale":"en"}`)
+func TestApplyQuotaResponseNullMeansGlobalDefault(t *testing.T) {
+	// Seerr treats null as "use the global default" and 0 as unlimited, so the
+	// two must stay distinguishable in state.
+	body := []byte(`{"movieQuotaLimit":null,"movieQuotaDays":null,"tvQuotaLimit":0,"tvQuotaDays":0}`)
 	data := &UserQuotaModel{UserID: types.Int64Value(3)}
 	applyQuotaResponse(data, body)
 
-	for name, got := range map[string]int64{
-		"MovieQuotaLimit": data.MovieQuotaLimit.ValueInt64(),
-		"MovieQuotaDays":  data.MovieQuotaDays.ValueInt64(),
-		"TvQuotaLimit":    data.TvQuotaLimit.ValueInt64(),
-		"TvQuotaDays":     data.TvQuotaDays.ValueInt64(),
-	} {
-		if got != 0 {
-			t.Fatalf("expected %s to default to 0, got %d", name, got)
+	if !data.MovieQuotaLimit.IsNull() || !data.MovieQuotaDays.IsNull() {
+		t.Fatalf("expected null movie quota for JSON null, got %v / %v", data.MovieQuotaLimit, data.MovieQuotaDays)
+	}
+	if data.TvQuotaLimit.IsNull() || data.TvQuotaLimit.ValueInt64() != 0 {
+		t.Fatalf("expected TvQuotaLimit 0 (unlimited) preserved, got %v", data.TvQuotaLimit)
+	}
+	if data.TvQuotaDays.IsNull() || data.TvQuotaDays.ValueInt64() != 0 {
+		t.Fatalf("expected TvQuotaDays 0 preserved, got %v", data.TvQuotaDays)
+	}
+
+	// Absent fields are also the global default.
+	data = &UserQuotaModel{UserID: types.Int64Value(3)}
+	applyQuotaResponse(data, []byte(`{"locale":"en"}`))
+	if !data.MovieQuotaLimit.IsNull() || !data.TvQuotaDays.IsNull() {
+		t.Fatalf("expected null quota fields when absent")
+	}
+}
+
+func TestUserQuotaApplyQuotaSendsNullForGlobalDefault(t *testing.T) {
+	var written map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			_, _ = w.Write([]byte(`{"locale":"fr","movieQuotaLimit":7,"movieQuotaDays":7,"tvQuotaLimit":7,"tvQuotaDays":7}`))
+		case http.MethodPost:
+			_ = json.NewDecoder(r.Body).Decode(&written)
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	defer srv.Close()
+
+	baseURL, _ := url.Parse(srv.URL)
+	res := &UserQuotaResource{client: NewClient(baseURL, "tok", "agent", false, defaultRequestTimeout, 0, 0)}
+	data := &UserQuotaModel{
+		UserID:          types.Int64Value(5),
+		MovieQuotaLimit: types.Int64Null(),
+		MovieQuotaDays:  types.Int64Null(),
+		TvQuotaLimit:    types.Int64Value(0),
+		TvQuotaDays:     types.Int64Value(0),
+	}
+	if err := res.applyQuota(context.Background(), data); err != nil {
+		t.Fatalf("applyQuota: %v", err)
+	}
+	for _, k := range []string{"movieQuotaLimit", "movieQuotaDays"} {
+		v, present := written[k]
+		if !present || v != nil {
+			t.Fatalf("expected %s to be sent as JSON null, got %#v (present=%v)", k, v, present)
+		}
+	}
+	for _, k := range []string{"tvQuotaLimit", "tvQuotaDays"} {
+		if v, ok := int64ValueFromAny(written[k]); !ok || v != 0 {
+			t.Fatalf("expected %s to be sent as 0, got %#v", k, written[k])
 		}
 	}
 }
@@ -121,8 +165,8 @@ func TestUserQuotaApplyQuotaPreservesNonQuotaFields(t *testing.T) {
 			_, _ = w.Write([]byte(`{
 				"locale":"fr",
 				"discoverRegion":"FR",
-				"movieQuotaLimit":0,
-				"movieQuotaDays":0,
+				"movieQuotaLimit":null,
+				"movieQuotaDays":null,
 				"tvQuotaLimit":0,
 				"tvQuotaDays":0
 			}`))
@@ -197,7 +241,7 @@ func TestAccUserQuotaResource(t *testing.T) {
 					resource.TestCheckResourceAttr("seerr_user_quota.test", "tv_quota_days", "30"),
 				),
 			},
-			// Step 3: Reset to unlimited (0 = inherit global)
+			// Step 3: Set to unlimited (0 = unlimited, NOT global default)
 			{
 				Config: testAccUserQuotaConfig(2, 0, 0, 0, 0),
 				Check: resource.ComposeAggregateTestCheckFunc(

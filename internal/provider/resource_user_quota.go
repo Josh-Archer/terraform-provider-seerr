@@ -48,7 +48,8 @@ func (r *UserQuotaResource) Metadata(_ context.Context, req resource.MetadataReq
 func (r *UserQuotaResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Manage per-user movie and TV request quotas in Seerr via `/api/v1/user/{userId}/settings/main`.\n\n" +
-			"Setting a quota to `0` means **unlimited** (the global default applies). " +
+			"Leaving a quota attribute unset (`null`) sends JSON `null` to Seerr, which means **use the instance-wide global default**. " +
+			"Setting a quota limit to `0` means **unlimited** and bypasses the global default. " +
 			"The `global_*` computed attributes reflect the instance-wide quota defaults for reference.\n\n" +
 			"Use `seerr_permission_set` together with this resource to fully declare a user's access tier " +
 			"(e.g. *standard_user* vs *power_user*).",
@@ -66,27 +67,23 @@ func (r *UserQuotaResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			// --- per-user quota settings (writable) ---
 			"movie_quota_limit": schema.Int64Attribute{
 				MarkdownDescription: "Maximum number of movie requests allowed within `movie_quota_days`. " +
-					"Set to `0` to use the global default (unlimited unless configured globally).",
+					"Omit to use the global default; `0` means unlimited.",
 				Optional: true,
-				Computed: true,
 			},
 			"movie_quota_days": schema.Int64Attribute{
 				MarkdownDescription: "Rolling window in days for the movie quota. " +
-					"Set to `0` to use the global default.",
+					"Omit to use the global default.",
 				Optional: true,
-				Computed: true,
 			},
 			"tv_quota_limit": schema.Int64Attribute{
 				MarkdownDescription: "Maximum number of TV season requests allowed within `tv_quota_days`. " +
-					"Set to `0` to use the global default.",
+					"Omit to use the global default.",
 				Optional: true,
-				Computed: true,
 			},
 			"tv_quota_days": schema.Int64Attribute{
 				MarkdownDescription: "Rolling window in days for the TV quota. " +
-					"Set to `0` to use the global default.",
+					"Omit to use the global default.",
 				Optional: true,
-				Computed: true,
 			},
 			// --- instance-wide defaults (read-only) ---
 			"global_movie_quota_limit": schema.Int64Attribute{
@@ -228,11 +225,12 @@ func (r *UserQuotaResource) applyQuota(ctx context.Context, data *UserQuotaModel
 		return fmt.Errorf("parsing current settings: %w", err)
 	}
 
-	// Overlay the four quota fields from the plan.
-	setOptionalInt64(payload, "movieQuotaLimit", data.MovieQuotaLimit)
-	setOptionalInt64(payload, "movieQuotaDays", data.MovieQuotaDays)
-	setOptionalInt64(payload, "tvQuotaLimit", data.TvQuotaLimit)
-	setOptionalInt64(payload, "tvQuotaDays", data.TvQuotaDays)
+	// Overlay the four quota fields from the plan. Null means "global default"
+	// and is sent as JSON null; 0 is kept as-is (unlimited in Seerr).
+	setNullableInt64(payload, "movieQuotaLimit", data.MovieQuotaLimit)
+	setNullableInt64(payload, "movieQuotaDays", data.MovieQuotaDays)
+	setNullableInt64(payload, "tvQuotaLimit", data.TvQuotaLimit)
+	setNullableInt64(payload, "tvQuotaDays", data.TvQuotaDays)
 
 	body, _ := json.Marshal(payload)
 	writeRes, err := r.client.Request(ctx, "POST", apiPath, string(body), nil)
@@ -271,22 +269,22 @@ func applyQuotaResponse(data *UserQuotaModel, body []byte) {
 	if v, ok := int64ValueFromAny(decoded["movieQuotaLimit"]); ok {
 		data.MovieQuotaLimit = types.Int64Value(v)
 	} else {
-		data.MovieQuotaLimit = types.Int64Value(0)
+		data.MovieQuotaLimit = types.Int64Null()
 	}
 	if v, ok := int64ValueFromAny(decoded["movieQuotaDays"]); ok {
 		data.MovieQuotaDays = types.Int64Value(v)
 	} else {
-		data.MovieQuotaDays = types.Int64Value(0)
+		data.MovieQuotaDays = types.Int64Null()
 	}
 	if v, ok := int64ValueFromAny(decoded["tvQuotaLimit"]); ok {
 		data.TvQuotaLimit = types.Int64Value(v)
 	} else {
-		data.TvQuotaLimit = types.Int64Value(0)
+		data.TvQuotaLimit = types.Int64Null()
 	}
 	if v, ok := int64ValueFromAny(decoded["tvQuotaDays"]); ok {
 		data.TvQuotaDays = types.Int64Value(v)
 	} else {
-		data.TvQuotaDays = types.Int64Value(0)
+		data.TvQuotaDays = types.Int64Null()
 	}
 
 	// Global (instance-wide) read-only mirrors.

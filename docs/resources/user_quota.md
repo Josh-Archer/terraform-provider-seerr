@@ -4,7 +4,7 @@ page_title: "seerr_user_quota Resource - seerr"
 subcategory: ""
 description: |-
   Manage per-user movie and TV request quotas in Seerr via /api/v1/user/{userId}/settings/main.
-  Setting a quota to 0 means unlimited (the global default applies). The global_* computed attributes reflect the instance-wide quota defaults for reference.
+  Leaving a quota attribute unset (null) sends JSON null to Seerr, which means use the instance-wide global default. Setting a quota limit to 0 means unlimited and bypasses the global default. The global_* computed attributes reflect the instance-wide quota defaults for reference.
   Use seerr_permission_set together with this resource to fully declare a user's access tier (e.g. standard_user vs power_user).
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manage per-user movie and TV request quotas in Seerr via `/api/v1/user/{userId}/settings/main`.
 
-Setting a quota to `0` means **unlimited** (the global default applies). The `global_*` computed attributes reflect the instance-wide quota defaults for reference.
+Leaving a quota attribute unset (`null`) sends JSON `null` to Seerr, which means **use the instance-wide global default**. Setting a quota limit to `0` means **unlimited** and bypasses the global default. The `global_*` computed attributes reflect the instance-wide quota defaults for reference.
 
 Use `seerr_permission_set` together with this resource to fully declare a user's access tier (e.g. *standard_user* vs *power_user*).
 
@@ -37,10 +37,10 @@ resource "seerr_user_quota" "standard_user" {
 
 ### Optional
 
-- `movie_quota_days` (Number) Rolling window in days for the movie quota. Set to `0` to use the global default.
-- `movie_quota_limit` (Number) Maximum number of movie requests allowed within `movie_quota_days`. Set to `0` to use the global default (unlimited unless configured globally).
-- `tv_quota_days` (Number) Rolling window in days for the TV quota. Set to `0` to use the global default.
-- `tv_quota_limit` (Number) Maximum number of TV season requests allowed within `tv_quota_days`. Set to `0` to use the global default.
+- `movie_quota_days` (Number) Rolling window in days for the movie quota. Omit to use the global default.
+- `movie_quota_limit` (Number) Maximum number of movie requests allowed within `movie_quota_days`. Omit to use the global default; `0` means unlimited.
+- `tv_quota_days` (Number) Rolling window in days for the TV quota. Omit to use the global default.
+- `tv_quota_limit` (Number) Maximum number of TV season requests allowed within `tv_quota_days`. Omit to use the global default.
 
 ### Read-Only
 

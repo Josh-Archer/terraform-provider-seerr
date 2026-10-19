@@ -108,6 +108,19 @@ func setOptionalInt64(payload map[string]any, key string, value types.Int64) {
 	payload[key] = value.ValueInt64()
 }
 
+// setNullableInt64 writes value into payload, sending JSON null when value is null.
+// Unknown values leave the payload untouched.
+func setNullableInt64(payload map[string]any, key string, value types.Int64) {
+	if value.IsUnknown() {
+		return
+	}
+	if value.IsNull() {
+		payload[key] = nil
+		return
+	}
+	payload[key] = value.ValueInt64()
+}
+
 func setOptionalBool(payload map[string]any, key string, value types.Bool) {
 	if value.IsNull() || value.IsUnknown() {
 		return

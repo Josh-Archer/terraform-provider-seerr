@@ -39,7 +39,7 @@ func (d *UserQuotaDataSource) Metadata(_ context.Context, req datasource.Metadat
 func (d *UserQuotaDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Read per-user movie and TV request quotas from Seerr via `/api/v1/user/{userId}/settings/main`.\n\n" +
-			"A quota value of `0` means the user inherits the global instance default. " +
+			"A `null` quota value means the user inherits the global instance default; `0` means unlimited. " +
 			"Use `global_movie_quota_limit` / `global_tv_quota_limit` to inspect those defaults.",
 		Attributes: map[string]schema.Attribute{
 			"user_id": schema.Int64Attribute{
@@ -47,19 +47,19 @@ func (d *UserQuotaDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 				Required:            true,
 			},
 			"movie_quota_limit": schema.Int64Attribute{
-				MarkdownDescription: "Per-user movie request quota limit (`0` = inherit global).",
+				MarkdownDescription: "Per-user movie request quota limit (`null` = inherit global, `0` = unlimited for limits).",
 				Computed:            true,
 			},
 			"movie_quota_days": schema.Int64Attribute{
-				MarkdownDescription: "Per-user movie quota rolling window in days (`0` = inherit global).",
+				MarkdownDescription: "Per-user movie quota rolling window in days (`null` = inherit global, `0` = unlimited for limits).",
 				Computed:            true,
 			},
 			"tv_quota_limit": schema.Int64Attribute{
-				MarkdownDescription: "Per-user TV request quota limit (`0` = inherit global).",
+				MarkdownDescription: "Per-user TV request quota limit (`null` = inherit global, `0` = unlimited for limits).",
 				Computed:            true,
 			},
 			"tv_quota_days": schema.Int64Attribute{
-				MarkdownDescription: "Per-user TV quota rolling window in days (`0` = inherit global).",
+				MarkdownDescription: "Per-user TV quota rolling window in days (`null` = inherit global, `0` = unlimited for limits).",
 				Computed:            true,
 			},
 			"global_movie_quota_limit": schema.Int64Attribute{
@@ -121,22 +121,22 @@ func (d *UserQuotaDataSource) Read(ctx context.Context, req datasource.ReadReque
 	if v, ok := int64ValueFromAny(decoded["movieQuotaLimit"]); ok {
 		data.MovieQuotaLimit = types.Int64Value(v)
 	} else {
-		data.MovieQuotaLimit = types.Int64Value(0)
+		data.MovieQuotaLimit = types.Int64Null()
 	}
 	if v, ok := int64ValueFromAny(decoded["movieQuotaDays"]); ok {
 		data.MovieQuotaDays = types.Int64Value(v)
 	} else {
-		data.MovieQuotaDays = types.Int64Value(0)
+		data.MovieQuotaDays = types.Int64Null()
 	}
 	if v, ok := int64ValueFromAny(decoded["tvQuotaLimit"]); ok {
 		data.TvQuotaLimit = types.Int64Value(v)
 	} else {
-		data.TvQuotaLimit = types.Int64Value(0)
+		data.TvQuotaLimit = types.Int64Null()
 	}
 	if v, ok := int64ValueFromAny(decoded["tvQuotaDays"]); ok {
 		data.TvQuotaDays = types.Int64Value(v)
 	} else {
-		data.TvQuotaDays = types.Int64Value(0)
+		data.TvQuotaDays = types.Int64Null()
 	}
 	if v, ok := int64ValueFromAny(decoded["globalMovieQuotaLimit"]); ok {
 		data.GlobalMovieQuotaLimit = types.Int64Value(v)
