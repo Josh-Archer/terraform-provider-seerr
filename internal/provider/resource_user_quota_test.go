@@ -9,8 +9,15 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/stretchr/testify/require"
 )
 
 // ----------------------------------------------------------------------------
@@ -225,4 +232,33 @@ resource "seerr_user_quota" "test" {
   tv_quota_days     = %d
 }
 `, userID, movieLimit, movieDays, tvLimit, tvDays)
+}
+
+// Changing user_id must force replacement; otherwise Update would write to the
+// new user and orphan the old user's quota (#345).
+func TestUserQuotaUserIDRequiresReplace(t *testing.T) {
+	t.Parallel()
+	var resp fwresource.SchemaResponse
+	NewUserQuotaResource().Schema(context.Background(), fwresource.SchemaRequest{}, &resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	attr, ok := resp.Schema.Attributes["user_id"].(rschema.Int64Attribute)
+	require.True(t, ok)
+
+	req := planmodifier.Int64Request{
+		Path:        path.Root("user_id"),
+		PlanValue:   types.Int64Value(2),
+		StateValue:  types.Int64Value(1),
+		ConfigValue: types.Int64Value(2),
+		State:       tfsdk.State{Raw: tftypes.NewValue(tftypes.Object{}, map[string]tftypes.Value{})},
+		Plan:        tfsdk.Plan{Raw: tftypes.NewValue(tftypes.Object{}, map[string]tftypes.Value{})},
+	}
+	var replace bool
+	for _, m := range attr.PlanModifiers {
+		var mresp planmodifier.Int64Response
+		mresp.PlanValue = req.PlanValue
+		m.PlanModifyInt64(context.Background(), req, &mresp)
+		replace = replace || mresp.RequiresReplace
+	}
+	require.True(t, replace, "changing user_id must require replacement")
 }

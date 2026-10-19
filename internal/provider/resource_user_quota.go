@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -60,8 +61,11 @@ func (r *UserQuotaResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				},
 			},
 			"user_id": schema.Int64Attribute{
-				MarkdownDescription: "The numeric ID of the Seerr user whose quotas to manage.",
+				MarkdownDescription: "The numeric ID of the Seerr user whose quotas to manage. Changing this forces a new resource.",
 				Required:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			// --- per-user quota settings (writable) ---
 			"movie_quota_limit": schema.Int64Attribute{
