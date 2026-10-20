@@ -4,14 +4,14 @@ page_title: "seerr_user_quota Data Source - seerr"
 subcategory: ""
 description: |-
   Read per-user movie and TV request quotas from Seerr via /api/v1/user/{userId}/settings/main.
-  A quota value of 0 means the user inherits the global instance default. Use global_movie_quota_limit / global_tv_quota_limit to inspect those defaults.
+  A null quota value means the user inherits the global instance default; 0 means unlimited. Use global_movie_quota_limit / global_tv_quota_limit to inspect those defaults.
 ---
 
 # seerr_user_quota (Data Source)
 
 Read per-user movie and TV request quotas from Seerr via `/api/v1/user/{userId}/settings/main`.
 
-A quota value of `0` means the user inherits the global instance default. Use `global_movie_quota_limit` / `global_tv_quota_limit` to inspect those defaults.
+A `null` quota value means the user inherits the global instance default; `0` means unlimited. Use `global_movie_quota_limit` / `global_tv_quota_limit` to inspect those defaults.
 
 ## Example Usage
 
@@ -34,7 +34,7 @@ data "seerr_user_quota" "alice" {
 - `global_movie_quota_limit` (Number) Instance-wide default movie quota limit.
 - `global_tv_quota_days` (Number) Instance-wide default TV quota period in days.
 - `global_tv_quota_limit` (Number) Instance-wide default TV quota limit.
-- `movie_quota_days` (Number) Per-user movie quota rolling window in days (`0` = inherit global).
-- `movie_quota_limit` (Number) Per-user movie request quota limit (`0` = inherit global).
-- `tv_quota_days` (Number) Per-user TV quota rolling window in days (`0` = inherit global).
-- `tv_quota_limit` (Number) Per-user TV request quota limit (`0` = inherit global).
+- `movie_quota_days` (Number) Per-user movie quota rolling window in days (`null` = inherit global, `0` = unlimited for limits).
+- `movie_quota_limit` (Number) Per-user movie request quota limit (`null` = inherit global, `0` = unlimited for limits).
+- `tv_quota_days` (Number) Per-user TV quota rolling window in days (`null` = inherit global, `0` = unlimited for limits).
+- `tv_quota_limit` (Number) Per-user TV request quota limit (`null` = inherit global, `0` = unlimited for limits).
