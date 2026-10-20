@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.2.1...v2.2.2) (2026-10-20)
+
+
+### Bug Fixes
+
+* **blocklist:** make user_id optional+computed and drop mediaType-less fallback ([#346](https://github.com/Josh-Archer/terraform-provider-seerr/issues/346)) ([#348](https://github.com/Josh-Archer/terraform-provider-seerr/issues/348)) ([20fd5b5](https://github.com/Josh-Archer/terraform-provider-seerr/commit/20fd5b5cce13d54d10079804e251dbd2f5bae36e))
+* **user_quota:** require replacement when user_id changes ([#345](https://github.com/Josh-Archer/terraform-provider-seerr/issues/345)) ([#347](https://github.com/Josh-Archer/terraform-provider-seerr/issues/347)) ([1978e93](https://github.com/Josh-Archer/terraform-provider-seerr/commit/1978e93625f1aae57a8c65c4eb965c7efc8b1337))
+* **user_quota:** send null for global default; treat 0 as unlimited ([#344](https://github.com/Josh-Archer/terraform-provider-seerr/issues/344)) ([#349](https://github.com/Josh-Archer/terraform-provider-seerr/issues/349)) ([b681ead](https://github.com/Josh-Archer/terraform-provider-seerr/commit/b681ead227a05edefa498e4b95259046a0daddf0))
+
 ## [2.2.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.2.0...v2.2.1) (2026-10-16)
 
 
