@@ -75,9 +75,11 @@ func blocklistResourceAttributes() map[string]rschema.Attribute {
 		},
 		"user_id": rschema.Int64Attribute{
 			MarkdownDescription: "User ID recorded as the actor who manually blocklisted this media.",
-			Required:            true,
+			Optional:            true,
+			Computed:            true,
 			PlanModifiers: []planmodifier.Int64{
-				int64planmodifier.RequiresReplace(),
+				int64planmodifier.UseStateForUnknown(),
+				int64planmodifier.RequiresReplaceIfConfigured(),
 			},
 		},
 		"blocklisted_tags": rschema.StringAttribute{
@@ -201,12 +203,6 @@ func (r *BlocklistResource) Delete(ctx context.Context, req resource.DeleteReque
 		resp.Diagnostics.AddError("Delete Failed", err.Error())
 		return
 	}
-	if res.StatusCode == 400 {
-		fallbackEndpoint := fmt.Sprintf("/api/v1/blocklist/%d", data.TMDBID.ValueInt64())
-		if fallbackRes, fallbackErr := r.client.Request(ctx, "DELETE", fallbackEndpoint, "", nil); fallbackErr == nil {
-			res = fallbackRes
-		}
-	}
 	if res.StatusCode != 404 && res.StatusCode != 204 && !StatusIsOK(res.StatusCode) {
 		resp.Diagnostics.AddError("Delete Failed", fmt.Sprintf("status %d: %s", res.StatusCode, string(res.Body)))
 	}
@@ -242,7 +238,11 @@ func buildBlocklistPayload(data *BlocklistModel) map[string]any {
 }
 func applyBlocklistMap(data *BlocklistModel, decoded map[string]any) error {
 	data.Title = types.StringNull()
-	data.UserID = types.Int64Null()
+	// Seerr may return `user: null` even when a user was supplied on create, so
+	// keep the prior (configured) value unless the API reports one.
+	if data.UserID.IsUnknown() {
+		data.UserID = types.Int64Null()
+	}
 	data.BlocklistedTags = types.StringNull()
 	data.CreatedAt = types.StringNull()
 
@@ -284,12 +284,6 @@ func (r *BlocklistResource) refreshBlocklist(ctx context.Context, data *Blocklis
 	res, err := r.client.Request(ctx, "GET", endpoint, "", nil)
 	if err != nil {
 		return err
-	}
-	if res.StatusCode == 400 {
-		fallbackEndpoint := fmt.Sprintf("/api/v1/blocklist/%d", data.TMDBID.ValueInt64())
-		if fallbackRes, fallbackErr := r.client.Request(ctx, "GET", fallbackEndpoint, "", nil); fallbackErr == nil {
-			res = fallbackRes
-		}
 	}
 	if res.StatusCode == 404 {
 		return ErrNotFound
