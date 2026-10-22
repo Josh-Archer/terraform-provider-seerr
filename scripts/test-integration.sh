@@ -1,21 +1,28 @@
 #!/usr/bin/env bash
-# Purpose: run OpenTofu integration coverage against either the stable merge gate or the broader full suite.
+# Purpose: run Terraform/OpenTofu integration coverage against either the stable merge gate or the broader full suite.
 # Usage:
 #   bash ./scripts/test-integration.sh
 #   SEERR_TEST_SUITE=stable bash ./scripts/test-integration.sh
 #   SEERR_TEST_SUITE=all bash ./scripts/test-integration.sh
+#   SEERR_TEST_ENGINE=terraform bash ./scripts/test-integration.sh
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
 cd "${repo_root}"
-tests_dir="${repo_root}/tests"
 artifact_dir="${SEERR_ARTIFACT_DIR:-${repo_root}/test-artifacts/integration}"
+test_work_dir="${artifact_dir}/work"
+tests_dir="${test_work_dir}/tests"
 mirror_root="${SEERR_PROVIDER_MIRROR_ROOT:-${repo_root}/provider-mirror}"
-provider_namespace="${SEERR_PROVIDER_NAMESPACE:-registry.opentofu.org/josh-archer/seerr/99.99.99}"
+test_engine="${SEERR_TEST_ENGINE:-tofu}"
+provider_host="registry.opentofu.org"
+if [[ "${test_engine}" == "terraform" ]]; then
+  provider_host="registry.terraform.io"
+fi
+provider_namespace="${SEERR_PROVIDER_NAMESPACE:-${provider_host}/josh-archer/seerr/99.99.99}"
 test_suite="${SEERR_TEST_SUITE:-stable}"
-tofu_test_log="${artifact_dir}/tofu-test.log"
+engine_test_log="${artifact_dir}/${test_engine}-test.log"
 compose_log="${artifact_dir}/docker-compose.log"
-tofu_cli_config="${artifact_dir}/tofurc"
+engine_cli_config="${artifact_dir}/${test_engine}rc"
 local_env_created=false
 generated_provider_files=()
 
@@ -54,8 +61,8 @@ go_bin="$(resolve_tool go)" || {
   exit 1
 }
 
-tofu_bin="$(resolve_tool tofu)" || {
-  echo "Unable to find 'tofu' on PATH." >&2
+engine_bin="$(resolve_tool "${test_engine}")" || {
+  echo "Unable to find '${test_engine}' on PATH." >&2
   exit 1
 }
 
@@ -66,12 +73,20 @@ provider_target_dir="${mirror_root}/${provider_namespace}/${goos}_${goarch}"
 provider_binary="${provider_target_dir}/terraform-provider-seerr${goexe}"
 
 mkdir -p "${artifact_dir}" "${provider_target_dir}"
-cat >"${tofu_cli_config}" <<EOF
+rm -rf "${test_work_dir}"
+mkdir -p "${test_work_dir}"
+cp -R "${repo_root}/tests" "${tests_dir}"
+cp -R "${repo_root}/modules" "${test_work_dir}/modules"
+while IFS= read -r -d '' terraform_file; do
+  sed -E -i "s#(source[[:space:]]*=[[:space:]]*)\"josh-archer/seerr\"#\1\"${provider_host}/josh-archer/seerr\"#" "${terraform_file}"
+  sed -i "s#registry.opentofu.org/josh-archer/seerr#${provider_host}/josh-archer/seerr#g" "${terraform_file}"
+done < <(find "${tests_dir}" "${test_work_dir}/modules" -type f -name '*.tf' -print0)
+cat >"${engine_cli_config}" <<EOF
 provider_installation {
   direct {}
 }
 EOF
-export TF_CLI_CONFIG_FILE="${tofu_cli_config}"
+export TF_CLI_CONFIG_FILE="${engine_cli_config}"
 
 capture_diagnostics() {
   if [[ "${local_env_created}" != "true" ]]; then
@@ -153,12 +168,13 @@ export TF_VAR_url="${SEERR_URL}"
 export TF_VAR_api_key="${SEERR_API_KEY}"
 generate_test_provider_configs
 
-run "${tofu_bin}" init -plugin-dir="${mirror_root}"
+run "${engine_bin}" init -plugin-dir="${mirror_root}"
 
-tofu_test_args=()
-if [[ -n "${SEERR_TOFU_FILTERS:-}" ]]; then
-  for filter in ${SEERR_TOFU_FILTERS}; do
-    tofu_test_args+=("-filter=${filter}")
+engine_test_args=()
+test_filters="${SEERR_TEST_FILTERS:-${SEERR_TOFU_FILTERS:-}}"
+if [[ -n "${test_filters}" ]]; then
+  for filter in ${test_filters}; do
+    engine_test_args+=("-filter=${filter}")
   done
 elif [[ "${test_suite}" == "stable" ]]; then
   stable_filters=(
@@ -181,12 +197,12 @@ elif [[ "${test_suite}" == "stable" ]]; then
     "user_permissions.tftest.hcl"
   )
   for filter in "${stable_filters[@]}"; do
-    tofu_test_args+=("-filter=${filter}")
+    engine_test_args+=("-filter=${filter}")
   done
 elif [[ "${test_suite}" != "all" ]]; then
   echo "Unsupported SEERR_TEST_SUITE value: ${test_suite}" >&2
   exit 1
 fi
 
-run "${tofu_bin}" test \
-  "${tofu_test_args[@]}" 2>&1 | tee "${tofu_test_log}"
+run "${engine_bin}" test \
+  "${engine_test_args[@]}" 2>&1 | tee "${engine_test_log}"

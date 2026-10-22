@@ -26,6 +26,21 @@ variable "email" {
   default = "ci-admin@example.invalid"
 }
 
+variable "backup_settings_supported" {
+  type    = bool
+  default = true
+}
+
+variable "fixture_job_id" {
+  type    = string
+  default = ""
+}
+
+variable "notification_agents_supported" {
+  type    = bool
+  default = true
+}
+
 provider "seerr" {
   url     = var.url
   api_key = var.api_key

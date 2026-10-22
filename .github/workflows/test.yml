@@ -77,15 +77,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: seerr-v3.5.0
+          - engine: tofu
+            target: seerr-v3.5.0
             tofu_version: 1.8.0
             image: seerr/seerr:v3.5.0
             filters: ""
-          - target: seerr-v3.4.1
+          - engine: tofu
+            target: seerr-v3.4.1
             tofu_version: 1.8.0
             image: seerr/seerr:v3.4.1
             filters: ""
-          - target: jellyseerr-v2.7.3
+          - engine: tofu
+            target: jellyseerr-v2.7.3
             tofu_version: 1.8.0
             image: fallenbagel/jellyseerr:2.7.3
             filters: >-
@@ -104,7 +107,8 @@ jobs:
               settings.tftest.hcl
               user.tftest.hcl
               user_permissions.tftest.hcl
-          - target: overseerr-v1.35.0
+          - engine: tofu
+            target: overseerr-v1.35.0
             tofu_version: 1.8.0
             image: sctx/overseerr:1.35.0
             filters: >-
@@ -121,9 +125,10 @@ jobs:
               user_permissions.tftest.hcl
     env:
       USE_SELF_HOSTED: "false"
+      SEERR_TEST_ENGINE: ${{ matrix.engine }}
       SEERR_TEST_IMAGE: ${{ matrix.image }}
-      SEERR_TOFU_FILTERS: ${{ matrix.filters }}
-      SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration
+      SEERR_TEST_FILTERS: ${{ matrix.filters }}
+      SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration-${{ matrix.engine }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -144,7 +149,7 @@ jobs:
             echo "SEERR_URL=${LEGACY_SEERR_URL}" >> "$GITHUB_ENV"
             echo "SEERR_API_KEY=${LEGACY_SEERR_API_KEY}" >> "$GITHUB_ENV"
           fi
-      - name: OpenTofu stable suite
+      - name: Run stable lifecycle suite
         shell: bash
         run: bash ./scripts/test-integration.sh
         env:
@@ -153,7 +158,105 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: compatibility-artifacts-${{ matrix.target }}-${{ matrix.tofu_version }}
+          name: compatibility-artifacts-${{ matrix.engine }}-${{ matrix.target }}
+          path: test-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  terraform-test-stable:
+    name: Terraform Compatibility (${{ matrix.target }}, ${{ matrix.terraform_version }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: seerr-v3.5.0
+            engine: terraform
+            terraform_version: 1.8.5
+            image: seerr/seerr:v3.5.0
+            filters: ""
+          - target: seerr-v3.4.1
+            engine: terraform
+            terraform_version: 1.8.5
+            image: seerr/seerr:v3.4.1
+            filters: ""
+          - target: jellyseerr-v2.7.3
+            engine: terraform
+            terraform_version: 1.8.5
+            image: fallenbagel/jellyseerr:2.7.3
+            filters: >-
+              api_objects.tftest.hcl
+              backup_settings.tftest.hcl
+              current_user.tftest.hcl
+              data_sources.tftest.hcl
+              discover.tftest.hcl
+              discover_slider_data_source.tftest.hcl
+              features.tftest.hcl
+              issue.tftest.hcl
+              job_schedule.tftest.hcl
+              override_rule.tftest.hcl
+              request.tftest.hcl
+              servers.tftest.hcl
+              settings.tftest.hcl
+              user.tftest.hcl
+              user_permissions.tftest.hcl
+          - target: overseerr-v1.35.0
+            engine: terraform
+            terraform_version: 1.8.5
+            image: sctx/overseerr:1.35.0
+            filters: >-
+              current_user.tftest.hcl
+              data_sources.tftest.hcl
+              discover_slider_data_source.tftest.hcl
+              features.tftest.hcl
+              issue.tftest.hcl
+              job_schedule.tftest.hcl
+              request.tftest.hcl
+              servers.tftest.hcl
+              settings.tftest.hcl
+              user.tftest.hcl
+              user_permissions.tftest.hcl
+    env:
+      USE_SELF_HOSTED: "false"
+      SEERR_TEST_ENGINE: ${{ matrix.engine }}
+      SEERR_TEST_IMAGE: ${{ matrix.image }}
+      SEERR_TEST_FILTERS: ${{ matrix.filters }}
+      SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration-${{ matrix.engine }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
+        with:
+          terraform_version: ${{ matrix.terraform_version }}
+          terraform_wrapper: false
+      - name: Use legacy external Seerr target when configured
+        shell: bash
+        run: |
+          if [[ -n "${LEGACY_SEERR_URL:-}" ]] && [[ "${USE_SELF_HOSTED:-false}" == "false" ]]; then
+            echo "Using Legacy External Seerr Instance"
+            echo "SEERR_URL=${LEGACY_SEERR_URL}" >> "$GITHUB_ENV"
+            echo "SEERR_API_KEY=${LEGACY_SEERR_API_KEY}" >> "$GITHUB_ENV"
+          fi
+      - name: Run stable lifecycle suite
+        shell: bash
+        run: bash ./scripts/test-integration.sh
+        env:
+          SEERR_TEST_SUITE: stable
+      - name: Upload integration diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: compatibility-artifacts-${{ matrix.engine }}-${{ matrix.target }}
           path: test-artifacts/
           if-no-files-found: ignore
           retention-days: 7

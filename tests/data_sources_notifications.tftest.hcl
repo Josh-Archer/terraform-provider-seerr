@@ -1,7 +1,3 @@
-variables {
-  notification_agents_supported = true
-}
-
 run "test_notification_agents_data_source" {
   command = plan
 

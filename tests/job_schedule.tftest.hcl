@@ -1,7 +1,3 @@
-variables {
-  fixture_job_id = ""
-}
-
 run "job_schedule_lifecycle" {
   command = apply
 
