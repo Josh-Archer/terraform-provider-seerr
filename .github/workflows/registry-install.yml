@@ -1,0 +1,97 @@
+name: Registry Install Check
+
+# Verifies the signed provider installs from both public registries using the
+# latest published version, with signature verification left enabled.
+on:
+  schedule:
+    - cron: '30 7 * * *'
+  workflow_dispatch:
+  release:
+    types: [published]
+
+concurrency:
+  group: registry-install-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    name: ${{ matrix.tool }} init
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: [terraform, tofu]
+    steps:
+      - name: Setup Terraform
+        if: matrix.tool == 'terraform'
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
+        with:
+          terraform_wrapper: false
+
+      - name: Setup OpenTofu
+        if: matrix.tool == 'tofu'
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_wrapper: false
+
+      - name: Resolve latest published version
+        id: version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${RELEASE_TAG:-}"
+          if [ -z "$tag" ]; then
+            tag=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name')
+          fi
+          version="${tag#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Unexpected release tag '$tag'"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install provider from registry (with retries for index lag)
+        env:
+          TOOL: ${{ matrix.tool }}
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir=$(mktemp -d)
+          cd "$dir"
+          if [ "$TOOL" = "tofu" ]; then
+            source_addr="registry.opentofu.org/josh-archer/seerr"
+          else
+            source_addr="registry.terraform.io/josh-archer/seerr"
+          fi
+          cat > main.tf <<TF
+          terraform {
+            required_providers {
+              seerr = {
+                source  = "${source_addr}"
+                version = "= ${VERSION}"
+              }
+            }
+          }
+          TF
+          # New releases can take a while to appear in the registries.
+          for attempt in 1 2 3 4 5 6; do
+            if "$TOOL" init -input=false -no-color; then
+              break
+            fi
+            if [ "$attempt" = 6 ]; then
+              echo "::error::$TOOL init failed to install seerr ${VERSION} from ${source_addr}"
+              exit 1
+            fi
+            echo "Attempt $attempt failed; retrying in 120s"
+            sleep 120
+          done
+          grep -q "version     = \"${VERSION}\"" .terraform.lock.hcl
+          grep -q 'zh:' .terraform.lock.hcl
