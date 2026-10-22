@@ -1,7 +1,3 @@
-variables {
-  backup_settings_supported = true
-}
-
 run "backup_settings_lifecycle" {
   command = apply
 

@@ -1,8 +1,8 @@
 provider_installation {
   dev_overrides {
-    "registry.opentofu.org/josh-archer/seerr" = "/workspace/wt-2326-seerr351/.bin"
-    "registry.terraform.io/josh-archer/seerr" = "/workspace/wt-2326-seerr351/.bin"
-    "josh-archer/seerr" = "/workspace/wt-2326-seerr351/.bin"
+    "registry.opentofu.org/josh-archer/seerr" = "/workspace/wt-seerr358/.bin"
+    "registry.terraform.io/josh-archer/seerr" = "/workspace/wt-seerr358/.bin"
+    "josh-archer/seerr" = "/workspace/wt-seerr358/.bin"
   }
   direct {}
 }
