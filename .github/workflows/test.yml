@@ -56,6 +56,8 @@ jobs:
           SEERR_RUN_INTEGRATION: "false"
       - name: Run OpenAPI coverage check
         run: go run ./tools/openapi
+      - name: Check tested Seerr versions match upstream-compatibility.json
+        run: python3 -m unittest discover -s tests -p test_compat_matrix.py
       - name: Run linters
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
@@ -73,6 +75,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - target: seerr-v3.5.0
+            tofu_version: 1.8.0
+            image: seerr/seerr:v3.5.0
+            filters: ""
           - target: seerr-v3.4.1
             tofu_version: 1.8.0
             image: seerr/seerr:v3.4.1
@@ -150,6 +156,41 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  consumer-replay:
+    name: Consumer Replay (arr-config)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 25
+    # Required by release gating: rc -> final promotion needs this job green on the tagged commit.
+    if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    env:
+      SEERR_TEST_IMAGE: seerr/seerr:v3.5.0
+      SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/consumer-replay
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.8.0
+          tofu_wrapper: false
+      - name: Replay consumer config (apply, clean re-plan, upgrade from previous release)
+        run: bash ./scripts/test-consumer-replay.sh
+      - name: Upload consumer replay diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: consumer-replay-artifacts
+          path: test-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
   watchlist-live:
     name: Watchlist Live Integration (Seerr 3.5.0)
     runs-on: ubuntu-latest
@@ -214,7 +255,7 @@ jobs:
       USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED || 'false' }}
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
-      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.4.1' }}
+      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.5.0' }}
       SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration-trusted
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -267,7 +308,7 @@ jobs:
       USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED || 'false' }}
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
-      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.4.1' }}
+      SEERR_TEST_IMAGE: ${{ vars.SEERR_TEST_IMAGE || 'seerr/seerr:v3.5.0' }}
       SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration-full
       SEERR_TEST_SUITE: all
     steps:
@@ -346,7 +387,7 @@ jobs:
 
   auto-merge:
     name: Auto Merge
-    needs: [build-test, tofu-test-stable, watchlist-live]
+    needs: [build-test, tofu-test-stable, watchlist-live, consumer-replay]
     runs-on: ubuntu-latest
     permissions:
       contents: write

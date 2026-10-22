@@ -79,6 +79,28 @@ jobs:
             -f "sha=${target_sha}"
           echo "Created ${RELEASE_TAG} at ${target_sha} from its draft release target."
 
+      # rc -> final promotion gate: a stable tag may only be built when the
+      # consumer replay job (apply, clean re-plan, upgrade from the previous
+      # release) succeeded on the exact commit being promoted.
+      - name: Require consumer replay to pass for stable releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${RELEASE_TAG}" == *-* ]]; then
+            echo "${RELEASE_TAG} is a prerelease; consumer replay gate applies to stable promotion only."
+            exit 0
+          fi
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG}" --jq '.sha')"
+          conclusion="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${sha}/check-runs?filter=latest&per_page=100" \
+            --jq '[.check_runs[] | select(.name | startswith("Consumer Replay"))] | if length == 0 then "missing" else (map(.conclusion // "pending") | if all(. == "success") then "success" else join(",") end) end')"
+          if [[ "${conclusion}" != "success" ]]; then
+            echo "Refusing to promote ${RELEASE_TAG} (${sha}): Consumer Replay check is '${conclusion}', expected 'success'." >&2
+            exit 1
+          fi
+          echo "Consumer Replay passed on ${sha}; promotion allowed."
+
       - name: Check release state
         id: release_state
         env:

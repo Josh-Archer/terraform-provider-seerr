@@ -109,6 +109,10 @@ docker compose -f dev/docker-compose.yml up -d
 ```
 Access the server at `http://localhost:5055` to test real provider configurations.
 
+### Consumer Replay
+
+`bash ./scripts/test-consumer-replay.sh` applies `test/consumer/arr-config/` (a sanitized copy of a real consumer config) to a disposable Seerr and requires a clean re-plan, then repeats it as an upgrade from the previous release. It gates rc-to-final promotion. A semantic change to an existing attribute needs a minor bump and a changelog upgrade note; see the [stability guide](docs/guides/stability-and-breaking-changes.md).
+
 ---
 
 ## 📝 Commit Conventions
