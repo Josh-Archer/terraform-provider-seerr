@@ -30,7 +30,7 @@ variable "status" {
 resource "seerr_request" "media_item" {
   count      = var.media_id == null ? 1 : 0
   media_type = "movie"
-  media_id   = 550
+  media_id   = 680
   status     = 2
 }
 
@@ -59,4 +59,9 @@ output "media_id" {
 
 output "status" {
   value = seerr_issue.test.status
+}
+
+resource "seerr_issue_comment" "test" {
+  issue_id = tonumber(seerr_issue.test.id)
+  message  = "Lifecycle fixture comment"
 }

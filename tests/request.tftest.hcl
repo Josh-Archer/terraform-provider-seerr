@@ -35,4 +35,8 @@ run "request_lifecycle" {
 
 run "request_no_drift" {
   command = plan
+
+  module {
+    source = "./modules/request"
+  }
 }

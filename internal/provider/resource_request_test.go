@@ -113,6 +113,10 @@ func TestRequestReadPopulatesComputedIDs(t *testing.T) {
 func TestRequestApplyStatusPostsWorkflowEndpoint(t *testing.T) {
 	var gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`{"status":1}`))
+			return
+		}
 		gotPath = r.URL.Path
 		if r.Method != http.MethodPost {
 			t.Fatalf("unexpected method %s", r.Method)
@@ -268,5 +272,28 @@ func TestWaitForRequestStatusContextCancel(t *testing.T) {
 	}
 	if !errors.Is(err, context.Canceled) && !strings.Contains(err.Error(), "context canceled") {
 		t.Fatalf("expected context cancellation error, got %v", err)
+	}
+}
+
+// Seerr auto-approves admin requests and responds with 409 if approved twice.
+func TestRequestApplyStatusAlreadyApproved(t *testing.T) {
+	var posts int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			posts++
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"message":"Only pending requests can be approved or declined."}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"status":2}`))
+	}))
+	defer srv.Close()
+	base, _ := url.Parse(srv.URL)
+	r := &RequestResource{client: NewClient(base, "test", "test", false, defaultRequestTimeout, 0, 0)}
+	if err := r.applyRequestStatus(context.Background(), "42", types.Int64Value(2)); err != nil {
+		t.Fatal(err)
+	}
+	if posts != 0 {
+		t.Fatalf("already approved request received %d transitions", posts)
 	}
 }
