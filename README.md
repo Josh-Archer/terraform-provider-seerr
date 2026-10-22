@@ -3,7 +3,7 @@
 [![CI](https://github.com/Josh-Archer/terraform-provider-seerr/actions/workflows/test.yml/badge.svg)](https://github.com/Josh-Archer/terraform-provider-seerr/actions/workflows/test.yml)
 [![OpenTofu Registry](https://img.shields.io/badge/OpenTofu-Registry-FF5722?logo=opentofu&logoColor=white)](https://registry.opentofu.org/providers/josh-archer/seerr/latest)
 [![Terraform Registry](https://img.shields.io/badge/Terraform-Registry-844FBA?logo=terraform&logoColor=white)](https://registry.terraform.io/providers/josh-archer/seerr/latest)
-[![Roadmap](https://img.shields.io/badge/Roadmap-v1.0.0-2ea44f.svg)](#roadmap)
+[![Roadmap](https://img.shields.io/badge/Roadmap-Next-2ea44f.svg)](#roadmap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 `seerr` is a feature-complete OpenTofu and Terraform provider for managing [Overseerr](https://overseerr.dev) and [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) instances via their REST APIs as Infrastructure as Code. Track ongoing milestones in the [roadmap](#roadmap) or join the conversation in [GitHub Discussion #161](https://github.com/Josh-Archer/terraform-provider-seerr/discussions/161).
@@ -24,26 +24,22 @@
 
 ## Roadmap
 
-The latest release milestone is [`v1.0.0`](https://github.com/Josh-Archer/terraform-provider-seerr/releases/tag/v1.0.0). All planned milestones (Phases 1 through 14) are complete with full General Availability guarantees.
+The next work focuses on reliable releases, safe adoption of existing instances, and maintained compatibility. Track progress in the [roadmap issue](https://github.com/Josh-Archer/terraform-provider-seerr/issues/360) and [GitHub milestones](https://github.com/Josh-Archer/terraform-provider-seerr/milestones). The order below is a priority order, not a release-date commitment.
 
-This section is the canonical roadmap. Use [GitHub Discussion #161](https://github.com/Josh-Archer/terraform-provider-seerr/discussions/161) for feedback, proposals, and status discussion.
-
-| Milestone | Target | Outcome | Status |
+| Priority | Milestone | Work | Completion evidence |
 | :--- | :--- | :--- | :--- |
-| **Phases 1-8: Provider foundation** | `v0.31.0`-`v0.38.2` | Core quality, observability, identity and access, reference helpers, lifecycle hardening, Servarr resolvers, dual-registry publishing, and release automation. | ✅ Complete |
-| **Phase 9: Community readiness** | `v0.39.0` | Contributor onboarding, issue and pull request templates, and reproducible development environments ([#183](https://github.com/Josh-Archer/terraform-provider-seerr/issues/183)). | ✅ Complete |
-| **Phase 10: Import and migration tooling** | `v0.40.0` | Bulk importer that generates Terraform HCL and import blocks from a live Seerr instance ([#170](https://github.com/Josh-Archer/terraform-provider-seerr/issues/170)). | ✅ Complete |
-| **Phase 11: State resilience** | `v0.41.0` | Graceful 404 removal, state schema resilience, and semantic diff normalization ([#169](https://github.com/Josh-Archer/terraform-provider-seerr/issues/169)). | ✅ Complete |
-| **Phase 12: Observability and disaster recovery** | `v0.42.0` | Drift monitoring, Prometheus and Grafana assets, backup workflows, and recovery runbooks ([#184](https://github.com/Josh-Archer/terraform-provider-seerr/issues/184)). | ✅ Complete |
-| **Phase 13: Module ecosystem** | `v0.43.0` | Reusable modules for family media servers, ARR stack bootstrapping, and monitoring ([#171](https://github.com/Josh-Archer/terraform-provider-seerr/issues/171)). | ✅ Complete |
-| **Phase 14: General availability** | `v1.0.0` | Stable public contracts, a documented breaking-change policy, and full Terraform/OpenTofu acceptance coverage. | ✅ Complete |
+| Now | **Release confidence** | Finish consumer replay and release promotion [#351](https://github.com/Josh-Archer/terraform-provider-seerr/issues/351); restore request/issue coverage [#353](https://github.com/Josh-Archer/terraform-provider-seerr/issues/353); verify registry installation [#354](https://github.com/Josh-Archer/terraform-provider-seerr/issues/354); compare public schemas [#355](https://github.com/Josh-Archer/terraform-provider-seerr/issues/355). | Clean apply/re-plan and upgrade replay, supported lifecycle tests, fresh signed installs through both registries, and reviewed schema changes. |
+| Next | **Safe adoption** | Generate secret references [#356](https://github.com/Josh-Archer/terraform-provider-seerr/issues/356); complete importer discovery and validate adoption [#357](https://github.com/Josh-Archer/terraform-provider-seerr/issues/357). | Generated files contain no fetched credentials; paginated discovery is complete; importing a populated disposable instance preserves settings and produces a clean re-plan. |
+| Later | **Compatibility maintenance** | Exercise both IaC engines [#358](https://github.com/Josh-Archer/terraform-provider-seerr/issues/358); improve upstream tracking [#359](https://github.com/Josh-Archer/terraform-provider-seerr/issues/359); retain recurring tracker [#314](https://github.com/Josh-Archer/terraform-provider-seerr/issues/314). | Explicit engine/upstream test evidence and idempotent monitoring that distinguishes new releases from API failures. |
 
-### `v1.0.0` exit criteria
+The consumer replay gate is already partly implemented on `main`; #351 tracks its remaining verification. The other issues describe planned work. Complete secret-safe importer output before the broader adoption workflow, and reuse the consumer fixture for dual-engine tests.
 
-- [x] Publish and enforce the compatibility and breaking-change policy for public provider schemas and import identifiers ([Stability Policy](docs/guides/stability-and-breaking-changes.md)).
-- [x] Pass the supported Terraform and OpenTofu acceptance matrix against the documented Seerr, Jellyseerr, and Overseerr versions ([Compatibility Matrix](docs/guides/compatibility.md)).
-- [x] Validate installation and signed release artifacts through both the Terraform and OpenTofu registries.
-- [x] Complete upgrade, migration, module, and recovery documentation for a stable release ([Guides](docs/index.md)).
+### Completed foundation
+
+Phases 1–14 culminated in `v1.0.0`: core resources and data sources, typed notifications, imports, modules, lifecycle hardening, release automation, contributor tooling, and the [stability policy](docs/guides/stability-and-breaking-changes.md). That history is the foundation for this roadmap; current compatibility evidence is documented in the [compatibility guide](docs/guides/compatibility.md).
+
+New feature proposals should identify a concrete workflow, a verified upstream API, import/lifecycle behavior, and live acceptance criteria. Use [GitHub Discussion #161](https://github.com/Josh-Archer/terraform-provider-seerr/discussions/161) for proposals and priority feedback.
+
 ---
 
 ## Quick Start
