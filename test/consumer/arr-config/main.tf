@@ -80,6 +80,8 @@ resource "seerr_user_watchlist_settings" "admin" {
   user_id               = tonumber(data.seerr_current_user.admin.id)
   watchlist_sync_movies = true
   watchlist_sync_tv     = true
+
+  depends_on = [seerr_user_permissions.admin]
 }
 
 # Admin quota: Seerr ignores quota writes for users holding MANAGE_USERS, so
