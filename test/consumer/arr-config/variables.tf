@@ -64,5 +64,5 @@ variable "ntfy_topic_media" {
 variable "ntfy_token" {
   type      = string
   sensitive = true
-  default   = "tk_testtoken000000000000000000000"
+  default   = "test-token"
 }
