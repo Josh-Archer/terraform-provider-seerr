@@ -88,6 +88,14 @@ flowchart LR
 
 ---
 
+## 🚦 Release Gate: Semantic Changes and Consumer Replay
+
+A change to the *meaning* of an existing attribute (for example, "`0` now means unlimited and `null` means the global default") is not a bug fix for release purposes, even when it is committed as `fix:`. It must ship as at least a **`MINOR`** release (never a patch) and the changelog entry must include an **Upgrade note** describing the old and new behaviour and any configuration change consumers need. Use a `feat:` commit, or `fix!:` / a `BREAKING CHANGE:` footer when existing configurations stop applying cleanly.
+
+Promoting a release candidate (`-rc`) to a stable tag is gated on the **Consumer Replay** CI job. It applies a sanitized copy of a real consumer configuration (`test/consumer/arr-config/`) to a disposable Seerr, requires `tofu plan -detailed-exitcode` to exit `0` afterwards, then applies with the previously released provider, upgrades to the version under test and requires a clean re-plan again. The Release workflow refuses to build a stable tag unless that check passed on the tagged commit. The tested Seerr versions are kept in step with `.github/upstream-compatibility.json` by `scripts/check_compat_matrix.py`.
+
+---
+
 ## 🔄 State Schema Migration Policy
 
 State resilience is guaranteed across version upgrades through the following rules:
@@ -124,4 +132,5 @@ When submitting changes, ensure your PR complies with:
 - [ ] Does this change add a `Required: true` field to an existing resource? *(If yes, make it `Optional` with a sensible default).*
 - [ ] Does this change modify `ImportState` parsing logic? *(If yes, preserve backward-compatible ID formats).*
 - [ ] Are deprecations accompanied by a `DeprecationMessage` pointing to the replacement attribute?
+- [ ] Does this change the meaning of an existing attribute (defaults, null/zero semantics)? *(If yes, ship as a minor release with a changelog upgrade note, and confirm Consumer Replay passes).*
 - [ ] Have all unit tests and `test-all-locally.sh` checks passed with zero regressions?

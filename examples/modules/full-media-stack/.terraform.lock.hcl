@@ -6,6 +6,7 @@ provider "registry.opentofu.org/josh-archer/seerr" {
   constraints = ">= 0.37.0"
   hashes = [
     "h1:GhAqg1exYPRhwebQqermqGNrgLYTbnZwBtRTQBRB+YY=",
+    "h1:Z7Hv6V8DpcPuYhPR0FWdBrCRwEL1qnYUaKlmYhNOd9c=",
     "zh:037b636c50ec79ebc4938f6cd9807b517a4dbbd9e92b0e222cfeb516c4456bcd",
     "zh:06fe5421640a5718b2a1e8c45ded237571cf6c2d0a96c7b3e1e18f7df8eeb2f0",
     "zh:10417aeb7376d6e76024f95e482bb904b57face5fc37107f52b9bd98487fef30",

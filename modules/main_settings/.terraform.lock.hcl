@@ -4,6 +4,7 @@
 provider "registry.opentofu.org/josh-archer/seerr" {
   version = "0.24.0"
   hashes = [
+    "h1:KiVsjh4htkZf1hGOvinxvFNJ7Sdc2jsn/kQkVngCo+A=",
     "h1:ffKbNSRvJA//MhTOWNThIw/P+lEi5DEBXE9P+zJcxKQ=",
     "zh:21698a2ccc1f1b8265ddb0f114b73b83bf782bf9fff2b8345ba5533b324959ed",
     "zh:231026f4dd01a883989e628ae7a757639506e8beabd6b86e59961833d091470d",
