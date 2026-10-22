@@ -15,7 +15,7 @@ provider "seerr" {
 locals {
   seerr_managed_job_schedules = {
     for job in data.seerr_jobs.all.jobs : job.id => job.schedule
-    if job.enabled && job.schedule != null && trimspace(job.schedule) != ""
+    if job.enabled == true && (job.schedule != null ? trimspace(job.schedule) != "" : false)
   }
 }
 
