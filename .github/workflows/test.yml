@@ -65,7 +65,7 @@ jobs:
           verify: false
 
   tofu-test-stable:
-    name: OpenTofu Compatibility (${{ matrix.target }}, ${{ matrix.tofu_version }})
+    name: ${{ matrix.engine }} Compatibility (${{ matrix.target }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -74,6 +74,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        engine: [tofu, terraform]
         include:
           - target: seerr-v3.5.0
             tofu_version: 1.8.0
@@ -119,9 +120,10 @@ jobs:
               user_permissions.tftest.hcl
     env:
       USE_SELF_HOSTED: "false"
+      SEERR_TEST_ENGINE: ${{ matrix.engine }}
       SEERR_TEST_IMAGE: ${{ matrix.image }}
-      SEERR_TOFU_FILTERS: ${{ matrix.filters }}
-      SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration
+      SEERR_TEST_FILTERS: ${{ matrix.filters }}
+      SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/integration-${{ matrix.engine }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -131,9 +133,16 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Setup OpenTofu
+        if: matrix.engine == 'tofu'
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_version: ${{ matrix.tofu_version }}
+      - name: Setup Terraform
+        if: matrix.engine == 'terraform'
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
+        with:
+          terraform_version: 1.8.5
+          terraform_wrapper: false
       - name: Use legacy external Seerr target when configured
         shell: bash
         run: |
@@ -142,7 +151,7 @@ jobs:
             echo "SEERR_URL=${LEGACY_SEERR_URL}" >> "$GITHUB_ENV"
             echo "SEERR_API_KEY=${LEGACY_SEERR_API_KEY}" >> "$GITHUB_ENV"
           fi
-      - name: OpenTofu stable suite
+      - name: Run stable lifecycle suite
         shell: bash
         run: bash ./scripts/test-integration.sh
         env:
@@ -151,7 +160,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: compatibility-artifacts-${{ matrix.target }}-${{ matrix.tofu_version }}
+          name: compatibility-artifacts-${{ matrix.engine }}-${{ matrix.target }}
           path: test-artifacts/
           if-no-files-found: ignore
           retention-days: 7
