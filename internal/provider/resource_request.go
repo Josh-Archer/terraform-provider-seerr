@@ -507,6 +507,24 @@ func (r *RequestResource) applyRequestStatus(ctx context.Context, requestID stri
 	if !ok {
 		return fmt.Errorf("unsupported request status %d; valid values are 1 (pending), 2 (approved), and 3 (declined)", status.ValueInt64())
 	}
+	// Seerr 3.5 rejects approving an already auto-approved request. Read before
+	// transitioning so applying the desired status is idempotent.
+	current, err := r.client.Request(ctx, "GET", "/api/v1/request/"+requestID, "", nil)
+	if err != nil {
+		return err
+	}
+	if !StatusIsOK(current.StatusCode) {
+		return fmt.Errorf("read request status: status %d", current.StatusCode)
+	}
+	var observed struct {
+		Status int64 `json:"status"`
+	}
+	if err := json.Unmarshal(current.Body, &observed); err != nil {
+		return fmt.Errorf("decode request status: %w", err)
+	}
+	if observed.Status == status.ValueInt64() {
+		return nil
+	}
 	res, err := r.client.Request(ctx, "POST", fmt.Sprintf("/api/v1/request/%s/%s", requestID, statusPath), "", nil)
 	if err != nil {
 		return err

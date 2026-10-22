@@ -12,6 +12,11 @@ run "issue_lifecycle" {
   }
 
   assert {
+    condition     = seerr_issue_comment.test.message == "Lifecycle fixture comment"
+    error_message = "Issue comment did not round-trip"
+  }
+
+  assert {
     condition     = seerr_issue.test.issue_type == var.issue_type
     error_message = "Issue type did not match expected value"
   }
@@ -29,6 +34,10 @@ run "issue_lifecycle" {
 
 run "issue_no_drift" {
   command = plan
+
+  module {
+    source = "./modules/issue"
+  }
 }
 
 run "issue_update_status" {
