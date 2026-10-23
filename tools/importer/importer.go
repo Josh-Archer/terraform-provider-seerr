@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -30,6 +32,182 @@ type DiscoveredResource struct {
 	ImportID     string
 	Attributes   map[string]any
 	Comments     []string
+}
+
+// SensitiveVariable represents a declared sensitive variable.
+type SensitiveVariable struct {
+	Name         string
+	ResourceType string
+	ResourceName string
+	Attribute    string
+	Description  string
+}
+
+// SensitiveAttributes maps supported resource types to their sensitive attribute names.
+var SensitiveAttributes = map[string]map[string]bool{
+	"seerr_radarr_server": {
+		"api_key": true,
+	},
+	"seerr_sonarr_server": {
+		"api_key": true,
+	},
+	"seerr_tautulli_settings": {
+		"api_key": true,
+	},
+	"seerr_jellyfin_settings": {
+		"api_key": true,
+	},
+	"seerr_emby_settings": {
+		"api_key": true,
+	},
+	"seerr_network_settings": {
+		"password": true,
+	},
+	"seerr_user": {
+		"plex_auth_token":   true,
+		"jellyfin_password": true,
+	},
+	"seerr_user_notification_settings": {
+		"pushbullet_access_token":    true,
+		"pushover_application_token": true,
+		"pushover_user_key":          true,
+	},
+	"seerr_notification_email": {
+		"auth_pass":       true,
+		"pgp_private_key": true,
+		"pgp_password":    true,
+	},
+	"seerr_notification_gotify": {
+		"token": true,
+	},
+	"seerr_notification_ntfy": {
+		"password": true,
+		"token":    true,
+	},
+	"seerr_notification_pushbullet": {
+		"access_token": true,
+	},
+	"seerr_notification_pushover": {
+		"access_token": true,
+		"user_token":   true,
+	},
+	"seerr_notification_telegram": {
+		"bot_api": true,
+	},
+	"seerr_notification_webhook": {
+		"auth_header": true,
+	},
+}
+
+var (
+	sensitiveJSONRegex   = regexp.MustCompile(`(?i)"(api_?key|password|token|auth_?pass|auth_?header|access_?token|user_?token|bot_?api|secret|pgp_password|pgp_private_key)"\s*:\s*"[^"]*"`)
+	sensitiveQueryRegex  = regexp.MustCompile(`(?i)(api_?key|token|password|auth_?pass|bot_?api)=[^&\s]+`)
+	sensitiveWordRegex   = regexp.MustCompile(`(?i)\b(token|secret|password|key|auth|bearer)\s+([A-Za-z0-9_\-\.]{6,})\b`)
+	sensitiveCanaryRegex = regexp.MustCompile(`\bCANARY_[A-Za-z0-9_]+\b`)
+)
+
+// IsSensitiveAttribute returns whether an attribute of a resource type is classified as sensitive.
+func IsSensitiveAttribute(resourceType, attrName string) bool {
+	if attrs, ok := SensitiveAttributes[resourceType]; ok {
+		if attrs[attrName] {
+			return true
+		}
+	}
+	// Heuristic fallback for common credential attribute names
+	switch attrName {
+	case "api_key", "password", "auth_pass", "token", "access_token", "user_token",
+		"bot_api", "auth_header", "pgp_private_key", "pgp_password",
+		"plex_auth_token", "jellyfin_password", "pushbullet_access_token",
+		"pushover_application_token", "pushover_user_key":
+		return true
+	}
+	return false
+}
+
+// SensitiveVariableName returns the variable identifier for a sensitive attribute.
+func SensitiveVariableName(resourceName, attrName string) string {
+	name := fmt.Sprintf("%s_%s", resourceName, attrName)
+	return sanitizeName(name)
+}
+
+// ExtractSensitiveVariables scans discovered resources and returns sensitive variable definitions,
+// resolving any naming collisions deterministically.
+func ExtractSensitiveVariables(resources []DiscoveredResource) []SensitiveVariable {
+	type key struct {
+		resType string
+		resName string
+		attr    string
+	}
+	var detected []SensitiveVariable
+	usedNames := map[string]key{}
+
+	for _, res := range resources {
+		keys := make([]string, 0, len(res.Attributes))
+		for k := range res.Attributes {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			if !IsSensitiveAttribute(res.ResourceType, k) {
+				continue
+			}
+			baseName := SensitiveVariableName(res.ResourceName, k)
+			varName := baseName
+			kObj := key{res.ResourceType, res.ResourceName, k}
+			if existing, exists := usedNames[varName]; exists && existing != kObj {
+				// Disambiguate by prefixing short resource type
+				shortType := strings.TrimPrefix(res.ResourceType, "seerr_")
+				varName = sanitizeName(fmt.Sprintf("%s_%s_%s", shortType, res.ResourceName, k))
+			}
+			usedNames[varName] = kObj
+			detected = append(detected, SensitiveVariable{
+				Name:         varName,
+				ResourceType: res.ResourceType,
+				ResourceName: res.ResourceName,
+				Attribute:    k,
+				Description:  fmt.Sprintf("Sensitive credential %s for %s.%s", k, res.ResourceType, res.ResourceName),
+			})
+		}
+	}
+
+	sort.Slice(detected, func(i, j int) bool {
+		return detected[i].Name < detected[j].Name
+	})
+
+	return detected
+}
+
+// redactSensitiveText replaces known secrets and sensitive patterns with [REDACTED].
+func redactSensitiveText(text string, secrets ...string) string {
+	if text == "" {
+		return ""
+	}
+	for _, s := range secrets {
+		if s != "" {
+			text = strings.ReplaceAll(text, s, "[REDACTED]")
+		}
+	}
+	text = sensitiveCanaryRegex.ReplaceAllString(text, "[REDACTED]")
+	text = sensitiveJSONRegex.ReplaceAllStringFunc(text, func(match string) string {
+		parts := strings.SplitN(match, ":", 2)
+		if len(parts) == 2 {
+			return parts[0] + `: "[REDACTED]"`
+		}
+		return match
+	})
+	text = sensitiveQueryRegex.ReplaceAllString(text, "$1=[REDACTED]")
+	text = sensitiveWordRegex.ReplaceAllString(text, "$1 [REDACTED]")
+	return text
+}
+
+// redactURL masks credentials embedded in a URL string.
+func redactURL(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	return parsed.Redacted()
 }
 
 // Importer fetches configuration from a live Seerr instance and generates Terraform/OpenTofu code.
@@ -98,7 +276,8 @@ func (imp *Importer) get(ctx context.Context, apiPath string) (any, int, error) 
 
 	resp, err := imp.httpClient.Do(req)
 	if err != nil {
-		return nil, 0, err
+		sanitizedErr := redactSensitiveText(err.Error(), imp.cfg.APIKey)
+		return nil, 0, fmt.Errorf("%s", sanitizedErr)
 	}
 	defer resp.Body.Close()
 
@@ -112,12 +291,14 @@ func (imp *Importer) get(ctx context.Context, apiPath string) (any, int, error) 
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, resp.StatusCode, fmt.Errorf("API error %d from %s: %s", resp.StatusCode, apiPath, string(body))
+		sanitizedBody := redactSensitiveText(string(body), imp.cfg.APIKey)
+		return nil, resp.StatusCode, fmt.Errorf("API error %d from %s: %s", resp.StatusCode, apiPath, sanitizedBody)
 	}
 
 	var result any
 	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, resp.StatusCode, err
+		sanitizedBody := redactSensitiveText(string(body), imp.cfg.APIKey)
+		return nil, resp.StatusCode, fmt.Errorf("failed to parse JSON response from %s: %w (body: %s)", apiPath, err, sanitizedBody)
 	}
 
 	return result, resp.StatusCode, nil
@@ -192,6 +373,7 @@ func (imp *Importer) DiscoverAll(ctx context.Context) ([]DiscoveredResource, err
 			copyString(m, attrs, "url", "url")
 			copyString(m, attrs, "userId", "user_id")
 			copyString(m, attrs, "serverId", "server_id")
+			copyString(m, attrs, "apiKey", "api_key")
 
 			if len(attrs) > 0 {
 				discovered = append(discovered, DiscoveredResource{
@@ -216,6 +398,7 @@ func (imp *Importer) DiscoverAll(ctx context.Context) ([]DiscoveredResource, err
 			copyString(m, attrs, "url", "url")
 			copyString(m, attrs, "userId", "user_id")
 			copyString(m, attrs, "serverId", "server_id")
+			copyString(m, attrs, "apiKey", "api_key")
 
 			if len(attrs) > 0 {
 				discovered = append(discovered, DiscoveredResource{
@@ -237,6 +420,7 @@ func (imp *Importer) DiscoverAll(ctx context.Context) ([]DiscoveredResource, err
 			copyInt(m, attrs, "port", "port")
 			copyBool(m, attrs, "useSsl", "use_ssl")
 			copyString(m, attrs, "externalUrl", "external_url")
+			copyString(m, attrs, "apiKey", "api_key")
 
 			if len(attrs) > 0 && (attrs["hostname"] != nil || attrs["external_url"] != nil) {
 				discovered = append(discovered, DiscoveredResource{
@@ -256,6 +440,7 @@ func (imp *Importer) DiscoverAll(ctx context.Context) ([]DiscoveredResource, err
 			attrs := map[string]any{}
 			copyBool(m, attrs, "trustProxy", "trust_proxy")
 			copyString(m, attrs, "proxyIpHeader", "proxy_ip_header")
+			copyString(m, attrs, "password", "password")
 
 			discovered = append(discovered, DiscoveredResource{
 				ResourceType: "seerr_network_settings",
@@ -290,6 +475,9 @@ func (imp *Importer) DiscoverAll(ctx context.Context) ([]DiscoveredResource, err
 					}
 					if v := getString(s, "baseUrl"); v != "" {
 						attrs["base_url"] = v
+					}
+					if v := getString(s, "apiKey"); v != "" {
+						attrs["api_key"] = v
 					}
 					discovered = append(discovered, DiscoveredResource{
 						ResourceType: "seerr_radarr_server",
@@ -335,6 +523,9 @@ func (imp *Importer) DiscoverAll(ctx context.Context) ([]DiscoveredResource, err
 					}
 					if v := getInt(s, "activeLanguageProfileId"); v != 0 {
 						attrs["active_language_profile_id"] = v
+					}
+					if v := getString(s, "apiKey"); v != "" {
+						attrs["api_key"] = v
 					}
 					discovered = append(discovered, DiscoveredResource{
 						ResourceType: "seerr_sonarr_server",
@@ -456,6 +647,12 @@ func (imp *Importer) DiscoverAll(ctx context.Context) ([]DiscoveredResource, err
 							"permissions": getInt(u, "permissions"),
 							"user_type":   getInt(u, "userType"),
 						}
+						if v := getString(u, "plexAuthToken"); v != "" {
+							attrs["plex_auth_token"] = v
+						}
+						if v := getString(u, "jellyfinPassword"); v != "" {
+							attrs["jellyfin_password"] = v
+						}
 						discovered = append(discovered, DiscoveredResource{
 							ResourceType: "seerr_user",
 							ResourceName: sanitizeName(resName),
@@ -500,7 +697,8 @@ func (imp *Importer) DiscoverAll(ctx context.Context) ([]DiscoveredResource, err
 	return discovered, nil
 }
 
-// GenerateHCL produces clean Terraform/OpenTofu HCL code for discovered resources.
+// GenerateHCL produces clean Terraform/OpenTofu HCL code for discovered resources,
+// emitting variable references for sensitive attributes instead of plaintext credential values.
 func GenerateHCL(resources []DiscoveredResource, providerHeader bool) string {
 	var sb strings.Builder
 
@@ -508,6 +706,18 @@ func GenerateHCL(resources []DiscoveredResource, providerHeader bool) string {
 		sb.WriteString(`# --------------------------------------------------------------------------
 # Terraform & OpenTofu Provider Configuration for Seerr
 # Generated by seerr-import CLI
+# --------------------------------------------------------------------------
+# SECURITY NOTICE - STATE STORAGE:
+# Terraform and OpenTofu store resource attribute values, including sensitive
+# credentials (such as API keys and notification secrets), in plain text within
+# the state file (.tfstate).
+#
+# To protect your secrets:
+# 1. Store your state remotely in a secure backend (e.g. Terraform Cloud,
+#    AWS S3 with SSE-KMS and restricted IAM policies, GCS, or Azure Blob).
+# 2. When using OpenTofu, enable state encryption using OpenTofu's native
+#    state encryption feature.
+# 3. Never commit .tfstate or .tfstate.backup files to version control.
 # --------------------------------------------------------------------------
 
 terraform {
@@ -529,8 +739,14 @@ provider "seerr" {
 `)
 	}
 
+	varMap := make(map[string]string)
+	for _, sv := range ExtractSensitiveVariables(resources) {
+		lookup := fmt.Sprintf("%s.%s.%s", sv.ResourceType, sv.ResourceName, sv.Attribute)
+		varMap[lookup] = sv.Name
+	}
+
 	for _, res := range resources {
-		sb.WriteString(fmt.Sprintf("resource \"%s\" \"%s\" {\n", res.ResourceType, res.ResourceName))
+		fmt.Fprintf(&sb, "resource \"%s\" \"%s\" {\n", res.ResourceType, res.ResourceName)
 
 		keys := make([]string, 0, len(res.Attributes))
 		for k := range res.Attributes {
@@ -539,30 +755,75 @@ provider "seerr" {
 		sort.Strings(keys)
 
 		for _, k := range keys {
+			if IsSensitiveAttribute(res.ResourceType, k) {
+				lookup := fmt.Sprintf("%s.%s.%s", res.ResourceType, res.ResourceName, k)
+				varName, ok := varMap[lookup]
+				if !ok {
+					varName = SensitiveVariableName(res.ResourceName, k)
+				}
+				fmt.Fprintf(&sb, "  %-25s = var.%s\n", k, varName)
+				continue
+			}
+
 			v := res.Attributes[k]
 			switch val := v.(type) {
 			case string:
-				sb.WriteString(fmt.Sprintf("  %-25s = %s\n", k, strconv.Quote(val)))
+				fmt.Fprintf(&sb, "  %-25s = %s\n", k, strconv.Quote(val))
 			case bool:
-				sb.WriteString(fmt.Sprintf("  %-25s = %t\n", k, val))
+				fmt.Fprintf(&sb, "  %-25s = %t\n", k, val)
 			case int64:
-				sb.WriteString(fmt.Sprintf("  %-25s = %d\n", k, val))
+				fmt.Fprintf(&sb, "  %-25s = %d\n", k, val)
 			case int:
-				sb.WriteString(fmt.Sprintf("  %-25s = %d\n", k, val))
+				fmt.Fprintf(&sb, "  %-25s = %d\n", k, val)
 			case []string:
 				quoted := make([]string, len(val))
 				for i, s := range val {
 					quoted[i] = strconv.Quote(s)
 				}
-				sb.WriteString(fmt.Sprintf("  %-25s = [%s]\n", k, strings.Join(quoted, ", ")))
+				fmt.Fprintf(&sb, "  %-25s = [%s]\n", k, strings.Join(quoted, ", "))
 			case []int64:
 				strs := make([]string, len(val))
 				for i, n := range val {
 					strs[i] = strconv.FormatInt(n, 10)
 				}
-				sb.WriteString(fmt.Sprintf("  %-25s = [%s]\n", k, strings.Join(strs, ", ")))
+				fmt.Fprintf(&sb, "  %-25s = [%s]\n", k, strings.Join(strs, ", "))
 			}
 		}
+		sb.WriteString("}\n\n")
+	}
+
+	return sb.String()
+}
+
+// GenerateVariables produces sensitive variable declarations in Terraform/OpenTofu HCL format.
+func GenerateVariables(resources []DiscoveredResource) string {
+	vars := ExtractSensitiveVariables(resources)
+	if len(vars) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	sb.WriteString(`# --------------------------------------------------------------------------
+# Sensitive Variable Declarations
+# Generated by seerr-import CLI
+#
+# Sensitive credentials discovered from your live Seerr instance are declared
+# as sensitive variables below to avoid storing secrets in plaintext HCL.
+# Provide values via terraform.tfvars, environment variables (TF_VAR_...),
+# or your secret management system.
+#
+# SECURITY NOTICE - STATE STORAGE:
+# Sensitive variable values will still be stored in plaintext within your
+# Terraform/OpenTofu state (.tfstate) when applied. Secure your state backend!
+# --------------------------------------------------------------------------
+
+`)
+
+	for _, sv := range vars {
+		fmt.Fprintf(&sb, "variable %q {\n", sv.Name)
+		fmt.Fprintf(&sb, "  description = %q\n", sv.Description)
+		sb.WriteString("  type        = string\n")
+		sb.WriteString("  sensitive   = true\n")
 		sb.WriteString("}\n\n")
 	}
 
@@ -581,8 +842,8 @@ func GenerateImportBlocks(resources []DiscoveredResource) string {
 `)
 	for _, res := range resources {
 		sb.WriteString("import {\n")
-		sb.WriteString(fmt.Sprintf("  to = %s.%s\n", res.ResourceType, res.ResourceName))
-		sb.WriteString(fmt.Sprintf("  id = \"%s\"\n", res.ImportID))
+		fmt.Fprintf(&sb, "  to = %s.%s\n", res.ResourceType, res.ResourceName)
+		fmt.Fprintf(&sb, "  id = %q\n", res.ImportID)
 		sb.WriteString("}\n\n")
 	}
 	return sb.String()
@@ -593,10 +854,17 @@ func GenerateImportScript(resources []DiscoveredResource) string {
 	var sb strings.Builder
 	sb.WriteString("#!/usr/bin/env bash\n")
 	sb.WriteString("# Legacy Terraform Import Script\n")
+	sb.WriteString("# Generated by seerr-import CLI\n")
+	sb.WriteString("#\n")
+	sb.WriteString("# Authentication:\n")
+	sb.WriteString("# Set environment variables rather than passing credentials as command-line arguments:\n")
+	sb.WriteString("#   export SEERR_URL=\"http://localhost:5055\"\n")
+	sb.WriteString("#   export SEERR_API_KEY=\"your-api-key\"\n")
+	sb.WriteString("#\n")
 	sb.WriteString("set -euo pipefail\n\n")
 
 	for _, res := range resources {
-		sb.WriteString(fmt.Sprintf("terraform import %s.%s %s\n", res.ResourceType, res.ResourceName, res.ImportID))
+		fmt.Fprintf(&sb, "terraform import %s.%s %s\n", res.ResourceType, res.ResourceName, res.ImportID)
 	}
 	return sb.String()
 }
