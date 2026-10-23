@@ -47,9 +47,11 @@ export GO_BIN="${go_bin}"
 run bash "${repo_root}/tools/check-generated.sh"
 run bash "${repo_root}/scripts/reconcile-release-tags_test.sh"
 run bash "${repo_root}/scripts/guard-empty-major-release_test.sh"
+run bash "${repo_root}/scripts/compare-provider-schemas_test.sh"
 run "${go_bin}" build ./...
 run "${go_bin}" test ./...
 run "${go_bin}" run ./tools/openapi
+run bash "${repo_root}/scripts/compare-provider-schemas.sh"
 
 case "${SEERR_RUN_LINT:-auto}" in
   true)

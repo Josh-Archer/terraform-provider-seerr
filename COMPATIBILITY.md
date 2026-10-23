@@ -8,4 +8,4 @@ See the full [Version Compatibility Guide](docs/guides/compatibility.md) for det
 - **OpenTofu**: `>= 1.6.0` (`registry.opentofu.org/josh-archer/seerr`)
 - **Terraform**: `>= 1.5.0` (`registry.terraform.io/josh-archer/seerr`)
 - **Protocol**: Terraform Plugin Framework Protocol 6.0
-- **Automated Monitoring**: Weekly OpenAPI drift detection, daily release comparison, and a three-image pull-request compatibility matrix.
+- **Automated Monitoring**: Weekly OpenAPI drift detection, daily release comparison, public provider schema contract gating, and a three-image pull-request compatibility matrix.
