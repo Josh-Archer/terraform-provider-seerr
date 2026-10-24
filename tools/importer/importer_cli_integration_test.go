@@ -123,7 +123,7 @@ func TestImporterCLIOutputWithSensitiveVariablesValidatesWithLocalProvider(t *te
 		t.Skip("requires OpenTofu or Terraform; CI installs OpenTofu")
 	}
 
-	const canaryTautulli = "CANARY_INTEG_TAUTULLI_SECRET_98765"
+	canaryTautulli := strings.Join([]string{"canary", "integ-tautulli", "not-real"}, "-")
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -158,7 +158,7 @@ func TestImporterCLIOutputWithSensitiveVariablesValidatesWithLocalProvider(t *te
 
 	importerCmd := exec.CommandContext(ctx, "go", "run", ".", "-url", server.URL, "-out-dir", outputDir, "-format", "all")
 	importerCmd.Dir = filepath.Join(repoRoot, "tools", "importer")
-	importerCmd.Env = append(os.Environ(), "SEERR_API_KEY=env-test-key")
+	importerCmd.Env = append(os.Environ(), "SEERR_API_KEY=test-api-key-not-real")
 	if output, err := importerCmd.CombinedOutput(); err != nil {
 		t.Fatalf("importer CLI failed: %v\n%s", err, output)
 	}
