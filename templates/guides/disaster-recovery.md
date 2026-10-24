@@ -79,10 +79,9 @@ flowchart TD
 1. **Run the Bulk Importer CLI**:
    The provider includes an automated bulk discovery tool (`tools/importer`) that inspects your live server and generates matching HCL and `import` blocks:
    ```bash
-   go run ./tools/importer \
-     --url "http://SEERR_HOST:5055" \
-     --api-key "YOUR_SEERR_API_KEY" \
-     --out-dir "./recovered-tf"
+   export SEERR_URL="http://SEERR_HOST:5055"
+   export SEERR_API_KEY="YOUR_SEERR_API_KEY"
+   go run ./tools/importer --out-dir "./recovered-tf"
    ```
 
 2. **Verify Generated Imports**:
