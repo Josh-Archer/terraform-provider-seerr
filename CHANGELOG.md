@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.3](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.2.2...v2.2.3) (2026-10-24)
+
+
+### Bug Fixes
+
+* avoid reapproving requests and restore Seerr 3.5 lifecycle tests ([#363](https://github.com/Josh-Archer/terraform-provider-seerr/issues/363)) ([52bbe49](https://github.com/Josh-Archer/terraform-provider-seerr/commit/52bbe499e0061e1d32739446057cab14bea0509a))
+
+
+### Documentation
+
+* map next priorities to actionable GitHub issues ([#361](https://github.com/Josh-Archer/terraform-provider-seerr/issues/361)) ([1f82d34](https://github.com/Josh-Archer/terraform-provider-seerr/commit/1f82d347c06dbaffa42d70dd4311a8f91f746558))
+
+
+### Miscellaneous Chores
+
+* **deps:** bump the github-actions group across 1 directory with 3 updates ([#367](https://github.com/Josh-Archer/terraform-provider-seerr/issues/367)) ([3922d84](https://github.com/Josh-Archer/terraform-provider-seerr/commit/3922d84da710fe0dc7ea781282188f2d587a5521))
+
 ## [2.2.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.2.1...v2.2.2) (2026-10-20)
 
 
