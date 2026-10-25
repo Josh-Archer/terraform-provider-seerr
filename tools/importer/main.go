@@ -7,13 +7,17 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
 func main() {
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
+
+func run(args []string, stdout, stderr io.Writer) int {
 	var (
 		serverURL      string
 		apiKey         string
@@ -21,6 +25,7 @@ func main() {
 		format         string
 		providerHeader bool
 		timeoutSec     int
+		allowPartial   bool
 	)
 
 	defaultURL := os.Getenv("SEERR_URL")
@@ -29,93 +34,130 @@ func main() {
 	}
 	defaultKey := os.Getenv("SEERR_API_KEY")
 
-	flag.StringVar(&serverURL, "url", defaultURL, "Base URL of the live Seerr/Jellyseerr/Overseerr instance (or SEERR_URL)")
-	flag.StringVar(&apiKey, "api-key", defaultKey, "API key for authentication (or SEERR_API_KEY)")
-	flag.StringVar(&outDir, "out-dir", ".", "Output directory for generated files")
-	flag.StringVar(&format, "format", "all", "Output format: 'all', 'hcl', 'imports', 'script'")
-	flag.BoolVar(&providerHeader, "provider-header", true, "Include provider configuration block in generated HCL")
-	flag.IntVar(&timeoutSec, "timeout", 30, "HTTP request timeout in seconds")
-	flag.Parse()
+	fs := flag.NewFlagSet("seerr-import", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	fs.StringVar(&serverURL, "url", defaultURL, "Base URL of the live Seerr/Jellyseerr/Overseerr instance (or SEERR_URL)")
+	fs.StringVar(&apiKey, "api-key", defaultKey, "API key for authentication (or SEERR_API_KEY). Prefer the environment variable so the key is not stored in shell history.")
+	fs.StringVar(&outDir, "out-dir", ".", "Output directory for generated files")
+	fs.StringVar(&format, "format", "all", "Output format: 'all', 'hcl', 'imports', 'script'")
+	fs.BoolVar(&providerHeader, "provider-header", true, "Include provider configuration block in generated HCL")
+	fs.IntVar(&timeoutSec, "timeout", 30, "HTTP request timeout in seconds")
+	fs.BoolVar(&allowPartial, "allow-partial", false, "Write discovered resources even when authentication, transport, or server errors make discovery incomplete. HTTP 404 is skipped either way.")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() > 0 {
+		fmt.Fprintf(stderr, "unexpected argument %q\n", fs.Arg(0))
+		return 2
+	}
+
+	canonical, err := canonicalFormat(format)
+	if err != nil {
+		fmt.Fprintln(stderr, err.Error())
+		return 2
+	}
+	format = canonical
 
 	if apiKey == "" {
-		fmt.Fprintln(os.Stderr, "Warning: No API key provided. Set via -api-key or SEERR_API_KEY env var.")
+		fmt.Fprintln(stderr, "Warning: No API key provided. Set via -api-key or SEERR_API_KEY env var.")
 	}
 
-	fmt.Printf("🔍 Connecting to Seerr at %s...\n", serverURL)
+	fmt.Fprintf(stdout, "🔍 Connecting to Seerr at %s...\n", serverURL)
 
-	cfg := ImporterConfig{
-		BaseURL: serverURL,
-		APIKey:  apiKey,
-		Timeout: time.Duration(timeoutSec) * time.Second,
-	}
+	imp := NewImporter(ImporterConfig{
+		BaseURL:      serverURL,
+		APIKey:       apiKey,
+		Timeout:      time.Duration(timeoutSec) * time.Second,
+		AllowPartial: allowPartial,
+	})
 
-	imp := NewImporter(cfg)
-	ctx := context.Background()
-
-	resources, err := imp.DiscoverAll(ctx)
+	resources, err := imp.DiscoverAll(context.Background())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error during discovery: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(stderr, "Error during discovery: %v\n", err)
+		return 1
+	}
+	if failures := imp.Failures(); len(failures) > 0 {
+		fmt.Fprintf(stderr, "Partial discovery: %d error(s) ignored because -allow-partial is set\n", len(failures))
+		for _, failure := range failures {
+			fmt.Fprintf(stderr, "  • %s\n", failure.Error())
+		}
+	}
+	if skipped := imp.UnsupportedEndpoints(); len(skipped) > 0 {
+		fmt.Fprintf(stdout, "Skipped %d unsupported endpoints (HTTP 404).\n", len(skipped))
+	}
+	if notes := imp.ManualAdoption(); len(notes) > 0 {
+		fmt.Fprintln(stdout, "Manual adoption required for settings left unmanaged:")
+		for _, note := range notes {
+			fmt.Fprintf(stdout, "  • %s\n", note)
+		}
 	}
 
 	if len(resources) == 0 {
-		fmt.Println("⚠️  No manageable resources discovered. Verify your URL, API Key, and server permissions.")
-		return
+		fmt.Fprintln(stdout, "⚠️  No manageable resources discovered. Verify your URL, API Key, and server permissions.")
+		if len(imp.Failures()) > 0 {
+			return 0
+		}
+		return 0
 	}
 
-	fmt.Printf("✅ Discovered %d live resources across your Seerr instance!\n\n", len(resources))
+	fmt.Fprintf(stdout, "✅ Discovered %d live resources across your Seerr instance!\n\n", len(resources))
 
-	// Group by resource type for reporting.
 	counts := map[string]int{}
-	for _, r := range resources {
-		counts[r.ResourceType]++
+	var countOrder []string
+	for _, resource := range resources {
+		if _, ok := counts[resource.ResourceType]; !ok {
+			countOrder = append(countOrder, resource.ResourceType)
+		}
+		counts[resource.ResourceType]++
 	}
-	for rType, count := range counts {
-		fmt.Printf("  • %-30s : %d\n", rType, count)
+	for _, resourceType := range countOrder {
+		fmt.Fprintf(stdout, "  • %-30s : %d\n", resourceType, counts[resourceType])
 	}
-	fmt.Println()
+	fmt.Fprintln(stdout)
 
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating output directory %s: %v\n", outDir, err)
-		os.Exit(1)
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		fmt.Fprintf(stderr, "Error creating output directory %s: %v\n", outDir, err)
+		return 1
 	}
 
-	format = strings.ToLower(format)
+	write := func(name, content string, mode os.FileMode) int {
+		path := filepath.Join(outDir, name)
+		if err := os.WriteFile(path, []byte(content), mode); err != nil {
+			fmt.Fprintf(stderr, "Error writing %s: %v\n", path, err)
+			return 1
+		}
+		fmt.Fprintf(stdout, "📄 Wrote %s\n", path)
+		return 0
+	}
 
 	if format == "all" || format == "hcl" {
-		hclContent := GenerateHCL(resources, providerHeader)
-		hclPath := filepath.Join(outDir, "main.tf")
-		if err := os.WriteFile(hclPath, []byte(hclContent), 0644); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", hclPath, err)
-		} else {
-			fmt.Printf("📄 Generated HCL resources: %s\n", hclPath)
+		if write("main.tf", GenerateHCL(resources, providerHeader), 0o644) != 0 {
+			return 1
+		}
+		if variables := GenerateVariables(resources); variables != "" {
+			if write("variables.tf", variables, 0o644) != 0 {
+				return 1
+			}
+			fmt.Fprintln(stdout, "Sensitive values were replaced with variables. Supply them with TF_VAR_* or an uncommitted tfvars file before planning.")
 		}
 	}
-
 	if format == "all" || format == "imports" {
-		importContent := GenerateImportBlocks(resources)
-		importPath := filepath.Join(outDir, "imports.tf")
-		if err := os.WriteFile(importPath, []byte(importContent), 0644); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", importPath, err)
-		} else {
-			fmt.Printf("📦 Generated Import blocks:  %s\n", importPath)
+		if write("imports.tf", GenerateImportBlocks(resources), 0o644) != 0 {
+			return 1
 		}
 	}
-
 	if format == "all" || format == "script" {
-		scriptContent := GenerateImportScript(resources)
-		scriptPath := filepath.Join(outDir, "import.sh")
-		if err := os.WriteFile(scriptPath, []byte(scriptContent), 0755); err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", scriptPath, err)
-		} else {
-			fmt.Printf("🚀 Generated Import script:  %s\n", scriptPath)
+		if write("import.sh", GenerateImportScript(resources), 0o755) != 0 {
+			return 1
 		}
 	}
 
-	fmt.Println("\n🎉 Migration files generated successfully!")
-	fmt.Println("Next steps:")
-	fmt.Println("  1. Review the generated main.tf and imports.tf")
-	fmt.Println("  2. Run 'tofu init' or 'terraform init'")
-	fmt.Println("  3. Run 'tofu plan' to verify 0 unexpected changes")
-	fmt.Println("  4. Run 'tofu apply' to import state and manage your Seerr stack with IaC!")
+	fmt.Fprintln(stdout, "\n🎉 Migration files generated successfully!")
+	fmt.Fprintln(stdout, "Next steps:")
+	fmt.Fprintln(stdout, "  1. Review main.tf, imports.tf, and variables.tf")
+	fmt.Fprintln(stdout, "  2. Export TF_VAR_* values or add an uncommitted tfvars file for sensitive variables")
+	fmt.Fprintln(stdout, "  3. Run 'tofu init' or 'terraform init'")
+	fmt.Fprintln(stdout, "  4. Run 'tofu apply' to import, then 'tofu plan' and confirm no changes")
+	fmt.Fprintln(stdout, "Settings for resource types this tool does not emit stay on the server. See docs/guides/migration.md.")
+	return 0
 }

@@ -308,8 +308,8 @@ func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerMod
 	baseURL := ""
 	if !data.BaseURL.IsNull() && !data.BaseURL.IsUnknown() {
 		baseURL = data.BaseURL.ValueString()
+		data.BaseURL = types.StringValue(baseURL)
 	}
-	data.BaseURL = types.StringValue(baseURL)
 
 	is4K := false
 	if !data.Is4K.IsNull() && !data.Is4K.IsUnknown() {
