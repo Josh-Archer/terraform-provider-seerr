@@ -173,6 +173,16 @@ func (c *APIClient) LockEndpoint(path string) func() {
 	return mu.Unlock
 }
 
+// LockUser serialises writes that load and save a Seerr user entity. Seerr's
+// /user/{id} PUT and /user/{id}/settings/* POST handlers each read the whole
+// user row and save it back, so concurrent writes for the same user from
+// different resources (e.g. seerr_user_permissions and seerr_user_quota)
+// can silently revert each other. Callers hold this lock across the write and
+// its read-back. Acquire it before any endpoint-specific lock.
+func (c *APIClient) LockUser(userID string) func() {
+	return c.LockEndpoint("user-entity:" + strings.TrimSpace(userID))
+}
+
 func normalizeEndpointLockKey(path string) string {
 	path = strings.TrimSpace(path)
 	if idx := strings.Index(path, "?"); idx >= 0 {

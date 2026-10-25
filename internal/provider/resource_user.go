@@ -126,9 +126,6 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 			"plex_username": schema.StringAttribute{
 				MarkdownDescription: "The linked Plex account username, if linked.",
 				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"plex_auth_token": schema.StringAttribute{
 				MarkdownDescription: "Plex auth token to link a Plex account to this user via `/api/v1/user/{userId}/settings/linked-accounts/plex`. Omit or set to null to unlink.",
@@ -147,9 +144,6 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 			"user_type": schema.Int64Attribute{
 				MarkdownDescription: "User account type (1: Plex, 2: Local, 3: Jellyfin).",
 				Computed:            true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.UseStateForUnknown(),
-				},
 			},
 			"permissions": schema.Int64Attribute{
 				MarkdownDescription: "Permissions bitmask.",
@@ -206,30 +200,18 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 			"global_movie_quota_days": schema.Int64Attribute{
 				MarkdownDescription: "Current global movie quota period in days reported by Seerr.",
 				Computed:            true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.UseStateForUnknown(),
-				},
 			},
 			"global_movie_quota_limit": schema.Int64Attribute{
 				MarkdownDescription: "Current global movie quota limit reported by Seerr.",
 				Computed:            true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.UseStateForUnknown(),
-				},
 			},
 			"global_tv_quota_limit": schema.Int64Attribute{
 				MarkdownDescription: "Current global TV quota limit reported by Seerr.",
 				Computed:            true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.UseStateForUnknown(),
-				},
 			},
 			"global_tv_quota_days": schema.Int64Attribute{
 				MarkdownDescription: "Current global TV quota period in days reported by Seerr.",
 				Computed:            true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.UseStateForUnknown(),
-				},
 			},
 			"watchlist_sync_movies": schema.BoolAttribute{
 				MarkdownDescription: "Enable watchlist sync for movies.",
@@ -706,6 +688,8 @@ func (r *UserResource) ImportState(ctx context.Context, req resource.ImportState
 }
 
 func (r *UserResource) updateMainSettings(ctx context.Context, userID string, data *UserModel) error {
+	unlockUser := r.client.LockUser(userID)
+	defer unlockUser()
 	path := fmt.Sprintf("/api/v1/user/%s/settings/main", userID)
 	unlock := r.client.LockEndpoint(path)
 	defer unlock()

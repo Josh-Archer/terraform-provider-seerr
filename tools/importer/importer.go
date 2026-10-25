@@ -473,7 +473,7 @@ func (imp *Importer) discoverArr(ctx context.Context, apiPath, resourceType, nam
 	}
 	var found []DiscoveredResource
 	for _, server := range list {
-		idStr, _, ok := objectID(server)
+		idStr, ok := objectID(server)
 		if !ok {
 			imp.failures = append(imp.failures, fmt.Errorf("decode error from %s: server id missing", apiPath))
 			continue
@@ -732,7 +732,7 @@ func (imp *Importer) discoverUsers(ctx context.Context) []DiscoveredResource {
 
 		added := 0
 		for _, user := range results {
-			idStr, _, ok := objectID(user)
+			idStr, ok := objectID(user)
 			if !ok {
 				continue
 			}
@@ -758,14 +758,14 @@ func (imp *Importer) discoverUsers(ctx context.Context) []DiscoveredResource {
 	}
 
 	sort.SliceStable(collected, func(i, j int) bool {
-		left, _, _ := objectID(collected[i])
-		right, _, _ := objectID(collected[j])
+		left, _ := objectID(collected[i])
+		right, _ := objectID(collected[j])
 		return compareImportID(left, right) < 0
 	})
 
 	found := make([]DiscoveredResource, 0, len(collected))
 	for _, user := range collected {
-		idStr, _, ok := objectID(user)
+		idStr, ok := objectID(user)
 		if !ok {
 			continue
 		}
@@ -1311,20 +1311,17 @@ func intFromAny(value any) (int64, bool) {
 	}
 }
 
-func objectID(m map[string]any) (string, int64, bool) {
+func objectID(m map[string]any) (string, bool) {
 	raw, ok := m["id"]
 	if !ok || raw == nil {
-		return "", 0, false
+		return "", false
 	}
 	if number, ok := intFromAny(raw); ok {
-		return strconv.FormatInt(number, 10), number, true
+		return strconv.FormatInt(number, 10), true
 	}
 	text, ok := raw.(string)
 	if !ok || text == "" {
-		return "", 0, false
+		return "", false
 	}
-	if number, err := strconv.ParseInt(text, 10, 64); err == nil {
-		return text, number, true
-	}
-	return text, 0, true
+	return text, true
 }

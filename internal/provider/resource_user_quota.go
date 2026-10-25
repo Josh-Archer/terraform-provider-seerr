@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -211,6 +212,8 @@ func (r *UserQuotaResource) ImportState(ctx context.Context, req resource.Import
 // applyQuota performs a read-merge-write so that only the four quota fields are
 // modified while all other main-settings are preserved server-side.
 func (r *UserQuotaResource) applyQuota(ctx context.Context, data *UserQuotaModel) error {
+	unlockUser := r.client.LockUser(strconv.FormatInt(data.UserID.ValueInt64(), 10))
+	defer unlockUser()
 	apiPath := userQuotaPath(data.UserID.ValueInt64())
 	unlock := r.client.LockEndpoint(apiPath)
 	defer unlock()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -187,6 +188,8 @@ func (r *UserSettingsPermissionsResource) updatePermissions(ctx context.Context,
 		return fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
+	unlock := r.client.LockUser(strconv.FormatInt(data.UserID.ValueInt64(), 10))
+	defer unlock()
 	res, err := r.client.Request(ctx, "POST", fmt.Sprintf("/api/v1/user/%d/settings/permissions", data.UserID.ValueInt64()), string(body), nil)
 	if err != nil {
 		return err
