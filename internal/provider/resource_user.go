@@ -688,6 +688,8 @@ func (r *UserResource) ImportState(ctx context.Context, req resource.ImportState
 }
 
 func (r *UserResource) updateMainSettings(ctx context.Context, userID string, data *UserModel) error {
+	unlockUser := r.client.LockUser(userID)
+	defer unlockUser()
 	path := fmt.Sprintf("/api/v1/user/%s/settings/main", userID)
 	unlock := r.client.LockEndpoint(path)
 	defer unlock()

@@ -64,8 +64,10 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 				"useSsl":            false,
 				"is4k":              false,
 				"isDefault":         true,
+				"activeProfileId":   4,
 				"activeProfileName": "HD-1080p",
 				"activeDirectory":   "/movies",
+				"apiKey":            "unit-test-radarr-api-key-canary",
 			},
 		})
 	})
@@ -130,6 +132,21 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 	if !strings.Contains(hcl, `resource "seerr_radarr_server" "radarr_hd"`) {
 		t.Errorf("Expected seerr_radarr_server in HCL, got:\n%s", hcl)
 	}
+	if !strings.Contains(hcl, "quality_profile_id") || !strings.Contains(hcl, "quality_profile_name") {
+		t.Errorf("Expected Radarr profile attributes that match the provider schema, got:\n%s", hcl)
+	}
+	if strings.Contains(hcl, "active_profile_name") || strings.Contains(hcl, "default_permissions") {
+		t.Errorf("Generated HCL contains attributes that are not in the provider schema:\n%s", hcl)
+	}
+	if strings.Contains(hcl, "unit-test-radarr-api-key-canary") {
+		t.Errorf("Radarr API key was written into HCL:\n%s", hcl)
+	}
+	if !strings.Contains(hcl, "var.seerr_radarr_server_radarr_hd_api_key") {
+		t.Errorf("Expected Radarr API key variable reference, got:\n%s", hcl)
+	}
+	if !strings.Contains(hcl, "discord = {") || !strings.Contains(hcl, "webhook_url") {
+		t.Errorf("Expected Discord options as a nested attribute, got:\n%s", hcl)
+	}
 	if !strings.Contains(hcl, `resource "seerr_notification_discord" "discord"`) {
 		t.Errorf("Expected seerr_notification_discord in HCL, got:\n%s", hcl)
 	}
@@ -150,5 +167,13 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 	script := GenerateImportScript(resources)
 	if !strings.Contains(script, "terraform import seerr_main_settings.main main") {
 		t.Errorf("Expected terraform import command in script, got:\n%s", script)
+	}
+
+	variables := GenerateVariables(resources)
+	if strings.Contains(variables, "unit-test-radarr-api-key-canary") || strings.Contains(imports, "unit-test-radarr-api-key-canary") || strings.Contains(script, "unit-test-radarr-api-key-canary") {
+		t.Errorf("Radarr API key leaked outside main.tf variable references")
+	}
+	if !strings.Contains(variables, "sensitive   = true") || !strings.Contains(variables, "seerr_radarr_server_radarr_hd_api_key") {
+		t.Errorf("Expected a sensitive variable declaration, got:\n%s", variables)
 	}
 }

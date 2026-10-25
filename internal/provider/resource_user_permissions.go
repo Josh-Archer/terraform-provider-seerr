@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -98,6 +99,8 @@ func (r *UserPermissionsResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
+	unlock := r.client.LockUser(strconv.FormatInt(data.UserID.ValueInt64(), 10))
+	defer unlock()
 	apiPath := userPermissionsPath(data.UserID.ValueInt64())
 	res, err := r.client.Request(ctx, "PUT", apiPath, string(body), nil)
 	if err != nil {
@@ -165,6 +168,8 @@ func (r *UserPermissionsResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
+	unlock := r.client.LockUser(strconv.FormatInt(data.UserID.ValueInt64(), 10))
+	defer unlock()
 	apiPath := userPermissionsPath(data.UserID.ValueInt64())
 	res, err := r.client.Request(ctx, "PUT", apiPath, string(body), nil)
 	if err != nil {

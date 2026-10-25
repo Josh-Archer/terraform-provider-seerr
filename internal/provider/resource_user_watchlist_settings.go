@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -101,6 +102,8 @@ func (r *UserWatchlistSettingsResource) Create(ctx context.Context, req resource
 		return
 	}
 
+	unlock := r.client.LockUser(strconv.FormatInt(data.UserID.ValueInt64(), 10))
+	defer unlock()
 	apiPath := userWatchlistPath(data.UserID.ValueInt64())
 	res, err := r.client.Request(ctx, "POST", apiPath, string(body), nil)
 	if err != nil {
@@ -176,6 +179,8 @@ func (r *UserWatchlistSettingsResource) Update(ctx context.Context, req resource
 		return
 	}
 
+	unlock := r.client.LockUser(strconv.FormatInt(data.UserID.ValueInt64(), 10))
+	defer unlock()
 	apiPath := userWatchlistPath(data.UserID.ValueInt64())
 	res, err := r.client.Request(ctx, "POST", apiPath, string(body), nil)
 	if err != nil {
