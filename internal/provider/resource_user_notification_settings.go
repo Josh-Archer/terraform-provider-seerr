@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -199,6 +200,11 @@ func (r *UserNotificationSettingsResource) Create(ctx context.Context, req resou
 		return
 	}
 
+	// The notifications POST loads and saves the whole user row; hold the
+	// user-entity lock through the write and the read-back.
+	unlockUser := r.client.LockUser(strconv.FormatInt(data.UserID.ValueInt64(), 10))
+	defer unlockUser()
+
 	payload, err := buildUserNotificationSettingsPayload(ctx, r.client, data.UserID.ValueInt64(), &data)
 	if err != nil {
 		resp.Diagnostics.AddError("Create Failed", err.Error())
@@ -255,6 +261,11 @@ func (r *UserNotificationSettingsResource) Update(ctx context.Context, req resou
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// The notifications POST loads and saves the whole user row; hold the
+	// user-entity lock through the write and the read-back.
+	unlockUser := r.client.LockUser(strconv.FormatInt(data.UserID.ValueInt64(), 10))
+	defer unlockUser()
 
 	payload, err := buildUserNotificationSettingsPayload(ctx, r.client, data.UserID.ValueInt64(), &data)
 	if err != nil {
