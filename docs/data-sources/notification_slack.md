@@ -28,4 +28,4 @@ Read Seerr slack notification settings via /api/v1/settings/notifications/slack.
 
 Read-Only:
 
-- `webhook_url` (String)
+- `webhook_url` (String, Sensitive)

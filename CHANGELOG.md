@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Bug Fixes
+
+- Mark Discord, Slack, LunaSea, and generic notification `webhook_url` attributes `Sensitive` on both resources and data sources so webhook tokens no longer appear in plan output (#374). Server base URLs such as `ntfy.url`, `gotify.url`, `application_url`, and provider `url` stay visible.
+
 ## [2.3.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.3.0...v2.3.1) (2026-10-26)
 
 

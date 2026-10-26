@@ -30,4 +30,4 @@ Read-Only:
 
 - `auth_header` (String, Sensitive)
 - `json_payload` (String)
-- `webhook_url` (String)
+- `webhook_url` (String, Sensitive)

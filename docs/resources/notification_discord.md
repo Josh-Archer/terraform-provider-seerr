@@ -31,7 +31,7 @@ Manage Seerr discord notification settings via /api/v1/settings/notifications/di
 
 Required:
 
-- `webhook_url` (String)
+- `webhook_url` (String, Sensitive)
 
 Optional:
 
