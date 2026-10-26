@@ -29,4 +29,4 @@ Read Seerr lunasea notification settings via /api/v1/settings/notifications/luna
 Read-Only:
 
 - `profile_name` (String)
-- `webhook_url` (String)
+- `webhook_url` (String, Sensitive)

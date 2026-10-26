@@ -31,7 +31,7 @@ Manage Seerr lunasea notification settings via /api/v1/settings/notifications/lu
 
 Required:
 
-- `webhook_url` (String)
+- `webhook_url` (String, Sensitive)
 
 Optional:
 

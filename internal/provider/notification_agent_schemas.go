@@ -16,14 +16,14 @@ func notificationAgentResourceOptionAttributes() map[string]schema.Attribute {
 			Attributes: map[string]schema.Attribute{
 				"bot_username":    schema.StringAttribute{Optional: true, Computed: true},
 				"bot_avatar_url":  schema.StringAttribute{Optional: true, Computed: true},
-				"webhook_url":     schema.StringAttribute{Required: true},
+				"webhook_url":     schema.StringAttribute{Required: true, Sensitive: true},
 				"enable_mentions": schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)},
 			},
 		},
 		"slack": schema.SingleNestedAttribute{
 			Optional: true,
 			Attributes: map[string]schema.Attribute{
-				"webhook_url": schema.StringAttribute{Required: true},
+				"webhook_url": schema.StringAttribute{Required: true, Sensitive: true},
 			},
 		},
 		"email": schema.SingleNestedAttribute{
@@ -46,7 +46,7 @@ func notificationAgentResourceOptionAttributes() map[string]schema.Attribute {
 		"lunasea": schema.SingleNestedAttribute{
 			Optional: true,
 			Attributes: map[string]schema.Attribute{
-				"webhook_url":  schema.StringAttribute{Required: true},
+				"webhook_url":  schema.StringAttribute{Required: true, Sensitive: true},
 				"profile_name": schema.StringAttribute{Optional: true, Computed: true},
 			},
 		},
@@ -91,7 +91,7 @@ func notificationAgentResourceOptionAttributes() map[string]schema.Attribute {
 		"webhook": schema.SingleNestedAttribute{
 			Optional: true,
 			Attributes: map[string]schema.Attribute{
-				"webhook_url":  schema.StringAttribute{Required: true},
+				"webhook_url":  schema.StringAttribute{Required: true, Sensitive: true},
 				"json_payload": schema.StringAttribute{Required: true},
 				"auth_header":  schema.StringAttribute{Optional: true, Sensitive: true, Computed: true},
 			},
@@ -117,14 +117,14 @@ func notificationAgentDataSourceOptionAttributes() map[string]dschema.Attribute 
 			Attributes: map[string]dschema.Attribute{
 				"bot_username":    dschema.StringAttribute{Computed: true},
 				"bot_avatar_url":  dschema.StringAttribute{Computed: true},
-				"webhook_url":     dschema.StringAttribute{Computed: true},
+				"webhook_url":     dschema.StringAttribute{Computed: true, Sensitive: true},
 				"enable_mentions": dschema.BoolAttribute{Computed: true},
 			},
 		},
 		"slack": dschema.SingleNestedAttribute{
 			Computed: true,
 			Attributes: map[string]dschema.Attribute{
-				"webhook_url": dschema.StringAttribute{Computed: true},
+				"webhook_url": dschema.StringAttribute{Computed: true, Sensitive: true},
 			},
 		},
 		"email": dschema.SingleNestedAttribute{
@@ -147,7 +147,7 @@ func notificationAgentDataSourceOptionAttributes() map[string]dschema.Attribute 
 		"lunasea": dschema.SingleNestedAttribute{
 			Computed: true,
 			Attributes: map[string]dschema.Attribute{
-				"webhook_url":  dschema.StringAttribute{Computed: true},
+				"webhook_url":  dschema.StringAttribute{Computed: true, Sensitive: true},
 				"profile_name": dschema.StringAttribute{Computed: true},
 			},
 		},
@@ -192,7 +192,7 @@ func notificationAgentDataSourceOptionAttributes() map[string]dschema.Attribute 
 		"webhook": dschema.SingleNestedAttribute{
 			Computed: true,
 			Attributes: map[string]dschema.Attribute{
-				"webhook_url":  dschema.StringAttribute{Computed: true},
+				"webhook_url":  dschema.StringAttribute{Computed: true, Sensitive: true},
 				"json_payload": dschema.StringAttribute{Computed: true},
 				"auth_header":  dschema.StringAttribute{Computed: true, Sensitive: true},
 			},
