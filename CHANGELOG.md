@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.3.0...v2.3.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **ci:** skip unpublished and HEAD tags when picking consumer replay baseline ([#375](https://github.com/Josh-Archer/terraform-provider-seerr/issues/375)) ([0494f8d](https://github.com/Josh-Archer/terraform-provider-seerr/commit/0494f8d08da66940eef152737a1ee4de238ee84e))
+
 ## [2.3.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.2.2...v2.3.0) (2026-10-26)
 
 
