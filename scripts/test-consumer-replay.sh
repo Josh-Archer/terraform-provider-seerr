@@ -152,10 +152,15 @@ CFG
 }
 
 installed_provider_bins() {
-  if [[ ! -d "${work_dir}/.terraform/providers" ]]; then
+  local providers="${work_dir}/.terraform/providers"
+  if [[ ! -d "${providers}" ]]; then
     return 0
   fi
-  find "${work_dir}/.terraform/providers" -type f -name 'terraform-provider-seerr*' ! -name '*.json' -print
+  # An unpacked filesystem mirror is installed by symlinking the platform
+  # directory (…/99.99.99/linux_amd64 -> the mirror). find without -L does not
+  # descend into that link, so the built binary looks missing even after
+  # tofu init records this platform's checksum in the lock file.
+  find -L "${providers}" -type f -name 'terraform-provider-seerr*' ! -name '*.json' -print || true
 }
 
 assert_local_candidate() {
@@ -209,6 +214,9 @@ main() {
   fixture_src="${repo_root}/test/consumer/arr-config"
   artifact_dir="${SEERR_ARTIFACT_DIR:-${repo_root}/test-artifacts/consumer-replay}"
   mirror_root="${SEERR_PROVIDER_MIRROR_ROOT:-${repo_root}/provider-mirror-consumer}"
+  # Unpacked layout for the platform OpenTofu is running on. A binary placed
+  # only under another platform directory is not installed, and init fails
+  # closed instead of recording this platform in the lock file.
   provider_target_dir="${mirror_root}/registry.opentofu.org/josh-archer/seerr/${current_version}/$(go env GOOS)_$(go env GOARCH)"
   work_dir="${artifact_dir}/work"
   local_env_created=false

@@ -130,7 +130,9 @@ jobs:
         if: steps.meta.outputs.mode == 'replay'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: refs/tags/${{ inputs.release_tag }}
+          # Same fully qualified tag the goreleaser job checks out. The raw
+          # workflow input is not the ref the release checks validate.
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           path: source
           persist-credentials: false
 

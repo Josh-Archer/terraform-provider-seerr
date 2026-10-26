@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Selects the upgrade baseline without Docker or a live registry.
+# The candidate install check runs a real `tofu init` against the filesystem mirror.
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
@@ -190,6 +191,47 @@ if grep -q 'filesystem_mirror' "${TF_CLI_CONFIG_FILE}"; then
 fi
 grep -q 'direct' "${TF_CLI_CONFIG_FILE}"
 pass "upgrade baseline install is the public registry"
+
+command -v tofu >/dev/null || fail "real tofu init: tofu is required"
+
+platform="$(go env GOOS)_$(go env GOARCH)"
+provider_target_dir="${mirror_root}/registry.opentofu.org/josh-archer/seerr/${current_version}/${platform}"
+work_dir="${test_root}/real-init"
+mkdir -p "${provider_target_dir}" "${work_dir}"
+printf 'local-candidate\n' >"${provider_target_dir}/terraform-provider-seerr"
+chmod +x "${provider_target_dir}/terraform-provider-seerr"
+cat >"${work_dir}/versions.tf" <<VERSIONS
+terraform {
+  required_providers {
+    seerr = {
+      source  = "registry.opentofu.org/josh-archer/seerr"
+      version = "${current_version}"
+    }
+  }
+}
+VERSIONS
+use_cli_config local
+rm -rf "${work_dir}/.terraform" "${work_dir}/.terraform.lock.hcl"
+if ! (cd "${work_dir}" && tofu init -input=false -no-color) >"${test_root}/init.out" 2>"${test_root}/init.err"; then
+  cat "${test_root}/init.err" >&2
+  fail "real tofu init failed"
+fi
+installed_dir="${work_dir}/.terraform/providers/registry.opentofu.org/josh-archer/seerr/${current_version}/${platform}"
+if [[ ! -x "${installed_dir}/terraform-provider-seerr" ]]; then
+  fail "tofu init did not install the ${platform} candidate from the mirror (${installed_dir})"
+fi
+if ! grep -q 'h1:' "${work_dir}/.terraform.lock.hcl"; then
+  fail "lock file is missing the local candidate checksum"
+fi
+assert_local_candidate >/dev/null
+# A second init must honor the lock file recorded for this platform and
+# still select the mirrored candidate, not another platform's package.
+if ! (cd "${work_dir}" && tofu init -input=false -no-color) >"${test_root}/reinit.out" 2>"${test_root}/reinit.err"; then
+  cat "${test_root}/reinit.err" >&2
+  fail "tofu init with the candidate lock file failed"
+fi
+assert_local_candidate >/dev/null
+pass "real tofu init installs the local candidate"
 
 provider_target_dir="${test_root}/built"
 work_dir="${test_root}/tfwork"
