@@ -31,4 +31,4 @@ Read-Only:
 - `bot_avatar_url` (String)
 - `bot_username` (String)
 - `enable_mentions` (Boolean)
-- `webhook_url` (String)
+- `webhook_url` (String, Sensitive)

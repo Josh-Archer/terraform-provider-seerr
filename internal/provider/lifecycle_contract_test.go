@@ -415,12 +415,15 @@ func TestLifecycleContractSensitiveSchema(t *testing.T) {
 			"email.pgp_password",
 			"email.pgp_private_key",
 		},
+		"seerr_notification_discord":    {"discord.webhook_url"},
 		"seerr_notification_gotify":     {"gotify.token"},
+		"seerr_notification_lunasea":    {"lunasea.webhook_url"},
 		"seerr_notification_ntfy":       {"ntfy.password", "ntfy.token"},
 		"seerr_notification_pushbullet": {"pushbullet.access_token"},
 		"seerr_notification_pushover":   {"pushover.access_token", "pushover.user_token"},
 		"seerr_notification_telegram":   {"telegram.bot_api"},
-		"seerr_notification_webhook":    {"webhook.auth_header"},
+		"seerr_notification_slack":      {"slack.webhook_url"},
+		"seerr_notification_webhook":    {"webhook.auth_header", "webhook.webhook_url"},
 	}
 	for name, paths := range want {
 		sort.Strings(paths)
