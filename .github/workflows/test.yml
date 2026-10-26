@@ -273,6 +273,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  # Candidate provider comes from the local build (filesystem mirror).
+  # The upgrade step installs only the previous published release.
   consumer-replay:
     name: Consumer Replay (arr-config)
     runs-on: ubuntu-latest

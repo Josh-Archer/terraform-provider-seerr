@@ -20,7 +20,155 @@ env:
   GOTOOLCHAIN: local
 
 jobs:
+  # The candidate provider is not in the registry until this workflow promotes
+  # it. A historical Consumer Replay failure on the tag (it tried to install
+  # that unpublished version) must not deadlock promotion: replay the tagged
+  # source here, with the local build, and install only the previous published
+  # release from the registry.
+  consumer-replay-gate:
+    name: Release candidate replay
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      SEERR_TEST_IMAGE: seerr/seerr:v3.5.0
+    steps:
+      - name: Ensure release tag and choose replay mode
+        id: meta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          semver_pattern='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+          if [[ ! "${RELEASE_TAG}" =~ ${semver_pattern} ]]; then
+            echo "Invalid release tag: ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+
+          if tag_error="$(gh api --silent "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" 2>&1)"; then
+            echo "Release tag ${RELEASE_TAG} already exists."
+          else
+            if [[ "${tag_error}" != *"(HTTP 404)"* ]]; then
+              echo "Unable to inspect release tag ${RELEASE_TAG}: ${tag_error}" >&2
+              exit 1
+            fi
+
+            # GitHub does not create a Git ref for a draft release. Release
+            # Please intentionally creates drafts so GoReleaser can upload the
+            # signed artifacts before publication. Recover the exact target from
+            # that draft and create the missing ref before checking out source.
+            release_record="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases" \
+              --jq ".[] | select(.tag_name == \"${RELEASE_TAG}\") | [.draft, .target_commitish] | @tsv")"
+            if [[ -z "${release_record}" ]]; then
+              echo "Release tag ${RELEASE_TAG} is missing and no matching draft release exists." >&2
+              exit 1
+            fi
+
+            IFS=$'\t' read -r is_draft target_commitish <<< "${release_record}"
+            if [[ "${is_draft}" != "true" ]]; then
+              echo "Refusing to create ${RELEASE_TAG} for a non-draft release." >&2
+              exit 1
+            fi
+
+            target_sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${target_commitish}" --jq '.sha')"
+            if [[ ! "${target_sha}" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "Unable to resolve a full commit SHA for ${RELEASE_TAG}: ${target_sha}" >&2
+              exit 1
+            fi
+
+            gh api --silent --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+              -f "ref=refs/tags/${RELEASE_TAG}" \
+              -f "sha=${target_sha}"
+            echo "Created ${RELEASE_TAG} at ${target_sha} from its draft release target."
+          fi
+
+          if [[ "${RELEASE_TAG}" == *-* ]]; then
+            echo "mode=skip" >> "${GITHUB_OUTPUT}"
+            echo "${RELEASE_TAG} is a prerelease; consumer replay gate applies to stable promotion only."
+            exit 0
+          fi
+
+          if response="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq '{draft: .draft, has_sums: ([.assets[].name | select(endswith("_SHA256SUMS"))] | length > 0)}' 2>&1)"; then
+            is_draft="$(echo "${response}" | jq -r '.draft')"
+            has_sums="$(echo "${response}" | jq -r '.has_sums')"
+            if [[ "${is_draft}" == "false" && "${has_sums}" == "true" ]]; then
+              echo "mode=skip" >> "${GITHUB_OUTPUT}"
+              echo "Release ${RELEASE_TAG} is already published with artifacts; replay is not required."
+              exit 0
+            fi
+          elif [[ "${response}" != *"(HTTP 404)"* ]]; then
+            echo "Unable to inspect GitHub Release ${RELEASE_TAG}: ${response}" >&2
+            exit 1
+          fi
+
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG}" --jq '.sha')"
+          conclusion="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${sha}/check-runs?filter=latest&per_page=100" \
+            --jq '[.check_runs[] | select(.name | startswith("Consumer Replay"))] | if length == 0 then "missing" else (map(.conclusion // "pending") | if all(. == "success") then "success" else join(",") end) end')"
+          echo "version=${RELEASE_TAG#v}" >> "${GITHUB_OUTPUT}"
+          echo "sha=${sha}" >> "${GITHUB_OUTPUT}"
+          if [[ "${conclusion}" == "success" ]]; then
+            echo "mode=skip" >> "${GITHUB_OUTPUT}"
+            echo "Consumer Replay passed on ${sha}; promotion allowed."
+            exit 0
+          fi
+          echo "mode=replay" >> "${GITHUB_OUTPUT}"
+          echo "Consumer Replay check on ${sha} is '${conclusion}'. Replaying the tagged source with the local candidate build."
+
+      - name: Checkout release controls
+        if: steps.meta.outputs.mode == 'replay'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: release-control
+          persist-credentials: false
+
+      - name: Checkout tagged source
+        if: steps.meta.outputs.mode == 'replay'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ inputs.release_tag }}
+          path: source
+          persist-credentials: false
+
+      - name: Set up Go
+        if: steps.meta.outputs.mode == 'replay'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: source/go.mod
+          cache-dependency-path: source/go.sum
+          cache: true
+
+      - name: Setup OpenTofu
+        if: steps.meta.outputs.mode == 'replay'
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.8.0
+          tofu_wrapper: false
+
+      - name: Replay tagged source with the local candidate build
+        if: steps.meta.outputs.mode == 'replay'
+        working-directory: source
+        env:
+          SEERR_REPLAY_RELEASE_VERSION: ${{ steps.meta.outputs.version }}
+          SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/consumer-replay
+        shell: bash
+        run: bash "${GITHUB_WORKSPACE}/release-control/scripts/test-consumer-replay.sh"
+
+      - name: Upload consumer replay diagnostics
+        if: failure() && steps.meta.outputs.mode == 'replay'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-consumer-replay
+          path: test-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
   goreleaser:
+    needs: consumer-replay-gate
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
     permissions:
@@ -79,27 +227,9 @@ jobs:
             -f "sha=${target_sha}"
           echo "Created ${RELEASE_TAG} at ${target_sha} from its draft release target."
 
-      # rc -> final promotion gate: a stable tag may only be built when the
-      # consumer replay job (apply, clean re-plan, upgrade from the previous
-      # release) succeeded on the exact commit being promoted.
-      - name: Require consumer replay to pass for stable releases
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ "${RELEASE_TAG}" == *-* ]]; then
-            echo "${RELEASE_TAG} is a prerelease; consumer replay gate applies to stable promotion only."
-            exit 0
-          fi
-          sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG}" --jq '.sha')"
-          conclusion="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${sha}/check-runs?filter=latest&per_page=100" \
-            --jq '[.check_runs[] | select(.name | startswith("Consumer Replay"))] | if length == 0 then "missing" else (map(.conclusion // "pending") | if all(. == "success") then "success" else join(",") end) end')"
-          if [[ "${conclusion}" != "success" ]]; then
-            echo "Refusing to promote ${RELEASE_TAG} (${sha}): Consumer Replay check is '${conclusion}', expected 'success'." >&2
-            exit 1
-          fi
-          echo "Consumer Replay passed on ${sha}; promotion allowed."
+      # Stable promotion already passed consumer-replay-gate: either the tagged
+      # commit's Consumer Replay check succeeded, or this workflow replayed the
+      # tagged source with the local candidate build.
 
       - name: Check release state
         id: release_state
