@@ -349,6 +349,12 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	data.ID = types.StringValue(userIDStr)
 
+	// Every follow-up write below loads and saves the whole user row, so hold
+	// the user-entity lock through all of them and the final read-back. The
+	// helpers assume the caller holds it and must not re-lock it.
+	unlockUser := r.client.LockUser(userIDStr)
+	defer unlockUser()
+
 	// Force permissions to the planned value because the create/import endpoints
 	// can return a server-side default instead of the requested mask.
 	if err := r.updateUserPermissions(ctx, userIDStr, data.Permissions); err != nil {
@@ -555,6 +561,11 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	userID := data.ID.ValueString()
 
+	// Hold the user-entity lock across every write and the read-back; the
+	// helpers below assume it is held and do not re-lock it.
+	unlockUser := r.client.LockUser(userID)
+	defer unlockUser()
+
 	// Update Base Info
 	updateBody, _ := json.Marshal(buildBaseUserUpdatePayload(&data))
 
@@ -632,6 +643,9 @@ func (r *UserResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
+	unlockUser := r.client.LockUser(data.ID.ValueString())
+	defer unlockUser()
+
 	res, err := r.client.Request(ctx, "DELETE", "/api/v1/user/"+data.ID.ValueString(), "", nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Delete Failed", err.Error())
@@ -687,6 +701,7 @@ func (r *UserResource) ImportState(ctx context.Context, req resource.ImportState
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
 }
 
+// updateMainSettings requires the caller to hold r.client.LockUser(userID).
 func (r *UserResource) updateMainSettings(ctx context.Context, userID string, data *UserModel) error {
 	path := fmt.Sprintf("/api/v1/user/%s/settings/main", userID)
 	unlock := r.client.LockEndpoint(path)
@@ -707,6 +722,7 @@ func (r *UserResource) updateMainSettings(ctx context.Context, userID string, da
 	return nil
 }
 
+// updateUserPermissions requires the caller to hold r.client.LockUser(userID).
 func (r *UserResource) updateUserPermissions(ctx context.Context, userID string, permissions types.Int64) error {
 	if permissions.IsNull() || permissions.IsUnknown() {
 		return nil
@@ -725,6 +741,7 @@ func (r *UserResource) updateUserPermissions(ctx context.Context, userID string,
 	return nil
 }
 
+// updateNotificationSettings requires the caller to hold r.client.LockUser(userID).
 func (r *UserResource) updateNotificationSettings(ctx context.Context, userID string, settings *UserNotificationSettingsModel) error {
 	path := fmt.Sprintf("/api/v1/user/%s/settings/notifications", userID)
 	unlock := r.client.LockEndpoint(path)
@@ -926,6 +943,7 @@ func buildBaseUserUpdatePayload(data *UserModel) map[string]any {
 	return payload
 }
 
+// linkPlexAccount requires the caller to hold r.client.LockUser(userID).
 func (r *UserResource) linkPlexAccount(ctx context.Context, userID, authToken string) error {
 	payload, _ := json.Marshal(map[string]any{
 		"authToken": authToken,
@@ -940,6 +958,7 @@ func (r *UserResource) linkPlexAccount(ctx context.Context, userID, authToken st
 	return nil
 }
 
+// unlinkPlexAccount requires the caller to hold r.client.LockUser(userID).
 func (r *UserResource) unlinkPlexAccount(ctx context.Context, userID string) error {
 	res, err := r.client.Request(ctx, "DELETE", fmt.Sprintf("/api/v1/user/%s/settings/linked-accounts/plex", userID), "", nil)
 	if err != nil {
@@ -951,6 +970,7 @@ func (r *UserResource) unlinkPlexAccount(ctx context.Context, userID string) err
 	return nil
 }
 
+// linkJellyfinAccount requires the caller to hold r.client.LockUser(userID).
 func (r *UserResource) linkJellyfinAccount(ctx context.Context, userID, username, password string) error {
 	payloadMap := map[string]any{
 		"username": username,
@@ -969,6 +989,7 @@ func (r *UserResource) linkJellyfinAccount(ctx context.Context, userID, username
 	return nil
 }
 
+// unlinkJellyfinAccount requires the caller to hold r.client.LockUser(userID).
 func (r *UserResource) unlinkJellyfinAccount(ctx context.Context, userID string) error {
 	res, err := r.client.Request(ctx, "DELETE", fmt.Sprintf("/api/v1/user/%s/settings/linked-accounts/jellyfin", userID), "", nil)
 	if err != nil {

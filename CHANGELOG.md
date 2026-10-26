@@ -6,6 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.3.0...v2.3.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **ci:** skip unpublished and HEAD tags when picking consumer replay baseline ([#375](https://github.com/Josh-Archer/terraform-provider-seerr/issues/375)) ([0494f8d](https://github.com/Josh-Archer/terraform-provider-seerr/commit/0494f8d08da66940eef152737a1ee4de238ee84e))
+
+## [2.3.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.2.2...v2.3.0) (2026-10-26)
+
+
+### Features
+
+* **importer:** complete discovery and prove imports keep live settings ([#370](https://github.com/Josh-Archer/terraform-provider-seerr/issues/370)) ([d13ca28](https://github.com/Josh-Archer/terraform-provider-seerr/commit/d13ca2850c9de5d16e20f67de9c690447c4b61a3))
+
+
+### Bug Fixes
+
+* avoid reapproving requests and restore Seerr 3.5 lifecycle tests ([#363](https://github.com/Josh-Archer/terraform-provider-seerr/issues/363)) ([52bbe49](https://github.com/Josh-Archer/terraform-provider-seerr/commit/52bbe499e0061e1d32739446057cab14bea0509a))
+* **user:** hold LockUser across all seerr_user and notification-settings row writes ([#371](https://github.com/Josh-Archer/terraform-provider-seerr/issues/371)) ([7a3f512](https://github.com/Josh-Archer/terraform-provider-seerr/commit/7a3f5129cdc11aacafac1936ca7f23717c485861)), closes [#357](https://github.com/Josh-Archer/terraform-provider-seerr/issues/357)
+
+
+### Documentation
+
+* map next priorities to actionable GitHub issues ([#361](https://github.com/Josh-Archer/terraform-provider-seerr/issues/361)) ([1f82d34](https://github.com/Josh-Archer/terraform-provider-seerr/commit/1f82d347c06dbaffa42d70dd4311a8f91f746558))
+
+
+### Miscellaneous Chores
+
+* **deps:** bump the github-actions group across 1 directory with 3 updates ([#367](https://github.com/Josh-Archer/terraform-provider-seerr/issues/367)) ([3922d84](https://github.com/Josh-Archer/terraform-provider-seerr/commit/3922d84da710fe0dc7ea781282188f2d587a5521))
+
 ## [2.2.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.2.1...v2.2.2) (2026-10-20)
 
 

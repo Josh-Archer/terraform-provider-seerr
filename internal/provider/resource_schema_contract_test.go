@@ -2,10 +2,14 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/Josh-Archer/terraform-provider-seerr/internal/schemacmp"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
@@ -172,4 +176,70 @@ func attributeKeepsStateForUnknown(attr schema.Attribute) bool {
 		}
 	}
 	return false
+}
+
+func TestReleaseToReleaseSchemaContract(t *testing.T) {
+	candProvider := New("candidate")()
+	candSchema, err := schemacmp.NormalizeProvider(candProvider)
+	if err != nil {
+		t.Fatalf("failed to normalize candidate provider schema: %v", err)
+	}
+
+	repoRoot, err := findRepoRoot()
+	if err != nil {
+		t.Fatalf("failed to locate repo root: %v", err)
+	}
+	baselineFile := filepath.Join(repoRoot, "testdata", "provider_schema_baseline.json")
+	if custom := os.Getenv("SEERR_SCHEMA_BASELINE_FILE"); custom != "" {
+		baselineFile = custom
+	}
+
+	resolveOpts := schemacmp.ResolveOptions{
+		BaselineFile: baselineFile,
+		AllowOffline: true,
+	}
+
+	prevSchema, prevVer, err := schemacmp.ResolveBaseline(context.Background(), resolveOpts)
+	if err != nil {
+		if errors.Is(err, schemacmp.ErrInitialBaseline) {
+			t.Log("Initial baseline release: no previous release schema found; skipping comparison.")
+			return
+		}
+		if errors.Is(err, schemacmp.ErrRegistryUnavailable) {
+			t.Skipf("Public registry unavailable and no baseline file found (%s); skipping release comparison.", baselineFile)
+			return
+		}
+		t.Fatalf("failed to resolve baseline provider schema: %v", err)
+	}
+
+	cmpOpts := schemacmp.CompareOptions{
+		PreviousVersion:        prevVer,
+		TargetVersion:          os.Getenv("SEERR_SCHEMA_TARGET_VERSION"),
+		MigrationNotePath:      os.Getenv("SEERR_SCHEMA_MIGRATION_NOTE"),
+		AllowBreaking:          os.Getenv("SEERR_SCHEMA_ALLOW_BREAKING") == "true",
+		RequireStabilityPolicy: true,
+	}
+
+	report := schemacmp.Compare(prevSchema, candSchema, cmpOpts)
+	if !report.IsCompatible() {
+		t.Fatalf("Public provider schema release comparison failed (incompatible contract changes detected against %s):\n%s",
+			prevVer, schemacmp.GenerateMarkdownReport(report))
+	}
+}
+
+func findRepoRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("could not find repo root from %s", dir)
+		}
+		dir = parent
+	}
 }

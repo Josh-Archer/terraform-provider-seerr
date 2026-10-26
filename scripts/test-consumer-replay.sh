@@ -87,15 +87,30 @@ assert_clean_plan() {
   echo "consumer replay OK: ${label} plan is clean" >&2
 }
 
+# Newest stable tag that is not the commit under test and is published in the registry.
+# On a release commit the newest tag points at HEAD and is not in the registry yet.
 previous_version() {
   if [[ -n "${SEERR_REPLAY_PREVIOUS_VERSION:-}" ]]; then
     printf '%s\n' "${SEERR_REPLAY_PREVIOUS_VERSION#v}"
     return 0
   fi
-  git ls-remote --tags --refs "${SEERR_REPLAY_REPO_URL:-https://github.com/Josh-Archer/terraform-provider-seerr.git}" 'v*' \
-    | sed 's#.*refs/tags/v##' \
-    | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
-    | sort -V | tail -n 1
+  local head_sha published sha version
+  head_sha="$(git rev-parse HEAD)"
+  published="$(curl -fsSL --retry 3 "${SEERR_REPLAY_REGISTRY_VERSIONS_URL:-https://registry.opentofu.org/v1/providers/josh-archer/seerr/versions}" \
+    | grep -oE '"version" *: *"[^"]+"' | sed -E 's/.*"([^"]+)"$/\1/')" || published=""
+  # Without --refs, annotated tags also list a peeled "^{}" line carrying the commit SHA.
+  git ls-remote --tags "${SEERR_REPLAY_REPO_URL:-https://github.com/Josh-Archer/terraform-provider-seerr.git}" 'v*' \
+    | awk '{ sub("refs/tags/v", "", $2); sub("\\^\\{\\}$", "", $2); sha[$2] = $1 } END { for (v in sha) print sha[v], v }' \
+    | grep -E ' [0-9]+\.[0-9]+\.[0-9]+$' \
+    | sort -k2,2Vr \
+    | while read -r sha version; do
+        [[ "${sha}" == "${head_sha}" ]] && continue
+        if [[ -n "${published}" ]] && ! grep -qxF "${version}" <<<"${published}"; then
+          continue
+        fi
+        printf '%s\n' "${version}"
+        break
+      done
 }
 
 cleanup() {

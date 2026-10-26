@@ -96,6 +96,27 @@ Promoting a release candidate (`-rc`) to a stable tag is gated on the **Consumer
 
 ---
 
+## 🛡️ Release Gate: Public Provider Schema Comparison & Semantic Review
+
+To prevent coordinated code and test edits from silently modifying or removing public provider contracts, CI compares normalized candidate schemas against the previous stable release via `scripts/compare-provider-schemas.sh` and `internal/provider/resource_schema_contract_test.go`:
+
+1. **Normalized Contract Comparison**:
+   - Compares resources, data sources, and provider blocks against the latest published release.
+   - Detects removed resources, removed data sources, removed attributes, type alterations, newly required attributes, and lost sensitive markings.
+   - Ignores documentation, description, and key-ordering changes to eliminate false positives.
+   - Produces a structured Markdown PR artifact detailing compatibility risks.
+
+2. **Intentional Contract Change Governance**:
+   - If backward-incompatible schema changes are detected, CI requires an explicit reviewed migration note (via `--migration-note` / `SEERR_SCHEMA_MIGRATION_NOTE`) and a target version decision consistent with SemVer 2.0 (`MAJOR` bump). Pull requests failing these criteria are blocked.
+
+3. **Complementary Verification Requirements (Why Schema Diff Alone Is Not Enough)**:
+   > [!IMPORTANT]
+   > **Schema comparison detects structural contract differences, but schema diff alone does NOT prove compatibility.**
+   > - **Semantic Review**: A schema diff cannot detect semantic changes such as altered quota interpretations (`0` vs `null`), changed default behaviours, or modified API interaction semantics. All semantic alterations require explicit engineering review and changelog upgrade notes.
+   > - **Consumer Upgrade Replay**: Safe deserialization and plan stability across provider versions must be verified through the Consumer Upgrade Replay suite (`scripts/test-consumer-replay.sh`). Both structural schema diff and behavioral replay are mandatory.
+
+---
+
 ## 🔄 State Schema Migration Policy
 
 State resilience is guaranteed across version upgrades through the following rules:
@@ -132,5 +153,6 @@ When submitting changes, ensure your PR complies with:
 - [ ] Does this change add a `Required: true` field to an existing resource? *(If yes, make it `Optional` with a sensible default).*
 - [ ] Does this change modify `ImportState` parsing logic? *(If yes, preserve backward-compatible ID formats).*
 - [ ] Are deprecations accompanied by a `DeprecationMessage` pointing to the replacement attribute?
-- [ ] Does this change the meaning of an existing attribute (defaults, null/zero semantics)? *(If yes, ship as a minor release with a changelog upgrade note, and confirm Consumer Replay passes).*
+- [ ] Does public schema comparison pass against the previous stable release? *(If breaking changes are intentional, is an explicit migration note provided and version bumped to major?)*
+- [ ] Does this change the meaning of an existing attribute (defaults, null/zero semantics)? *(If yes, conduct semantic review, ship as a minor release with a changelog upgrade note, and confirm Consumer Replay passes).*
 - [ ] Have all unit tests and `test-all-locally.sh` checks passed with zero regressions?

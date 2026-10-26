@@ -56,6 +56,18 @@ jobs:
           SEERR_RUN_INTEGRATION: "false"
       - name: Run OpenAPI coverage check
         run: go run ./tools/openapi
+      - name: Compare public provider schema against previous release
+        run: bash ./scripts/compare-provider-schemas.sh
+        env:
+          SEERR_SCHEMA_REPORT_PATH: ${{ github.workspace }}/test-artifacts/schema-comparison/schema-comparison-report.md
+      - name: Upload schema comparison report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: schema-comparison-report
+          path: test-artifacts/schema-comparison/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Check tested Seerr versions match upstream-compatibility.json
         run: python3 -m unittest discover -s tests -p test_compat_matrix.py
       - name: Test upstream watch reconciliation

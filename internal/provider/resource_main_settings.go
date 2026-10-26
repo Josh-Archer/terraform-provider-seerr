@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -131,11 +132,17 @@ func (r *MainSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 				MarkdownDescription: "The Discover region used by Seerr.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"streaming_region": schema.StringAttribute{
 				MarkdownDescription: "The streaming region used by Seerr.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"region": schema.StringAttribute{
 				MarkdownDescription: "The application region.",
@@ -145,6 +152,9 @@ func (r *MainSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.MatchRoot("streaming_region")),
 					stringvalidator.ConflictsWith(path.MatchRoot("discover_region")),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"original_language": schema.StringAttribute{
@@ -234,10 +244,16 @@ func (r *MainSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 			"response_json": schema.StringAttribute{
 				MarkdownDescription: "Raw JSON response body.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"status_code": schema.Int64Attribute{
 				MarkdownDescription: "HTTP status code.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
