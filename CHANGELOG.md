@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.3.1...v2.4.0) (2026-10-26)
+
+
+### Features
+
+* **importer:** generate secret references and protect local output ([#368](https://github.com/Josh-Archer/terraform-provider-seerr/issues/368)) ([9b02ec3](https://github.com/Josh-Archer/terraform-provider-seerr/commit/9b02ec3968b86c26729c50d53b7bc32c250b290c))
+
+
+### Bug Fixes
+
+* **ci:** replay the local candidate build before stable promotion ([#380](https://github.com/Josh-Archer/terraform-provider-seerr/issues/380)) ([ebd757f](https://github.com/Josh-Archer/terraform-provider-seerr/commit/ebd757f9d1223da41571225d9727f41af377ebc0))
+* mark credential-bearing webhook_url attributes Sensitive ([#378](https://github.com/Josh-Archer/terraform-provider-seerr/issues/378)) ([c3487c2](https://github.com/Josh-Archer/terraform-provider-seerr/commit/c3487c2406a61368406249bdc37bae15862c2dec)), closes [#374](https://github.com/Josh-Archer/terraform-provider-seerr/issues/374)
+
 ## [Unreleased]
 
 ### Bug Fixes
