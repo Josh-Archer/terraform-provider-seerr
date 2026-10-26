@@ -165,11 +165,15 @@ Deprecated main-setting aliases `region`, `image_proxy`, and `plex_login` are no
 | :--- | :--- | :--- |
 | `--url` | `$SEERR_URL` or `http://localhost:5055` | Base URL of your live Seerr server |
 | `--api-key` | `$SEERR_API_KEY` | API Key with administrator permissions. Prefer `SEERR_API_KEY` so the key is not stored in shell history. |
-| `--out-dir` | `.` | Directory to write generated `.tf` files |
+| `--out-dir` | `.` | Directory to write generated `.tf` files (created with mode `0700`) |
 | `--format` | `all` | Output format: `all`, `hcl`, `imports`, or `script`. Any other value exits non-zero before discovery. |
 | `--provider-header` | `true` | Include `terraform {}` and `provider "seerr" {}` block in `main.tf` |
 | `--timeout` | `30` | HTTP timeout in seconds for API queries |
 | `--allow-partial` | `false` | Write partial HCL when authentication, transport, or server errors make discovery incomplete |
+| `--overwrite` / `--force` | `false` | Replace existing generated files in `out-dir`. Without it the importer refuses to overwrite and exits non-zero. |
+
+> [!NOTE]
+> Generated files are owner-only: `0700` for the output directory and `import.sh`, `0600` for `.tf` files.
 
 ---
 

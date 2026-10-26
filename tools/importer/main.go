@@ -33,6 +33,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		defaultURL = "http://localhost:5055"
 	}
 	defaultKey := os.Getenv("SEERR_API_KEY")
+	var overwrite bool
 
 	fs := flag.NewFlagSet("seerr-import", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -41,6 +42,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fs.StringVar(&outDir, "out-dir", ".", "Output directory for generated files")
 	fs.StringVar(&format, "format", "all", "Output format: 'all', 'hcl', 'imports', 'script'")
 	fs.BoolVar(&providerHeader, "provider-header", true, "Include provider configuration block in generated HCL")
+	fs.BoolVar(&overwrite, "overwrite", false, "Overwrite existing generated files in out-dir (refuses by default)")
+	fs.BoolVar(&overwrite, "force", false, "Alias for -overwrite")
 	fs.IntVar(&timeoutSec, "timeout", 30, "HTTP request timeout in seconds")
 	fs.BoolVar(&allowPartial, "allow-partial", false, "Write discovered resources even when authentication, transport, or server errors make discovery incomplete. HTTP 404 is skipped either way.")
 	if err := fs.Parse(args); err != nil {
@@ -115,41 +118,57 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintln(stdout)
 
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
+	type outFile struct {
+		name    string
+		content string
+		mode    os.FileMode
+	}
+	var files []outFile
+	variables := ""
+	if format == "all" || format == "hcl" {
+		files = append(files, outFile{"main.tf", GenerateHCL(resources, providerHeader), 0o600})
+		if variables = GenerateVariables(resources); variables != "" {
+			files = append(files, outFile{"variables.tf", variables, 0o600})
+		}
+	}
+	if format == "all" || format == "imports" {
+		files = append(files, outFile{"imports.tf", GenerateImportBlocks(resources), 0o600})
+	}
+	if format == "all" || format == "script" {
+		files = append(files, outFile{"import.sh", GenerateImportScript(resources), 0o700})
+	}
+
+	// Generated files can reference credentials, so keep the directory and files owner-only.
+	if err := os.MkdirAll(outDir, 0o700); err != nil {
 		fmt.Fprintf(stderr, "Error creating output directory %s: %v\n", outDir, err)
 		return 1
 	}
 
-	write := func(name, content string, mode os.FileMode) int {
-		path := filepath.Join(outDir, name)
-		if err := os.WriteFile(path, []byte(content), mode); err != nil {
+	if !overwrite {
+		for _, f := range files {
+			path := filepath.Join(outDir, f.name)
+			if _, err := os.Lstat(path); err == nil {
+				fmt.Fprintf(stderr, "Error: refusing to overwrite existing file %s (use -overwrite to replace it)\n", path)
+				return 1
+			}
+		}
+	}
+
+	for _, f := range files {
+		path := filepath.Join(outDir, f.name)
+		if err := os.WriteFile(path, []byte(f.content), f.mode); err != nil {
 			fmt.Fprintf(stderr, "Error writing %s: %v\n", path, err)
 			return 1
 		}
+		// WriteFile keeps the mode of an existing file and applies umask, so set it explicitly.
+		if err := os.Chmod(path, f.mode); err != nil {
+			fmt.Fprintf(stderr, "Error setting permissions on %s: %v\n", path, err)
+			return 1
+		}
 		fmt.Fprintf(stdout, "📄 Wrote %s\n", path)
-		return 0
 	}
-
-	if format == "all" || format == "hcl" {
-		if write("main.tf", GenerateHCL(resources, providerHeader), 0o644) != 0 {
-			return 1
-		}
-		if variables := GenerateVariables(resources); variables != "" {
-			if write("variables.tf", variables, 0o644) != 0 {
-				return 1
-			}
-			fmt.Fprintln(stdout, "Sensitive values were replaced with variables. Supply them with TF_VAR_* or an uncommitted tfvars file before planning.")
-		}
-	}
-	if format == "all" || format == "imports" {
-		if write("imports.tf", GenerateImportBlocks(resources), 0o644) != 0 {
-			return 1
-		}
-	}
-	if format == "all" || format == "script" {
-		if write("import.sh", GenerateImportScript(resources), 0o755) != 0 {
-			return 1
-		}
+	if variables != "" {
+		fmt.Fprintln(stdout, "Sensitive values were replaced with variables. Supply them with TF_VAR_* or an uncommitted tfvars file before planning.")
 	}
 
 	fmt.Fprintln(stdout, "\n🎉 Migration files generated successfully!")
