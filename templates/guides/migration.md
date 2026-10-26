@@ -25,23 +25,13 @@ With the automated **Bulk Importer CLI (`tools/importer`)**, you can inspect you
 
 ### Step 2: Run the Bulk Importer CLI
 
-Clone the repository and run the importer pointing at your live server:
+Clone the repository and run the importer pointing at your live server. Export `SEERR_API_KEY` before you start. Do not pass `--api-key` on the command line: shell history and the process list keep command arguments.
 
 ```bash
 # Clone the provider repository
 git clone https://github.com/Josh-Archer/terraform-provider-seerr.git
 cd terraform-provider-seerr
 
-# Run the bulk importer CLI
-go run ./tools/importer \
-  --url "http://192.168.1.100:5055" \
-  --api-key "YOUR_SEERR_API_KEY" \
-  --out-dir "./my-seerr-tf"
-```
-
-Or configure environment variables:
-
-```bash
 export SEERR_URL="http://192.168.1.100:5055"
 export SEERR_API_KEY="YOUR_SEERR_API_KEY"
 
@@ -124,7 +114,68 @@ Settings that are not in the generated configuration stay on the server, because
 
 ## Sensitive values and resource addresses
 
-Fetched credentials become sensitive variables with no default. Terraform and OpenTofu still store those values in state. Use an encrypted remote backend, or OpenTofu state encryption.
+Fetched credentials become sensitive variables with no default. Terraform and OpenTofu still store those values in state. A local `terraform.tfstate` file holds them in plaintext. Use an encrypted remote backend, OpenTofu state encryption, or both. Do not commit state files.
+
+### Encrypted remote backends
+
+Keep state in a backend that encrypts it at rest, and limit who can decrypt it:
+
+- **Amazon S3 with KMS (SSE-KMS).** Set `encrypt = true` and `kms_key_id` so the state object is encrypted with a customer-managed key. Grant `kms:Decrypt` only to the people and CI roles that plan this configuration.
+- **Google Cloud Storage (GCS).** Use a bucket with a customer-managed encryption key. The GCS backend writes ciphertext, and IAM on that key controls who can read state.
+- **Azure Blob Storage.** Enable encryption on the storage account (infrastructure encryption or a customer-managed key). The `azurerm` backend stores the state blob in that account.
+- **Terraform Cloud (TFC) / HCP Terraform.** State is encrypted at rest. Use a `cloud` block instead of a state file on disk.
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket     = "example-seerr-tfstate"
+    key        = "seerr/terraform.tfstate"
+    region     = "us-east-1"
+    encrypt    = true
+    kms_key_id = "arn:aws:kms:us-east-1:123456789012:key/example"
+  }
+}
+```
+
+Terraform and OpenTofu merge `terraform` blocks, so this can live next to the generated `required_providers` block.
+
+### OpenTofu state encryption
+
+OpenTofu 1.7 and later can encrypt state and plan files on the client, including state that is still local. Terraform does not read this block; use an encrypted remote backend there instead.
+
+Supply the passphrase with `TF_VAR_state_passphrase`. Do not write it into the configuration or commit it.
+
+```hcl
+variable "state_passphrase" {
+  type        = string
+  sensitive   = true
+  description = "Passphrase for OpenTofu state and plan encryption."
+}
+
+terraform {
+  encryption {
+    key_provider "pbkdf2" "state" {
+      passphrase = var.state_passphrase
+    }
+
+    method "aes_gcm" "state" {
+      keys = key_provider.pbkdf2.state
+    }
+
+    state {
+      method   = method.aes_gcm.state
+      enforced = true
+    }
+
+    plan {
+      method   = method.aes_gcm.state
+      enforced = true
+    }
+  }
+}
+```
+
+`enforced = true` makes OpenTofu refuse to write unencrypted state or plans. Client-side encryption protects the file wherever it is stored. An encrypted remote backend protects the copy the backend holds. Use both when state leaves the machine.
 
 Resource addresses are sanitized. When two names sanitize to the same identifier, the lower import ID keeps the base name and the rest get a numeric suffix (`radarr_hd`, `radarr_hd_2`). The suffix is stable for the same import IDs.
 
@@ -164,7 +215,7 @@ Deprecated main-setting aliases `region`, `image_proxy`, and `plex_login` are no
 | Flag | Default | Description |
 | :--- | :--- | :--- |
 | `--url` | `$SEERR_URL` or `http://localhost:5055` | Base URL of your live Seerr server |
-| `--api-key` | `$SEERR_API_KEY` | API Key with administrator permissions. Prefer `SEERR_API_KEY` so the key is not stored in shell history. |
+| `--api-key` | `$SEERR_API_KEY` | API key with administrator permissions. Set `SEERR_API_KEY` instead of passing this flag. Command-line arguments are stored in shell history and are visible in the process list. |
 | `--out-dir` | `.` | Directory to write generated `.tf` files (created with mode `0700`) |
 | `--format` | `all` | Output format: `all`, `hcl`, `imports`, or `script`. Any other value exits non-zero before discovery. |
 | `--provider-header` | `true` | Include `terraform {}` and `provider "seerr" {}` block in `main.tf` |
