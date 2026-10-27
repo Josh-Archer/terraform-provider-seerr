@@ -532,11 +532,11 @@ func notificationOptionFields(agent string) []notificationField {
 		return []notificationField{
 			{API: "botUsername", HCL: "bot_username", Kind: "string"},
 			{API: "botAvatarUrl", HCL: "bot_avatar_url", Kind: "string"},
-			{API: "webhookUrl", HCL: "webhook_url", Kind: "string"},
+			{API: "webhookUrl", HCL: "webhook_url", Kind: "sensitive"},
 			{API: "enableMentions", HCL: "enable_mentions", Kind: "bool"},
 		}
 	case "slack":
-		return []notificationField{{API: "webhookUrl", HCL: "webhook_url", Kind: "string"}}
+		return []notificationField{{API: "webhookUrl", HCL: "webhook_url", Kind: "sensitive"}}
 	case "email":
 		return []notificationField{
 			{API: "emailFrom", HCL: "email_from", Kind: "string"},
@@ -554,7 +554,7 @@ func notificationOptionFields(agent string) []notificationField {
 		}
 	case "lunasea":
 		return []notificationField{
-			{API: "webhookUrl", HCL: "webhook_url", Kind: "string"},
+			{API: "webhookUrl", HCL: "webhook_url", Kind: "sensitive"},
 			{API: "profileName", HCL: "profile_name", Kind: "string"},
 		}
 	case "telegram":
@@ -589,7 +589,7 @@ func notificationOptionFields(agent string) []notificationField {
 		}
 	case "webhook":
 		return []notificationField{
-			{API: "webhookUrl", HCL: "webhook_url", Kind: "string"},
+			{API: "webhookUrl", HCL: "webhook_url", Kind: "sensitive"},
 			{API: "jsonPayload", HCL: "json_payload", Kind: "string"},
 			{API: "authHeader", HCL: "auth_header", Kind: "sensitive"},
 		}
@@ -603,13 +603,16 @@ func notificationOptionFields(agent string) []notificationField {
 	}
 }
 
+// notificationAgents are the per-agent resources the importer emits.
+// seerr_notification_agent_test is a one-shot action and is not in this list.
+var notificationAgents = []string{
+	"discord", "email", "gotify", "lunasea", "ntfy", "pushbullet",
+	"pushover", "slack", "telegram", "webhook", "webpush",
+}
+
 func (imp *Importer) discoverNotifications(ctx context.Context) []DiscoveredResource {
-	agents := []string{
-		"discord", "email", "gotify", "lunasea", "ntfy", "pushbullet",
-		"pushover", "slack", "telegram", "webhook", "webpush",
-	}
 	var found []DiscoveredResource
-	for _, agent := range agents {
+	for _, agent := range notificationAgents {
 		path := "/api/v1/settings/notifications/" + agent
 		payload, ok := imp.take(ctx, path)
 		if !ok {
