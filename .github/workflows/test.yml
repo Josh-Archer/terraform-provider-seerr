@@ -32,7 +32,7 @@ jobs:
     name: Build and Test
     # Fork and same-repository PRs always use an isolated GitHub-hosted runner.
     # Trusted runs can use UECB or an isolated self-hosted runner via this label.
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || (github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared') }}
     permissions:
       contents: read
     timeout-minutes: 15
@@ -80,7 +80,7 @@ jobs:
 
   tofu-test-stable:
     name: OpenTofu Compatibility (${{ matrix.target }}, ${{ matrix.tofu_version }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     permissions:
       contents: read
     timeout-minutes: 15
@@ -177,7 +177,7 @@ jobs:
 
   terraform-test-stable:
     name: Terraform Compatibility (${{ matrix.target }}, ${{ matrix.terraform_version }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     permissions:
       contents: read
     timeout-minutes: 15
@@ -277,7 +277,7 @@ jobs:
   # The upgrade step installs only the previous published release.
   consumer-replay:
     name: Consumer Replay (arr-config)
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     permissions:
       contents: read
     timeout-minutes: 25
@@ -312,7 +312,7 @@ jobs:
 
   watchlist-live:
     name: Watchlist Live Integration (Seerr 3.5.0)
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     permissions:
       contents: read
     timeout-minutes: 20
@@ -359,7 +359,7 @@ jobs:
 
   tofu-test-stable-trusted:
     name: OpenTofu Stable Integration Trusted (${{ matrix.tofu_version }})
-    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || (github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared') }}
     environment: integration
     permissions:
       contents: read
@@ -412,7 +412,7 @@ jobs:
 
   tofu-test-full:
     name: OpenTofu Full Compatibility (${{ matrix.tofu_version }})
-    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || (github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared') }}
     environment: integration
     permissions:
       contents: read
@@ -464,7 +464,7 @@ jobs:
 
   release-snapshot:
     name: Release Snapshot
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     timeout-minutes: 15
     permissions:
       contents: read

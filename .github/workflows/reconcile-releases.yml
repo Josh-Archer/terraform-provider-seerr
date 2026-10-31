@@ -20,7 +20,7 @@ permissions:
 jobs:
   reconcile:
     name: Reconcile orphaned release tags
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     concurrency:
       group: release-tag-reconciliation
       cancel-in-progress: false

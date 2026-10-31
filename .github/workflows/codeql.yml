@@ -14,7 +14,7 @@ permissions:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || (github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared') }}
     permissions:
       contents: read
       security-events: write
