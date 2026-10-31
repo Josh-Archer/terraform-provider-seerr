@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.0...v2.4.1) (2026-10-31)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump the github-actions group with 3 updates ([#384](https://github.com/Josh-Archer/terraform-provider-seerr/issues/384)) ([a7b40e3](https://github.com/Josh-Archer/terraform-provider-seerr/commit/a7b40e343d2482e90b9349605490fd1c6e76cea6))
+
+
+### Tests
+
+* **importer:** match sensitive attributes to provider schemas ([#382](https://github.com/Josh-Archer/terraform-provider-seerr/issues/382)) ([eb3137e](https://github.com/Josh-Archer/terraform-provider-seerr/commit/eb3137e367144eced8bdcdd405d686fdb687a26b)), closes [#356](https://github.com/Josh-Archer/terraform-provider-seerr/issues/356)
+
 ## [2.4.0](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.3.1...v2.4.0) (2026-10-26)
 
 
