@@ -1,8 +1,14 @@
 name: Guard empty major release
 
+# No longer runs on pull_request (Josh, 2026-10-31). Run manually against a
+# release-please PR when needed.
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, edited]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: release-please PR number to check
+        required: true
+        type: number
 
 permissions:
   contents: write
@@ -11,7 +17,6 @@ permissions:
 jobs:
   guard:
     name: Reject empty major bumps
-    if: startsWith(github.head_ref, 'release-please--')
     runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     timeout-minutes: 5
     steps:
@@ -19,9 +24,25 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Resolve PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          set -euo pipefail
+          head="$(gh pr view "${PR_NUMBER}" --json headRefName -q .headRefName)"
+          case "${head}" in release-please--*) ;; *) echo "::error::PR #${PR_NUMBER} is not a release-please PR (${head})"; exit 1;; esac
+          git fetch --no-tags origin "pull/${PR_NUMBER}/head:pr-head"
+          git checkout -q pr-head
+          {
+            echo "title<<EOF"
+            gh pr view "${PR_NUMBER}" --json title -q .title
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
       - name: Require a new breaking commit for major bumps
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ steps.pr.outputs.title }}
+          PR_NUMBER: ${{ inputs.pr_number }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash ./scripts/guard-empty-major-release.sh
