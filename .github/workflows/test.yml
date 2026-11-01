@@ -32,7 +32,7 @@ jobs:
     name: Build and Test
     # Fork and same-repository PRs always use an isolated GitHub-hosted runner.
     # Trusted runs can use UECB or an isolated self-hosted runner via this label.
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || (github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared') }}
     permissions:
       contents: read
     timeout-minutes: 15
@@ -80,10 +80,10 @@ jobs:
 
   tofu-test-stable:
     name: OpenTofu Compatibility (${{ matrix.target }}, ${{ matrix.tofu_version }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     permissions:
       contents: read
-    timeout-minutes: 15
+    timeout-minutes: 30
     if: github.event_name == 'pull_request'
     strategy:
       fail-fast: false
@@ -149,6 +149,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Ensure docker compose plugin
+        uses: ./.github/actions/ensure-docker-compose
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
@@ -177,10 +179,10 @@ jobs:
 
   terraform-test-stable:
     name: Terraform Compatibility (${{ matrix.target }}, ${{ matrix.terraform_version }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     permissions:
       contents: read
-    timeout-minutes: 15
+    timeout-minutes: 30
     if: github.event_name == 'pull_request'
     strategy:
       fail-fast: false
@@ -246,6 +248,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Ensure docker compose plugin
+        uses: ./.github/actions/ensure-docker-compose
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
         with:
@@ -277,7 +281,7 @@ jobs:
   # The upgrade step installs only the previous published release.
   consumer-replay:
     name: Consumer Replay (arr-config)
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     permissions:
       contents: read
     timeout-minutes: 25
@@ -294,6 +298,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Ensure docker compose plugin
+        uses: ./.github/actions/ensure-docker-compose
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
@@ -312,7 +318,7 @@ jobs:
 
   watchlist-live:
     name: Watchlist Live Integration (Seerr 3.5.0)
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     permissions:
       contents: read
     timeout-minutes: 20
@@ -337,6 +343,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Ensure docker compose plugin
+        uses: ./.github/actions/ensure-docker-compose
       - name: Setup OpenTofu
         if: steps.watchlist_filter.outputs.run == 'true'
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
@@ -359,11 +367,11 @@ jobs:
 
   tofu-test-stable-trusted:
     name: OpenTofu Stable Integration Trusted (${{ matrix.tofu_version }})
-    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || (github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared') }}
     environment: integration
     permissions:
       contents: read
-    timeout-minutes: 15
+    timeout-minutes: 30
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.integration_mode != 'full')
     strategy:
       fail-fast: false
@@ -384,6 +392,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Ensure docker compose plugin
+        uses: ./.github/actions/ensure-docker-compose
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
@@ -412,7 +422,7 @@ jobs:
 
   tofu-test-full:
     name: OpenTofu Full Compatibility (${{ matrix.tofu_version }})
-    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || (github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared') }}
     environment: integration
     permissions:
       contents: read
@@ -438,6 +448,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Ensure docker compose plugin
+        uses: ./.github/actions/ensure-docker-compose
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
@@ -464,7 +476,7 @@ jobs:
 
   release-snapshot:
     name: Release Snapshot
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     timeout-minutes: 15
     permissions:
       contents: read

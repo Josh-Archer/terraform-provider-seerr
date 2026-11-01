@@ -1,0 +1,30 @@
+name: Ensure docker compose
+description: Install the Docker Compose v2 CLI plugin when the runner's docker lacks it (shared self-hosted pool images ship docker without compose).
+inputs:
+  version:
+    description: Compose release to install when missing
+    required: false
+    default: v2.40.3
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        COMPOSE_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        if docker compose version >/dev/null 2>&1; then
+          docker compose version
+          exit 0
+        fi
+        case "$(uname -m)" in
+          x86_64|amd64) arch=x86_64 ;;
+          aarch64|arm64) arch=aarch64 ;;
+          *) echo "unsupported arch $(uname -m)" >&2; exit 1 ;;
+        esac
+        plugin_dir="${DOCKER_CONFIG:-$HOME/.docker}/cli-plugins"
+        mkdir -p "$plugin_dir"
+        curl -fsSL --retry 3 -o "$plugin_dir/docker-compose" \
+          "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-${arch}"
+        chmod +x "$plugin_dir/docker-compose"
+        docker compose version
