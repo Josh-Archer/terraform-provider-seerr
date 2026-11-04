@@ -42,7 +42,7 @@ fi
 ${compose_cmd} up -d
 
 echo "Waiting for Seerr to become ready..."
-for _ in $(seq 1 60); do
+for _ in $(seq 1 150); do
   if curl -fsS "http://127.0.0.1:${local_port}/api/v1/status" >/dev/null 2>&1; then
     break
   fi
@@ -134,7 +134,7 @@ echo "Restarting Seerr to apply bootstrapped settings..."
 ${compose_cmd} restart seerr
 
 echo "Waiting for Seerr to become ready after restart..."
-for _ in $(seq 1 60); do
+for _ in $(seq 1 150); do
   if curl -fsS "http://127.0.0.1:${local_port}/api/v1/status" >/dev/null 2>&1; then
     break
   fi
