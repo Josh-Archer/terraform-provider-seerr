@@ -28,7 +28,7 @@ jobs:
   consumer-replay-gate:
     name: Release candidate replay
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     permissions:
       contents: write
     timeout-minutes: 30
@@ -172,7 +172,7 @@ jobs:
   goreleaser:
     needs: consumer-replay-gate
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || 'ubuntu-latest' }}
+    runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || (github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared') }}
     permissions:
       contents: write
       pull-requests: write

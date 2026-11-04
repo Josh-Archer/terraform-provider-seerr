@@ -18,7 +18,7 @@ env:
 jobs:
   prerelease:
     name: Prerelease RC
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     permissions:
       contents: write
     timeout-minutes: 30

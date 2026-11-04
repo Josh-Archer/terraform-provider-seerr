@@ -42,7 +42,7 @@ fi
 ${compose_cmd} up -d
 
 echo "Waiting for Seerr to become ready..."
-for _ in $(seq 1 60); do
+for _ in $(seq 1 150); do
   if curl -fsS "http://127.0.0.1:${local_port}/api/v1/status" >/dev/null 2>&1; then
     break
   fi
@@ -56,9 +56,10 @@ if ! curl -fsS "http://127.0.0.1:${local_port}/api/v1/status" >/dev/null 2>&1; t
 fi
 
 echo "Bootstrapping Seerr database and settings..."
-cat <<EOF | docker exec -i -u root seerr-test sh
+cat <<EOF | timeout 600 docker exec -i -u root seerr-test sh
 attempt=1
-until apk add --no-cache python3 sqlite; do
+# Bound each attempt: on slow/shared runners an APKINDEX fetch can hang silently forever.
+until timeout 90 apk add --no-cache python3 sqlite; do
   if [ "\${attempt}" -ge 10 ]; then
     echo "apk add failed after \${attempt} attempts" >&2
     exit 1
@@ -133,7 +134,7 @@ echo "Restarting Seerr to apply bootstrapped settings..."
 ${compose_cmd} restart seerr
 
 echo "Waiting for Seerr to become ready after restart..."
-for _ in $(seq 1 60); do
+for _ in $(seq 1 150); do
   if curl -fsS "http://127.0.0.1:${local_port}/api/v1/status" >/dev/null 2>&1; then
     break
   fi

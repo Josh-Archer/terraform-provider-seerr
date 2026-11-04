@@ -19,7 +19,7 @@ permissions:
 jobs:
   install:
     name: ${{ matrix.tool }} init
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     timeout-minutes: 15
     strategy:
       fail-fast: false

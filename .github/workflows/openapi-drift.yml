@@ -23,7 +23,7 @@ permissions:
 jobs:
   check-drift:
     name: Check Upstream OpenAPI Drift
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
     timeout-minutes: 15
     steps:
       - name: Checkout repository
