@@ -24,11 +24,14 @@ The `seerr` provider enables you to configure, manage, and automate [Overseerr](
 - [Reusable Modules Guide](guides/modules.md): Turnkey sub-modules for family media servers, ARR bootstrapping, and monitoring.
 - [Module Publishing Guide](guides/module-publishing.md): Standalone repository publishing guide for OpenTofu and Terraform registries.
 - [Migration & Bulk Adoption Guide](guides/migration.md): Bulk-importing live Seerr configurations into HCL with `tools/importer`.
+- [Adopting an Existing Instance](guides/adopting-an-existing-instance.md): Secret-safe operator runbook for adopting a live instance (disposable-instance first, variable references for secrets, import, clean re-plan).
 - [Observability & Metrics Guide](guides/observability.md): Telemetry data sources, Prometheus metrics exporter, and Grafana dashboard.
 - [Automated Drift Detection Guide](guides/drift-detection.md): Scheduling drift detection with `-detailed-exitcode` and webhook alerts.
 - [Disaster Recovery Runbook](guides/disaster-recovery.md): Restoring instances, state recovery, SQLite restoration, and automated snapshots.
 
 ## Example Usage
+
+Upgrading from 1.x crosses a major version; see the [stability and breaking-change policy](guides/stability-and-breaking-changes.md).
 
 {{tffile "examples/provider/provider.tf"}}
 
