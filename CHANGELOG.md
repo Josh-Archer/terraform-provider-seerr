@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.1...v2.4.2) (2026-11-10)
+
+
+### Bug Fixes
+
+* **ci:** resolve registry-install version without preinstalled gh ([#395](https://github.com/Josh-Archer/terraform-provider-seerr/issues/395)) ([1fefdb9](https://github.com/Josh-Archer/terraform-provider-seerr/commit/1fefdb98b6785a3d8fe618976da992e9f13febc2)), closes [#387](https://github.com/Josh-Archer/terraform-provider-seerr/issues/387)
+
 ## [2.4.1](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.0...v2.4.1) (2026-10-31)
 
 
