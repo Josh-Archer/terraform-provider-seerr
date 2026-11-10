@@ -25,6 +25,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Ensure GitHub CLI
+        uses: ./.github/actions/ensure-gh
+
       - name: Reconcile upstream status on issue #314
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

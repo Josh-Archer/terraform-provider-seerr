@@ -35,6 +35,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Ensure GitHub CLI
+        uses: ./.github/actions/ensure-gh
+
       - name: Dispatch the oldest pending release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

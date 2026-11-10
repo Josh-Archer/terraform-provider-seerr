@@ -37,6 +37,9 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Ensure GitHub CLI
+        uses: ./.github/actions/ensure-gh
+
       - name: Run OpenAPI Drift Comparison
         id: diff
         env:
