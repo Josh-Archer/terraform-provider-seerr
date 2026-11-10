@@ -52,7 +52,7 @@ terraform {
   required_providers {
     seerr = {
       source  = "registry.opentofu.org/josh-archer/seerr"
-      version = "~> 1.0.0"
+      version = "~> 2.4"
     }
   }
 }
@@ -64,11 +64,13 @@ terraform {
   required_providers {
     seerr = {
       source  = "josh-archer/seerr"
-      version = "~> 1.0.0"
+      version = "~> 2.4"
     }
   }
 }
 ```
+
+Upgrading from 1.x crosses a major version; see the [stability and breaking-change policy](docs/guides/stability-and-breaking-changes.md).
 
 ### Provider Configuration
 

@@ -30,6 +30,8 @@ The `seerr` provider enables you to configure, manage, and automate [Overseerr](
 
 ## Example Usage
 
+Upgrading from 1.x crosses a major version; see the [stability and breaking-change policy](guides/stability-and-breaking-changes.md).
+
 ```terraform
 # Standard OpenTofu / Terraform configuration
 terraform {
@@ -38,7 +40,7 @@ terraform {
       source  = "registry.opentofu.org/josh-archer/seerr"
       # For HashiCorp Terraform Registry, use:
       # source = "josh-archer/seerr"
-      version = "~> 1.0.0"
+      version = "~> 2.4"
     }
   }
 }
