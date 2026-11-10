@@ -11,7 +11,7 @@ terraform {
   required_providers {
     seerr = {
       source  = "josh-archer/seerr"
-      version = "~> 0.41"
+      version = "~> 2.4"
     }
   }
 }
