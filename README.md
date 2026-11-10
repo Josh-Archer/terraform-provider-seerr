@@ -335,6 +335,8 @@ The importer inspects all settings, Radarr/Sonarr servers, notification agents, 
 
 Read the step-by-step [Migration & Adoption Guide](docs/guides/migration.md) for full instructions.
 
+For the short secret-safe operator path (disposable instance, variable references for secrets, import, clean re-plan), see the [Adopting an Existing Instance runbook](docs/guides/adopting-an-existing-instance.md).
+
 ---
 
 ## Development & Verification
