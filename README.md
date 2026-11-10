@@ -3,7 +3,7 @@
 [![CI](https://github.com/Josh-Archer/terraform-provider-seerr/actions/workflows/test.yml/badge.svg)](https://github.com/Josh-Archer/terraform-provider-seerr/actions/workflows/test.yml)
 [![OpenTofu Registry](https://img.shields.io/badge/OpenTofu-Registry-FF5722?logo=opentofu&logoColor=white)](https://registry.opentofu.org/providers/josh-archer/seerr/latest)
 [![Terraform Registry](https://img.shields.io/badge/Terraform-Registry-844FBA?logo=terraform&logoColor=white)](https://registry.terraform.io/providers/josh-archer/seerr/latest)
-[![Roadmap](https://img.shields.io/badge/Roadmap-Next-2ea44f.svg)](#roadmap)
+[![Roadmap](https://img.shields.io/badge/Roadmap-Current-2ea44f.svg)](#roadmap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 `seerr` is a feature-complete OpenTofu and Terraform provider for managing [Overseerr](https://overseerr.dev) and [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) instances via their REST APIs as Infrastructure as Code. Track ongoing milestones in the [roadmap](#roadmap) or join the conversation in [GitHub Discussion #161](https://github.com/Josh-Archer/terraform-provider-seerr/discussions/161).
@@ -24,15 +24,20 @@
 
 ## Roadmap
 
-The next work focuses on reliable releases, safe adoption of existing instances, and maintained compatibility. Track progress in the [roadmap issue](https://github.com/Josh-Archer/terraform-provider-seerr/issues/360) and [GitHub milestones](https://github.com/Josh-Archer/terraform-provider-seerr/milestones). The order below is a priority order, not a release-date commitment.
+The Next 1–3 milestones tracked in the [roadmap issue](https://github.com/Josh-Archer/terraform-provider-seerr/issues/360) are **complete**: every linked checklist issue is closed and implemented on `main`. Current work is the CI-hardening and docs follow-ups listed below and tracked on [#360](https://github.com/Josh-Archer/terraform-provider-seerr/issues/360) — see that issue for live status.
 
-| Priority | Milestone | Work | Completion evidence |
-| :--- | :--- | :--- | :--- |
-| Now | **Release confidence** | Finish consumer replay and release promotion [#351](https://github.com/Josh-Archer/terraform-provider-seerr/issues/351); restore request/issue coverage [#353](https://github.com/Josh-Archer/terraform-provider-seerr/issues/353); verify registry installation [#354](https://github.com/Josh-Archer/terraform-provider-seerr/issues/354); compare public schemas [#355](https://github.com/Josh-Archer/terraform-provider-seerr/issues/355). | Clean apply/re-plan and upgrade replay, supported lifecycle tests, fresh signed installs through both registries, and reviewed schema changes. |
-| Next | **Safe adoption** | Generate secret references [#356](https://github.com/Josh-Archer/terraform-provider-seerr/issues/356); complete importer discovery and validate adoption [#357](https://github.com/Josh-Archer/terraform-provider-seerr/issues/357). | Generated files contain no fetched credentials; paginated discovery is complete; importing a populated disposable instance preserves settings and produces a clean re-plan. |
-| Later | **Compatibility maintenance** | Exercise both IaC engines [#358](https://github.com/Josh-Archer/terraform-provider-seerr/issues/358); improve upstream tracking [#359](https://github.com/Josh-Archer/terraform-provider-seerr/issues/359); retain recurring tracker [#314](https://github.com/Josh-Archer/terraform-provider-seerr/issues/314). | Explicit engine/upstream test evidence and idempotent monitoring that distinguishes new releases from API failures. |
+| Milestone | Work | Status |
+| :--- | :--- | :--- |
+| **Next 1: Release confidence** | Consumer replay / promotion gate [#351](https://github.com/Josh-Archer/terraform-provider-seerr/issues/351); request/issue lifecycle on Seerr 3.5.0 [#353](https://github.com/Josh-Archer/terraform-provider-seerr/issues/353); registry install CI [#354](https://github.com/Josh-Archer/terraform-provider-seerr/issues/354) (runner-flake follow-up [#387](https://github.com/Josh-Archer/terraform-provider-seerr/issues/387) also fixed and merged); public schema compare [#355](https://github.com/Josh-Archer/terraform-provider-seerr/issues/355). | ✅ Complete |
+| **Next 2: Safe adoption** | Importer secret references [#356](https://github.com/Josh-Archer/terraform-provider-seerr/issues/356); importer discovery / adoption proof [#357](https://github.com/Josh-Archer/terraform-provider-seerr/issues/357). | ✅ Complete |
+| **Next 3: Compatibility maintenance** | Terraform + OpenTofu lifecycle [#358](https://github.com/Josh-Archer/terraform-provider-seerr/issues/358); upstream watch idempotency [#359](https://github.com/Josh-Archer/terraform-provider-seerr/issues/359); upstream compatibility tracker [#314](https://github.com/Josh-Archer/terraform-provider-seerr/issues/314) (reopen decision rests with Josh). | ✅ Complete |
 
-The consumer replay gate is already partly implemented on `main`; #351 tracks its remaining verification. The other issues describe planned work. Complete secret-safe importer output before the broader adoption workflow, and reuse the consumer fixture for dual-engine tests.
+### Current work (open follow-ups)
+
+These follow-ups are still **open** — none of them has merged yet:
+
+- CI hardening: [#388](https://github.com/Josh-Archer/terraform-provider-seerr/issues/388) (CodeQL Go analysis fails — go not on PATH); [#389](https://github.com/Josh-Archer/terraform-provider-seerr/issues/389) (CodeQL actions analysis RAM setting); [#392](https://github.com/Josh-Archer/terraform-provider-seerr/issues/392) (audit uecb-shared workflows for undeclared gh/go dependencies).
+- Docs: [#390](https://github.com/Josh-Archer/terraform-provider-seerr/issues/390) (pin quickstart provider constraints to `~> 2.4`); [#393](https://github.com/Josh-Archer/terraform-provider-seerr/issues/393) (adopt-existing-instance runbook for secret-safe generated HCL).
 
 ### Completed foundation
 
