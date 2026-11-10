@@ -34,10 +34,12 @@ The Next 1–3 milestones tracked in the [roadmap issue](https://github.com/Josh
 
 ### Current work (open follow-ups)
 
-These follow-ups are still **open** — none of them has merged yet:
+These follow-ups are still **open**:
 
 - CI hardening: [#388](https://github.com/Josh-Archer/terraform-provider-seerr/issues/388) (CodeQL Go analysis fails — go not on PATH); [#389](https://github.com/Josh-Archer/terraform-provider-seerr/issues/389) (CodeQL actions analysis RAM setting); [#392](https://github.com/Josh-Archer/terraform-provider-seerr/issues/392) (audit uecb-shared workflows for undeclared gh/go dependencies).
-- Docs: [#390](https://github.com/Josh-Archer/terraform-provider-seerr/issues/390) (pin quickstart provider constraints to `~> 2.4`); [#393](https://github.com/Josh-Archer/terraform-provider-seerr/issues/393) (adopt-existing-instance runbook for secret-safe generated HCL).
+- Docs: [#390](https://github.com/Josh-Archer/terraform-provider-seerr/issues/390) (pin quickstart provider constraints to `~> 2.4`).
+
+The adopt-existing-instance runbook ([#393](https://github.com/Josh-Archer/terraform-provider-seerr/issues/393)) merged in [#401](https://github.com/Josh-Archer/terraform-provider-seerr/pull/401).
 
 ### Completed foundation
 
