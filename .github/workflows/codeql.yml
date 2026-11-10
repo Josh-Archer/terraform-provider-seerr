@@ -23,6 +23,16 @@ jobs:
       fail-fast: false
       matrix:
         language: [go, actions]
+    # uecb-shared can place this job on a 1 GiB GCE runner (MemTotal ~958 MiB
+    # on run 42657876846). CodeQL reserves 1024 MiB and exports the remainder,
+    # which was CODEQL_RAM=-66. Analyze treats that export as an explicit
+    # setting and fails with Invalid RAM setting. Pin the CLI minimum for the
+    # actions leg so autodetection is skipped. Smaller values are rounded up
+    # to 2048 by the CLI. One thread limits parallel query evaluation on that
+    # 2-vCPU VM. The go leg is left unset (#388).
+    env:
+      CODEQL_RAM: ${{ matrix.language == 'actions' && '2048' || '' }}
+      CODEQL_THREADS: ${{ matrix.language == 'actions' && '1' || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
