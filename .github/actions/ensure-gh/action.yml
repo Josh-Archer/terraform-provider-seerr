@@ -1,0 +1,11 @@
+name: Ensure GitHub CLI
+description: >-
+  Install pinned GitHub CLI v2.103.3. uecb-shared runner images do not
+  reliably ship gh, so workflows must not depend on a preinstalled binary.
+
+runs:
+  using: composite
+  steps:
+    - name: Install pinned gh
+      shell: bash
+      run: bash "${{ github.action_path }}/ensure-gh.sh"

@@ -24,6 +24,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Ensure GitHub CLI
+        uses: ./.github/actions/ensure-gh
       - name: Resolve PR
         id: pr
         env:
