@@ -6,7 +6,7 @@ import sys
 
 
 def should_run(event: str, paths: list[str]) -> bool:
-    if event == "push":
+    if event in ("push", "workflow_dispatch"):
         return True
     if event != "pull_request":
         return False
