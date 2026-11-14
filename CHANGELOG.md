@@ -6,6 +6,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.3](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.2...v2.4.3) (2026-11-14)
+
+
+### Bug Fixes
+
+* **ci:** give Actions CodeQL a memory-capable runner ([#416](https://github.com/Josh-Archer/terraform-provider-seerr/issues/416)) ([0e2dfd0](https://github.com/Josh-Archer/terraform-provider-seerr/commit/0e2dfd0cf1ffa3f32050cdabc84f0fb4f27815c0))
+* **ci:** install Go before CodeQL autobuild ([#397](https://github.com/Josh-Archer/terraform-provider-seerr/issues/397)) ([ca6f6b3](https://github.com/Josh-Archer/terraform-provider-seerr/commit/ca6f6b3daf46a56188db3e72eccf6478f5072a09)), closes [#388](https://github.com/Josh-Archer/terraform-provider-seerr/issues/388)
+* **ci:** locate Compose plugin when runner HOME is unset ([#414](https://github.com/Josh-Archer/terraform-provider-seerr/issues/414)) ([43a47a9](https://github.com/Josh-Archer/terraform-provider-seerr/commit/43a47a97356d5f3513ec65b72639fad802a11bee))
+* **ci:** pin and cache mock python image and seed seerr from runner ([#412](https://github.com/Josh-Archer/terraform-provider-seerr/issues/412)) ([fb19925](https://github.com/Josh-Archer/terraform-provider-seerr/commit/fb19925297d77dcf25af7e98d75ef01fa5f00b1e))
+* **ci:** pin CodeQL RAM for the actions language ([#399](https://github.com/Josh-Archer/terraform-provider-seerr/issues/399)) ([f0f9abd](https://github.com/Josh-Archer/terraform-provider-seerr/commit/f0f9abd907e24bff27d1fd21662f86b1b5f1c77e)), closes [#389](https://github.com/Josh-Archer/terraform-provider-seerr/issues/389)
+* **ci:** reconcile watchlist runner seeding with current main ([#413](https://github.com/Josh-Archer/terraform-provider-seerr/issues/413)) ([638bb6e](https://github.com/Josh-Archer/terraform-provider-seerr/commit/638bb6e28a8271d13092e56e7337abcc9e933198))
+
+
+### Documentation
+
+* add adopt-existing-instance runbook for secret-safe generated HCL ([#401](https://github.com/Josh-Archer/terraform-provider-seerr/issues/401)) ([99d6d01](https://github.com/Josh-Archer/terraform-provider-seerr/commit/99d6d01fab567595ddfc5a8d7e6099dc5b62a887))
+* mark [#360](https://github.com/Josh-Archer/terraform-provider-seerr/issues/360) Next 1–3 milestones complete and refresh README roadmap ([#402](https://github.com/Josh-Archer/terraform-provider-seerr/issues/402)) ([d7d49d6](https://github.com/Josh-Archer/terraform-provider-seerr/commit/d7d49d66b835d5aabb30c204951958a7c14168e9))
+* pin quickstart provider constraints to ~&gt; 2.4 ([#398](https://github.com/Josh-Archer/terraform-provider-seerr/issues/398)) ([6462e57](https://github.com/Josh-Archer/terraform-provider-seerr/commit/6462e579068deef4a3a4f8d96143e44b6fd35d68))
+
+
+### Miscellaneous Chores
+
+* **deps:** bump the github-actions group across 1 directory with 3 updates ([#404](https://github.com/Josh-Archer/terraform-provider-seerr/issues/404)) ([90900e6](https://github.com/Josh-Archer/terraform-provider-seerr/commit/90900e668ef57c7e43730844050d2b3ca1f1ecc7))
+
 ## [2.4.2](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.1...v2.4.2) (2026-11-10)
 
 
