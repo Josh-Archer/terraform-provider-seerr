@@ -72,6 +72,8 @@ jobs:
         run: python3 -m unittest discover -s tests -p test_compat_matrix.py
       - name: Test upstream watch reconciliation
         run: python3 -m unittest discover -s tests -p test_upstream_watch.py
+      - name: Test watchlist CI filter and seeding helpers
+        run: python3 -m unittest discover -s tests -p 'test_watchlist_*.py'
       - name: Test CI Docker image pinning and runner seeding
         run: python3 -m unittest discover -s tests -p test_ci_docker_setup.py
       - name: Test Compose installer environment handling
@@ -332,14 +334,14 @@ jobs:
     permissions:
       contents: read
     timeout-minutes: 20
-    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 2
-      - name: Validate integration path filter
-        run: python3 -m unittest discover -s tests -p test_watchlist_ci_filter.py
+      - name: Validate watchlist CI filter and seeding helpers
+        run: python3 -m unittest discover -s tests -p 'test_watchlist_*.py'
       - name: Select watchlist integration
         id: watchlist_filter
         env:
