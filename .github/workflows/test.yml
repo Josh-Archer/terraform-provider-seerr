@@ -74,6 +74,8 @@ jobs:
         run: python3 -m unittest discover -s tests -p test_upstream_watch.py
       - name: Test watchlist CI filter and seeding helpers
         run: python3 -m unittest discover -s tests -p 'test_watchlist_*.py'
+      - name: Test CI Docker image pinning and runner seeding
+        run: python3 -m unittest discover -s tests -p test_ci_docker_setup.py
       - name: Run linters
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
@@ -153,6 +155,8 @@ jobs:
           cache: true
       - name: Ensure docker compose plugin
         uses: ./.github/actions/ensure-docker-compose
+      - name: Ensure pinned mock Python image
+        uses: ./.github/actions/ensure-mock-python-image
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
@@ -252,6 +256,8 @@ jobs:
           cache: true
       - name: Ensure docker compose plugin
         uses: ./.github/actions/ensure-docker-compose
+      - name: Ensure pinned mock Python image
+        uses: ./.github/actions/ensure-mock-python-image
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
         with:
@@ -302,6 +308,8 @@ jobs:
           cache: true
       - name: Ensure docker compose plugin
         uses: ./.github/actions/ensure-docker-compose
+      - name: Ensure pinned mock Python image
+        uses: ./.github/actions/ensure-mock-python-image
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
@@ -396,6 +404,8 @@ jobs:
           cache: true
       - name: Ensure docker compose plugin
         uses: ./.github/actions/ensure-docker-compose
+      - name: Ensure pinned mock Python image
+        uses: ./.github/actions/ensure-mock-python-image
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
@@ -452,6 +462,8 @@ jobs:
           cache: true
       - name: Ensure docker compose plugin
         uses: ./.github/actions/ensure-docker-compose
+      - name: Ensure pinned mock Python image
+        uses: ./.github/actions/ensure-mock-python-image
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:

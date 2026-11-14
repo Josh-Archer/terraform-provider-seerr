@@ -49,6 +49,7 @@ run bash "${repo_root}/scripts/reconcile-release-tags_test.sh"
 run bash "${repo_root}/scripts/guard-empty-major-release_test.sh"
 run bash "${repo_root}/scripts/test-consumer-replay_test.sh"
 run bash "${repo_root}/scripts/compare-provider-schemas_test.sh"
+run python3 -m unittest discover -s "${repo_root}/tests" -p 'test_ci_docker_setup.py'
 run "${go_bin}" build ./...
 run "${go_bin}" test ./...
 run "${go_bin}" run ./tools/openapi

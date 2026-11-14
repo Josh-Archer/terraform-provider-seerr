@@ -10,7 +10,7 @@ if ! command -v docker-compose >/dev/null 2>&1 && ! command -v docker >/dev/null
 fi
 
 compose_cmd="docker compose"
-if command -v docker-compose >/dev/null 2>&1; then
+if ! docker compose version >/dev/null 2>&1 && command -v docker-compose >/dev/null 2>&1; then
   compose_cmd="docker-compose"
 fi
 

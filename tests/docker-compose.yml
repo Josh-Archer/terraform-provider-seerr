@@ -11,7 +11,7 @@ services:
       - seerr_config:/app/config
     restart: always
   plex-mock:
-    image: python:3.12-alpine
+    image: ${SEERR_MOCK_PYTHON_IMAGE:-mirror.gcr.io/library/python:3.12-alpine@sha256:c5ba3deef00c7758561a0f03c26f44f10589263d40e732b8748e0d1f38f6dd89}
     environment:
       - SERVICE_KIND=plex
       - PORT=32400
@@ -20,7 +20,7 @@ services:
       - ./fixtures:/fixtures:ro
 
   jellyfin-mock:
-    image: python:3.12-alpine
+    image: ${SEERR_MOCK_PYTHON_IMAGE:-mirror.gcr.io/library/python:3.12-alpine@sha256:c5ba3deef00c7758561a0f03c26f44f10589263d40e732b8748e0d1f38f6dd89}
     environment:
       - SERVICE_KIND=jellyfin
       - PORT=8096
@@ -30,7 +30,7 @@ services:
       - ./fixtures:/fixtures:ro
 
   tautulli-mock:
-    image: python:3.12-alpine
+    image: ${SEERR_MOCK_PYTHON_IMAGE:-mirror.gcr.io/library/python:3.12-alpine@sha256:c5ba3deef00c7758561a0f03c26f44f10589263d40e732b8748e0d1f38f6dd89}
     environment:
       - SERVICE_KIND=tautulli
       - PORT=8181
@@ -40,7 +40,7 @@ services:
       - ./fixtures:/fixtures:ro
 
   radarr-mock:
-    image: python:3.12-alpine
+    image: ${SEERR_MOCK_PYTHON_IMAGE:-mirror.gcr.io/library/python:3.12-alpine@sha256:c5ba3deef00c7758561a0f03c26f44f10589263d40e732b8748e0d1f38f6dd89}
     environment:
       - SERVICE_KIND=radarr
       - PORT=7878
@@ -50,7 +50,7 @@ services:
       - ./fixtures:/fixtures:ro
 
   sonarr-mock:
-    image: python:3.12-alpine
+    image: ${SEERR_MOCK_PYTHON_IMAGE:-mirror.gcr.io/library/python:3.12-alpine@sha256:c5ba3deef00c7758561a0f03c26f44f10589263d40e732b8748e0d1f38f6dd89}
     environment:
       - SERVICE_KIND=sonarr
       - PORT=8989
@@ -60,7 +60,7 @@ services:
       - ./fixtures:/fixtures:ro
 
   notify-mock:
-    image: python:3.12-alpine
+    image: ${SEERR_MOCK_PYTHON_IMAGE:-mirror.gcr.io/library/python:3.12-alpine@sha256:c5ba3deef00c7758561a0f03c26f44f10589263d40e732b8748e0d1f38f6dd89}
     environment:
       - SERVICE_KIND=generic
       - PORT=8080

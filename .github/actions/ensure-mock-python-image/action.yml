@@ -1,0 +1,17 @@
+name: Ensure pinned mock Python image
+description: Restore or pull and verify the digest-pinned python:3.12-alpine mock image before Docker Compose starts.
+runs:
+  using: composite
+  steps:
+    - name: Cache pinned mock Python image tarball
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/seerr-mock-python-cache
+        key: seerr-mock-python-${{ runner.os }}-${{ runner.arch }}-sha256-c5ba3deef00c7758561a0f03c26f44f10589263d40e732b8748e0d1f38f6dd89
+    - name: Prepare and verify pinned mock Python image
+      shell: bash
+      run: |
+        set -euo pipefail
+        python3 ./scripts/ci_docker_helpers.py prepare-mock-image \
+          --cache-dir "${{ runner.temp }}/seerr-mock-python-cache" \
+          --github-env "${GITHUB_ENV}"
