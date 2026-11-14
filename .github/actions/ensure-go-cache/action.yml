@@ -1,0 +1,11 @@
+name: Ensure Go caches
+description: Configure Go cache paths even when HOME is absent
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        : "${RUNNER_TEMP:?RUNNER_TEMP is required}"
+        printf 'GOMODCACHE=%s\n' "${GOMODCACHE:-$RUNNER_TEMP/seerr-go-mod}" >> "$GITHUB_ENV"
+        printf 'GOCACHE=%s\n' "${GOCACHE:-$RUNNER_TEMP/seerr-go-build}" >> "$GITHUB_ENV"

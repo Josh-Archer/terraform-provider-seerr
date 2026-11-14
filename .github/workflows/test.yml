@@ -36,13 +36,12 @@ jobs:
     permissions:
       contents: read
     timeout-minutes: 15
-    env:
-      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
-      GOCACHE: ${{ runner.temp }}/seerr-go-build
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -147,8 +146,6 @@ jobs:
               user.tftest.hcl
               user_permissions.tftest.hcl
     env:
-      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
-      GOCACHE: ${{ runner.temp }}/seerr-go-build
       USE_SELF_HOSTED: "false"
       SEERR_TEST_ENGINE: ${{ matrix.engine }}
       SEERR_TEST_IMAGE: ${{ matrix.image }}
@@ -158,6 +155,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -250,8 +249,6 @@ jobs:
               user.tftest.hcl
               user_permissions.tftest.hcl
     env:
-      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
-      GOCACHE: ${{ runner.temp }}/seerr-go-build
       USE_SELF_HOSTED: "false"
       SEERR_TEST_ENGINE: ${{ matrix.engine }}
       SEERR_TEST_IMAGE: ${{ matrix.image }}
@@ -261,6 +258,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -307,14 +306,14 @@ jobs:
     # Required by release gating: rc -> final promotion needs this job green on the tagged commit.
     if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     env:
-      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
-      GOCACHE: ${{ runner.temp }}/seerr-go-build
       SEERR_TEST_IMAGE: seerr/seerr:v3.5.0
       SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/consumer-replay
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -346,9 +345,6 @@ jobs:
       contents: read
     timeout-minutes: 20
     if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    env:
-      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
-      GOCACHE: ${{ runner.temp }}/seerr-go-build
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -364,6 +360,8 @@ jobs:
           run_integration="$(python3 ./scripts/watchlist_ci_filter.py "${WATCHLIST_EVENT}")"
           echo "run=${run_integration}" >> "$GITHUB_OUTPUT"
           echo "Watchlist live integration selected: ${run_integration}"
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - if: steps.watchlist_filter.outputs.run == 'true'
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -405,8 +403,6 @@ jobs:
         tofu_version:
           - 1.8.0
     env:
-      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
-      GOCACHE: ${{ runner.temp }}/seerr-go-build
       USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED || 'false' }}
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
@@ -416,6 +412,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -464,8 +462,6 @@ jobs:
         tofu_version:
           - 1.8.0
     env:
-      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
-      GOCACHE: ${{ runner.temp }}/seerr-go-build
       USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED || 'false' }}
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
@@ -476,6 +472,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -514,15 +512,14 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-    env:
-      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
-      GOCACHE: ${{ runner.temp }}/seerr-go-build
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod

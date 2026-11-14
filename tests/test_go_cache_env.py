@@ -10,13 +10,22 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 class GoCacheEnvironmentTests(unittest.TestCase):
+    def test_existing_caches_are_preserved(self):
+        source = (ROOT / '.github/actions/ensure-go-cache/action.yml').read_text()
+        script = '\n'.join(line[8:] for line in source.split('      run: |\n', 1)[1].splitlines())
+        with tempfile.TemporaryDirectory() as directory:
+            output = pathlib.Path(directory) / 'env'
+            env = dict(os.environ, RUNNER_TEMP=directory, GITHUB_ENV=str(output),
+                       GOMODCACHE='/configured module cache', GOCACHE='/configured build cache')
+            subprocess.run(['/bin/bash', '-c', script], env=env, check=True)
+            self.assertEqual(output.read_text(), 'GOMODCACHE=/configured module cache\nGOCACHE=/configured build cache\n')
+
     def test_job_local_caches_support_real_build_without_home(self):
         workflow = (ROOT / '.github/workflows/test.yml').read_text()
-        jobs = re.split(r'(?m)(?=^  [a-z][a-z0-9-]*:\n)', workflow.split('jobs:\n', 1)[1])
-        jobs = [job for job in jobs if job.strip()]
-        self.assertEqual(len(jobs), 8)
-        for job in jobs:
-            self.assertRegex(job, r'(?m)^    env:\n      GOMODCACHE: \$\{\{ runner\.temp \}\}/seerr-go-mod\n      GOCACHE: \$\{\{ runner\.temp \}\}/seerr-go-build$')
+        self.assertNotIn('runner.temp', workflow)
+        self.assertEqual(workflow.count('uses: ./.github/actions/ensure-go-cache'), 8)
+        source = (ROOT / '.github/actions/ensure-go-cache/action.yml').read_text()
+        script = '\n'.join(line[8:] for line in source.split('      run: |\n', 1)[1].splitlines())
         go = shutil.which('go')
         self.assertIsNotNone(go, 'Go must be installed for this regression')
         with tempfile.TemporaryDirectory(prefix='go cache test ') as directory:
@@ -26,9 +35,15 @@ class GoCacheEnvironmentTests(unittest.TestCase):
             env = dict(os.environ)
             for key in ('HOME', 'USERPROFILE', 'GOPATH', 'XDG_CACHE_HOME'):
                 env.pop(key, None)
-            env.update(GOMODCACHE=str(root / 'seerr-go-mod'),
-                       GOCACHE=str(root / 'seerr-go-build'),
+            for key in ('GOMODCACHE', 'GOCACHE'):
+                env.pop(key, None)
+            env.update(RUNNER_TEMP=str(root), GITHUB_ENV=str(root / 'github-env'),
                        GOTOOLCHAIN='local', GOPROXY='off', GOSUMDB='off', CGO_ENABLED='0')
+            subprocess.run(['/bin/bash', '-c', script], env=env, check=True)
+            exported = dict(line.split('=', 1) for line in (root / 'github-env').read_text().splitlines())
+            self.assertEqual(exported, {'GOMODCACHE': str(root / 'seerr-go-mod'),
+                                        'GOCACHE': str(root / 'seerr-go-build')})
+            env.update(exported)
             subprocess.run([go, 'build', '-o', str(root / 'app'), '.'],
                            cwd=root, env=env, check=True, timeout=120)
             self.assertTrue((root / 'app').is_file())
