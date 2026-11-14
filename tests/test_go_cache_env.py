@@ -10,6 +10,11 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 class GoCacheEnvironmentTests(unittest.TestCase):
+    def test_opentofu_uses_native_cli_without_node_wrapper(self):
+        workflow = (ROOT / '.github/workflows/test.yml').read_text()
+        setups = re.findall(r'uses: opentofu/setup-opentofu@[^\n]+\n        with:\n          tofu_version: [^\n]+\n          tofu_wrapper: false', workflow)
+        self.assertEqual(len(setups), 6)
+
     def test_existing_caches_are_preserved(self):
         source = (ROOT / '.github/actions/ensure-go-cache/action.yml').read_text()
         script = '\n'.join(line[8:] for line in source.split('      run: |\n', 1)[1].splitlines())
