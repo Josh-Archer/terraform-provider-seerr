@@ -5,9 +5,10 @@ from scripts.watchlist_ci_filter import pr_paths, should_run
 
 
 class WatchlistCIFilterTests(unittest.TestCase):
-    def test_main_push_always_runs_even_for_documentation(self):
+    def test_main_push_and_workflow_dispatch_always_run(self):
         self.assertTrue(should_run("push", ["README.md"]))
         self.assertTrue(should_run("push", []))
+        self.assertTrue(should_run("workflow_dispatch", []))
 
     def test_documentation_only_pr_skips_integration(self):
         self.assertFalse(should_run("pull_request", ["README.md", "docs/resources/watchlist.md", "templates/guides/watchlist-live-integration.md"]))
