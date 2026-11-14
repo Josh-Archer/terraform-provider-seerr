@@ -3,12 +3,15 @@
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import pathlib
 import shutil
+import sqlite3
 import subprocess
 import sys
+import tarfile
 import time
 import urllib.error
 import urllib.parse
@@ -23,6 +26,13 @@ API_KEY = "seerr-watchlist-live-ci-key"
 FIXTURE_COUNT = 42
 FIRST_TMDB_ID = 9_220_000
 COMMAND_TIMEOUT_SECONDS = 300
+DOCKER_IO_TIMEOUT_SECONDS = 60
+LOG_CAPTURE_TIMEOUT_SECONDS = 30
+SERVER_READY_TIMEOUT_SECONDS = 180
+AUTH_READY_TIMEOUT_SECONDS = 60
+FAILURE_LOG_TAIL_LINES = 50
+SEERR_UID = 1000
+SEERR_GID = 1000
 
 
 class IntegrationFailure(RuntimeError):
@@ -35,22 +45,28 @@ def require(condition: bool, message: str) -> None:
 
 
 def run(command: list[str], *, cwd: pathlib.Path | None = None, env=None,
-        input_text: str | None = None, capture: bool = False,
-        allowed_codes: tuple[int, ...] = (0,)) -> subprocess.CompletedProcess[str]:
+        input_text: str | None = None, input_bytes: bytes | None = None,
+        capture: bool = False, allowed_codes: tuple[int, ...] = (0,),
+        timeout: int = COMMAND_TIMEOUT_SECONDS) -> subprocess.CompletedProcess:
+    if input_text is not None and input_bytes is not None:
+        raise ValueError("input_text and input_bytes are mutually exclusive")
     print("+", " ".join(command), flush=True)
+    use_text = input_bytes is None
     result = subprocess.run(
         command,
         cwd=cwd,
         env=env,
-        input=input_text,
-        text=True,
+        input=input_bytes if input_bytes is not None else input_text,
+        text=use_text,
         stdout=subprocess.PIPE if capture else None,
         stderr=subprocess.STDOUT if capture else None,
         check=False,
-        timeout=COMMAND_TIMEOUT_SECONDS,
+        timeout=timeout,
     )
     if result.returncode not in allowed_codes:
-        output = result.stdout or "" if capture else ""
+        output = ""
+        if capture and result.stdout is not None:
+            output = result.stdout if isinstance(result.stdout, str) else result.stdout.decode("utf-8", errors="replace")
         raise IntegrationFailure(
             f"command exited {result.returncode}: {' '.join(command)}\n{output}"
         )
@@ -78,102 +94,171 @@ def api_request(base_url: str, path: str, *, method: str = "GET") -> tuple[int, 
         ) from error
 
 
-def seed_database(container_id: str) -> None:
-    bootstrap = r'''import json
-import sqlite3
-from pathlib import Path
+def seed_config_dir(config_dir: pathlib.Path) -> None:
+    """Seed settings.json and the SQLite watchlist fixtures in a host copy of /app/config."""
+    settings_path = config_dir / "settings.json"
+    if not settings_path.is_file():
+        raise IntegrationFailure(f"Seerr bootstrap did not create {settings_path}")
+    settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    settings.setdefault("main", {})["apiKey"] = API_KEY
+    settings.setdefault("public", {})["initialized"] = True
+    settings_path.write_text(json.dumps(settings, indent=1) + "\n", encoding="utf-8")
 
-config_dir = Path("/app/config")
-settings_path = config_dir / "settings.json"
-settings = json.loads(settings_path.read_text())
-settings.setdefault("main", {})["apiKey"] = "seerr-watchlist-live-ci-key"
-settings.setdefault("public", {})["initialized"] = True
-settings_path.write_text(json.dumps(settings, indent=1) + "\n")
+    db_path = config_dir / "db" / "db.sqlite3"
+    if not db_path.is_file():
+        raise IntegrationFailure(f"Seerr bootstrap did not create {db_path}")
 
-db = sqlite3.connect(config_dir / "db" / "db.sqlite3")
-db.row_factory = sqlite3.Row
-user_result = db.execute(
-    'UPDATE "user" SET email=?, username=?, permissions=2, avatar=?, userType=1 WHERE id=1',
-    ("watchlist-ci@example.invalid", "watchlist-ci-admin", "/logo_full.svg"),
-)
-if user_result.rowcount == 0:
-    db.execute(
-        'INSERT INTO "user" (id, email, username, permissions, avatar, userType) VALUES (1, ?, ?, 2, ?, 1)',
-        ("watchlist-ci@example.invalid", "watchlist-ci-admin", "/logo_full.svg"),
+    db = sqlite3.connect(db_path)
+    try:
+        db.row_factory = sqlite3.Row
+        user_result = db.execute(
+            'UPDATE "user" SET email=?, username=?, permissions=2, avatar=?, userType=1 WHERE id=1',
+            ("watchlist-ci@example.invalid", "watchlist-ci-admin", "/logo_full.svg"),
+        )
+        if user_result.rowcount == 0:
+            db.execute(
+                'INSERT INTO "user" (id, email, username, permissions, avatar, userType) VALUES (1, ?, ?, 2, ?, 1)',
+                ("watchlist-ci@example.invalid", "watchlist-ci-admin", "/logo_full.svg"),
+            )
+        settings_result = db.execute(
+            "UPDATE user_settings SET locale='en', watchlistSyncMovies=0, watchlistSyncTv=0 WHERE userId=1"
+        )
+        if settings_result.rowcount == 0:
+            db.execute(
+                "INSERT INTO user_settings (userId, locale, watchlistSyncMovies, watchlistSyncTv) VALUES (1, 'en', 0, 0)"
+            )
+        tables = {row[0].lower(): row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        table = tables.get("watchlist")
+        if table is None:
+            raise IntegrationFailure("Seerr 3.5.0 database has no watchlist table")
+        columns = {row[1] for row in db.execute(f'PRAGMA table_info("{table}")')}
+        required = {"tmdbId", "mediaType", "title", "ratingKey", "requestedById"}
+        missing = required - columns
+        if missing:
+            raise IntegrationFailure(f"watchlist schema is missing columns: {sorted(missing)}")
+        user_row = db.execute('SELECT id FROM "user" WHERE id=1').fetchone()
+        if user_row is None:
+            raise IntegrationFailure("expected the existing Seerr bootstrap to create admin user 1")
+        start_id = FIRST_TMDB_ID
+        end_id = start_id + FIXTURE_COUNT
+        collision = db.execute(
+            'SELECT tmdbId, mediaType FROM "' + table + '" WHERE tmdbId >= ? AND tmdbId < ?',
+            (start_id, end_id),
+        ).fetchall()
+        if collision:
+            raise IntegrationFailure(f"fixture TMDB IDs already exist: {[tuple(row) for row in collision]}")
+
+        for offset in range(FIXTURE_COUNT):
+            tmdb_id = start_id + offset
+            row = {
+                "tmdbId": tmdb_id,
+                "mediaType": "movie",
+                "title": f"Watchlist CI Fixture {offset + 1:02d}",
+                "ratingKey": f"watchlist-ci-{offset + 1:02d}",
+                "requestedById": 1,
+            }
+            if "createdAt" in columns:
+                row["createdAt"] = f"2024-01-{(offset // 28) + 1:02d}T00:{offset % 60:02d}:00.000Z"
+            if "updatedAt" in columns:
+                row["updatedAt"] = f"2024-01-{(offset // 28) + 1:02d}T00:{offset % 60:02d}:00.000Z"
+            names = list(row)
+            quoted = ", ".join('"' + name + '"' for name in names)
+            placeholders = ", ".join("?" for _ in names)
+            db.execute(f'INSERT INTO "{table}" ({quoted}) VALUES ({placeholders})', [row[name] for name in names])
+
+        db.commit()
+        count = db.execute(
+            'SELECT COUNT(*) FROM "' + table + '" WHERE requestedById=1 AND tmdbId >= ? AND tmdbId < ?',
+            (start_id, end_id),
+        ).fetchone()[0]
+        if count != FIXTURE_COUNT:
+            raise IntegrationFailure(f"expected {FIXTURE_COUNT} seeded watchlist rows, found {count}")
+        db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    finally:
+        db.close()
+    print(f"Seeded {FIXTURE_COUNT} native watchlist rows for admin user 1")
+
+
+def build_config_tar(config_dir: pathlib.Path) -> bytes:
+    """Package seeded config files with Seerr container UID/GID ownership."""
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w") as archive:
+        for rel_path in ("settings.json", "db/db.sqlite3"):
+            source = config_dir / rel_path
+            data = source.read_bytes()
+            info = tarfile.TarInfo(rel_path)
+            info.size = len(data)
+            info.mode = 0o644
+            info.uid = SEERR_UID
+            info.gid = SEERR_GID
+            info.uname = "node"
+            info.gname = "node"
+            info.mtime = int(source.stat().st_mtime)
+            archive.addfile(info, io.BytesIO(data))
+    return buffer.getvalue()
+
+
+def seed_container_database(compose: list[str], container_id: str, work_dir: pathlib.Path) -> None:
+    """Stop Seerr, seed its config/SQLite DB on the runner, and copy it back."""
+    print("Seeding Seerr configuration and SQLite watchlist fixtures from the runner...")
+    run(compose + ["stop", "seerr"], timeout=DOCKER_IO_TIMEOUT_SECONDS)
+
+    seed_dir = work_dir / "seed-config"
+    shutil.rmtree(seed_dir, ignore_errors=True)
+    run(["docker", "cp", f"{container_id}:/app/config", str(seed_dir)], timeout=DOCKER_IO_TIMEOUT_SECONDS)
+
+    seed_config_dir(seed_dir)
+
+    # Clear any pre-stop SQLite WAL/SHM files so the checkpointed DB is authoritative on restart.
+    run(
+        compose + [
+            "run", "--rm", "--no-deps", "-T", "--entrypoint", "sh", "seerr",
+            "-c", "rm -f /app/config/db/db.sqlite3-wal /app/config/db/db.sqlite3-shm",
+        ],
+        timeout=DOCKER_IO_TIMEOUT_SECONDS,
     )
-settings_result = db.execute(
-	"UPDATE user_settings SET locale='en', watchlistSyncMovies=0, watchlistSyncTv=0 WHERE userId=1"
-)
-if settings_result.rowcount == 0:
-    db.execute(
-        "INSERT INTO user_settings (userId, locale, watchlistSyncMovies, watchlistSyncTv) VALUES (1, 'en', 0, 0)"
+    run(
+        ["docker", "cp", "-", f"{container_id}:/app/config"],
+        input_bytes=build_config_tar(seed_dir),
+        timeout=DOCKER_IO_TIMEOUT_SECONDS,
     )
-tables = {row[0].lower(): row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-table = tables.get("watchlist")
-if table is None:
-    raise RuntimeError("Seerr 3.5.0 database has no watchlist table")
-columns = {row[1] for row in db.execute(f'PRAGMA table_info("{table}")')}
-required = {"tmdbId", "mediaType", "title", "ratingKey", "requestedById"}
-missing = required - columns
-if missing:
-    raise RuntimeError(f"watchlist schema is missing columns: {sorted(missing)}")
-user_row = db.execute('SELECT id FROM "user" WHERE id=1').fetchone()
-if user_row is None:
-    raise RuntimeError("expected the existing Seerr bootstrap to create admin user 1")
-start_id = 9220000
-end_id = start_id + 42
-collision = db.execute(
-    'SELECT tmdbId, mediaType FROM "' + table + '" WHERE tmdbId >= ? AND tmdbId < ?',
-    (start_id, end_id),
-).fetchall()
-if collision:
-    raise RuntimeError(f"fixture TMDB IDs already exist: {[tuple(row) for row in collision]}")
-
-for offset in range(42):
-    tmdb_id = start_id + offset
-    row = {
-        "tmdbId": tmdb_id,
-        "mediaType": "movie",
-        "title": f"Watchlist CI Fixture {offset + 1:02d}",
-        "ratingKey": f"watchlist-ci-{offset + 1:02d}",
-        "requestedById": 1,
-    }
-    if "createdAt" in columns:
-        row["createdAt"] = f"2024-01-{(offset // 28) + 1:02d}T00:{offset % 60:02d}:00.000Z"
-    if "updatedAt" in columns:
-        row["updatedAt"] = f"2024-01-{(offset // 28) + 1:02d}T00:{offset % 60:02d}:00.000Z"
-    names = list(row)
-    quoted = ", ".join('"' + name + '"' for name in names)
-    placeholders = ", ".join("?" for _ in names)
-    db.execute(f'INSERT INTO "{table}" ({quoted}) VALUES ({placeholders})', [row[name] for name in names])
-
-db.commit()
-count = db.execute('SELECT COUNT(*) FROM "' + table + '" WHERE requestedById=1 AND tmdbId >= ? AND tmdbId < ?', (start_id, end_id)).fetchone()[0]
-if count != 42:
-    raise RuntimeError(f"expected 42 seeded watchlist rows, found {count}")
-db.close()
-print("Seeded 42 native watchlist rows for admin user 1")
-'''
-    run(["docker", "exec", "-i", "-u", "root", container_id, "python3", "-"],
-        input_text=bootstrap)
-    run(["docker", "exec", "-u", "root", container_id, "sh", "-c",
-         "chown -R 1000:1000 /app/config"])
 
 
-def wait_for_server(base_url: str, container_id: str) -> None:
-    for attempt in range(90):
+def wait_for_server(base_url: str, container_id: str, *,
+                    timeout_seconds: float = SERVER_READY_TIMEOUT_SECONDS) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    attempt = 0
+    while True:
         try:
             with urllib.request.urlopen(base_url + "/api/v1/status", timeout=3) as response:
                 if response.status == 200:
                     return
         except (OSError, urllib.error.URLError):
             pass
+        attempt += 1
         if attempt in (25, 55):
             print("Waiting for Seerr 3.5.0 startup migrations...")
-        time.sleep(2)
-    logs = subprocess.run(["docker", "logs", container_id], text=True,
-                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
-    raise IntegrationFailure(f"Seerr did not become ready. Container log:\n{logs.stdout}")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(2.0, remaining))
+    raise IntegrationFailure(f"Seerr did not become ready within {timeout_seconds:.0f}s (container {container_id})")
+
+
+def wait_for_auth(base_url: str, *, timeout_seconds: float = AUTH_READY_TIMEOUT_SECONDS) -> dict:
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        try:
+            status, user = api_request(base_url, "/api/v1/auth/me")
+            if status == 200 and isinstance(user, dict) and str(user.get("id")) == "1":
+                return user
+        except (OSError, urllib.error.URLError, IntegrationFailure):
+            pass
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(2.0, remaining))
+    raise IntegrationFailure("bootstrapped API key did not authenticate")
 
 
 def create_provider(work_dir: pathlib.Path, base_url: str, target_id: int) -> None:
@@ -314,8 +399,48 @@ def run_terraform_flow(work_dir: pathlib.Path, base_url: str, expected_ids: set[
     print("PASS: both read modes returned 42 items; final-page import stayed unchanged; refresh removed only the deleted item and retained 41 others.")
 
 
+def tail_lines(text: str, limit: int = FAILURE_LOG_TAIL_LINES) -> str:
+    if not text or limit <= 0:
+        return ""
+    return "\n".join(text.splitlines()[-limit:])
+
+
+def _capture_command_output(command: list[str], *, timeout: int = LOG_CAPTURE_TIMEOUT_SECONDS) -> str:
+    try:
+        completed = subprocess.run(
+            command,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+            timeout=timeout,
+        )
+        return completed.stdout or ""
+    except (subprocess.SubprocessError, OSError) as capture_error:
+        return f"<failed to capture output from {' '.join(command)}: {capture_error}>\n"
+
+
+def capture_failure_diagnostics(compose: list[str], container_id: str,
+                                work_dir: pathlib.Path, *, stream=None) -> None:
+    if stream is None:
+        stream = sys.stderr
+    container_logs = ""
+    if container_id:
+        container_logs = _capture_command_output(["docker", "logs", container_id])
+        write(work_dir / "seerr-container.log", container_logs)
+    compose_logs = _capture_command_output(compose + ["logs", "--no-color"])
+    write(work_dir / "compose.log", compose_logs)
+
+    tail = tail_lines(container_logs or compose_logs, FAILURE_LOG_TAIL_LINES)
+    if tail:
+        print(f"--- Last {FAILURE_LOG_TAIL_LINES} lines of Seerr container logs ---", file=stream)
+        print(tail, file=stream)
+        print("--- End of Seerr container logs ---", file=stream)
+    print(f"Diagnostics saved under {work_dir}", file=stream)
+
+
 def service_url(compose: list[str]) -> str:
-    result = run(compose + ["port", "seerr", "5055"], capture=True)
+    result = run(compose + ["port", "seerr", "5055"], capture=True, timeout=DOCKER_IO_TIMEOUT_SECONDS)
     host = result.stdout.strip().splitlines()[-1]
     host_port = int(host.rsplit(":", 1)[-1])
     require(0 < host_port < 65536, "Docker did not publish a valid Seerr port")
@@ -344,34 +469,18 @@ def main() -> int:
     try:
         print(f"Starting disposable {IMAGE} stack (project {project})...")
         run(compose + ["up", "-d"])
-        result = run(compose + ["ps", "-q", "seerr"], capture=True)
+        result = run(compose + ["ps", "-q", "seerr"], capture=True, timeout=DOCKER_IO_TIMEOUT_SECONDS)
         container_id = result.stdout.strip()
         require(container_id != "", "Compose did not return the Seerr container ID")
         base_url = service_url(compose)
         wait_for_server(base_url, container_id)
 
-        print("Installing the SQLite bootstrap tools in the disposable container...")
-        run(["docker", "exec", "-u", "root", container_id, "sh", "-c",
-             "attempt=1; until apk add --no-cache python3 sqlite; do "
-             "if [ \"$attempt\" -ge 10 ]; then exit 1; fi; "
-             "attempt=$((attempt + 1)); sleep 2; done"])
-        seed_database(container_id)
-        run(compose + ["restart", "seerr"])
-        # Docker can allocate a new random host port when the container restarts.
+        seed_container_database(compose, container_id, work_dir)
+        run(compose + ["start", "seerr"], timeout=DOCKER_IO_TIMEOUT_SECONDS)
+        # Docker can allocate a new random host port when the container starts again.
         base_url = service_url(compose)
         wait_for_server(base_url, container_id)
-        authenticated = False
-        for _ in range(30):
-            try:
-                api_request(base_url, "/api/v1/auth/me")
-                authenticated = True
-                break
-            except (OSError, urllib.error.URLError, IntegrationFailure):
-                time.sleep(2)
-        require(authenticated, "bootstrapped API key did not authenticate")
-        status, user = api_request(base_url, "/api/v1/auth/me")
-        require(status == 200 and isinstance(user, dict) and str(user.get("id")) == "1",
-                f"expected authenticated admin user 1, got {user}")
+        wait_for_auth(base_url)
 
         expected_ids = set(range(FIRST_TMDB_ID, FIRST_TMDB_ID + FIXTURE_COUNT))
         status, first_page = api_request(base_url, "/api/v1/user/1/watchlist?page=1")
@@ -392,14 +501,7 @@ def main() -> int:
         return 0
     except Exception as error:
         print(f"WATCHLIST LIVE INTEGRATION FAILED: {error}", file=sys.stderr)
-        if container_id:
-            logs = subprocess.run(["docker", "logs", container_id], text=True,
-                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
-            write(work_dir / "seerr-container.log", logs.stdout)
-        diagnostics = subprocess.run(compose + ["logs", "--no-color"], text=True,
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
-        write(work_dir / "compose.log", diagnostics.stdout)
-        print(f"Diagnostics saved under {work_dir}", file=sys.stderr)
+        capture_failure_diagnostics(compose, container_id, work_dir, stream=sys.stderr)
         return 1
     finally:
         primary_error_active = sys.exc_info()[0] is not None
