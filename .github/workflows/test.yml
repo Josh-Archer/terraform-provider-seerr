@@ -40,6 +40,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -48,6 +50,7 @@ jobs:
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_version: 1.8.0
+          tofu_wrapper: false
       - run: go mod download
       - name: Run fast merge gate
         run: bash ./scripts/test-all-locally.sh
@@ -78,6 +81,8 @@ jobs:
         run: python3 -m unittest discover -s tests -p test_ci_docker_setup.py
       - name: Test Compose installer environment handling
         run: python3 -m unittest discover -s tests -p test_compose_installer.py
+      - name: Test Go cache configuration without HOME
+        run: python3 -m unittest discover -s tests -p test_go_cache_env.py
       - name: Run linters
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
@@ -151,6 +156,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -163,6 +170,7 @@ jobs:
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_version: ${{ matrix.tofu_version }}
+          tofu_wrapper: false
       - name: Use legacy external Seerr target when configured
         shell: bash
         run: |
@@ -252,6 +260,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -304,6 +314,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -350,6 +362,8 @@ jobs:
           run_integration="$(python3 ./scripts/watchlist_ci_filter.py "${WATCHLIST_EVENT}")"
           echo "run=${run_integration}" >> "$GITHUB_OUTPUT"
           echo "Watchlist live integration selected: ${run_integration}"
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - if: steps.watchlist_filter.outputs.run == 'true'
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -400,6 +414,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -412,6 +428,7 @@ jobs:
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_version: ${{ matrix.tofu_version }}
+          tofu_wrapper: false
       - name: Use legacy external Seerr target when configured
         shell: bash
         run: |
@@ -458,6 +475,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -470,6 +489,7 @@ jobs:
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_version: ${{ matrix.tofu_version }}
+          tofu_wrapper: false
       - name: Use legacy external Seerr target when configured
         shell: bash
         run: |
@@ -502,6 +522,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Configure job-local Go caches
+        uses: ./.github/actions/ensure-go-cache
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
