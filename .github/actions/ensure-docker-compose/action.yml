@@ -22,7 +22,15 @@ runs:
           aarch64|arm64) arch=aarch64 ;;
           *) echo "unsupported arch $(uname -m)" >&2; exit 1 ;;
         esac
-        plugin_dir="${DOCKER_CONFIG:-$HOME/.docker}/cli-plugins"
+        if [[ -z "${DOCKER_CONFIG:-}" ]]; then
+          if [[ -n "${HOME:-}" ]]; then
+            export DOCKER_CONFIG="$HOME/.docker"
+          else
+            export DOCKER_CONFIG="${RUNNER_TEMP:?RUNNER_TEMP required when HOME is unset}/docker-config"
+          fi
+          printf 'DOCKER_CONFIG=%s\n' "$DOCKER_CONFIG" >> "$GITHUB_ENV"
+        fi
+        plugin_dir="$DOCKER_CONFIG/cli-plugins"
         mkdir -p "$plugin_dir"
         curl -fsSL --retry 3 -o "$plugin_dir/docker-compose" \
           "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-${arch}"
