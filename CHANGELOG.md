@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.4](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.3...v2.4.4) (2026-11-14)
+
+
+### Bug Fixes
+
+* **ci:** use dedicated release automation token ([#418](https://github.com/Josh-Archer/terraform-provider-seerr/issues/418)) ([22411f3](https://github.com/Josh-Archer/terraform-provider-seerr/commit/22411f3686236f8d52a7f2e38a6ce28549e1998a))
+
 ## [2.4.3](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.2...v2.4.3) (2026-11-14)
 
 
