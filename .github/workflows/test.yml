@@ -36,6 +36,9 @@ jobs:
     permissions:
       contents: read
     timeout-minutes: 15
+    env:
+      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
+      GOCACHE: ${{ runner.temp }}/seerr-go-build
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -78,6 +81,8 @@ jobs:
         run: python3 -m unittest discover -s tests -p test_ci_docker_setup.py
       - name: Test Compose installer environment handling
         run: python3 -m unittest discover -s tests -p test_compose_installer.py
+      - name: Test Go cache configuration without HOME
+        run: python3 -m unittest discover -s tests -p test_go_cache_env.py
       - name: Run linters
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
@@ -142,6 +147,8 @@ jobs:
               user.tftest.hcl
               user_permissions.tftest.hcl
     env:
+      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
+      GOCACHE: ${{ runner.temp }}/seerr-go-build
       USE_SELF_HOSTED: "false"
       SEERR_TEST_ENGINE: ${{ matrix.engine }}
       SEERR_TEST_IMAGE: ${{ matrix.image }}
@@ -243,6 +250,8 @@ jobs:
               user.tftest.hcl
               user_permissions.tftest.hcl
     env:
+      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
+      GOCACHE: ${{ runner.temp }}/seerr-go-build
       USE_SELF_HOSTED: "false"
       SEERR_TEST_ENGINE: ${{ matrix.engine }}
       SEERR_TEST_IMAGE: ${{ matrix.image }}
@@ -298,6 +307,8 @@ jobs:
     # Required by release gating: rc -> final promotion needs this job green on the tagged commit.
     if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     env:
+      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
+      GOCACHE: ${{ runner.temp }}/seerr-go-build
       SEERR_TEST_IMAGE: seerr/seerr:v3.5.0
       SEERR_ARTIFACT_DIR: ${{ github.workspace }}/test-artifacts/consumer-replay
     steps:
@@ -335,6 +346,9 @@ jobs:
       contents: read
     timeout-minutes: 20
     if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    env:
+      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
+      GOCACHE: ${{ runner.temp }}/seerr-go-build
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -391,6 +405,8 @@ jobs:
         tofu_version:
           - 1.8.0
     env:
+      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
+      GOCACHE: ${{ runner.temp }}/seerr-go-build
       USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED || 'false' }}
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
@@ -448,6 +464,8 @@ jobs:
         tofu_version:
           - 1.8.0
     env:
+      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
+      GOCACHE: ${{ runner.temp }}/seerr-go-build
       USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED || 'false' }}
       LEGACY_SEERR_URL: ${{ secrets.SEERR_URL }}
       LEGACY_SEERR_API_KEY: ${{ secrets.SEERR_API_KEY }}
@@ -496,6 +514,9 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+    env:
+      GOMODCACHE: ${{ runner.temp }}/seerr-go-mod
+      GOCACHE: ${{ runner.temp }}/seerr-go-build
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
