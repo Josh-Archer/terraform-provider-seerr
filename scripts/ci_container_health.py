@@ -4,6 +4,8 @@
 Never collect container environment, health-check output, names, or raw errors.
 """
 import json
+import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -18,9 +20,40 @@ STATUSES = {'created', 'running', 'paused', 'restarting', 'removing', 'exited', 
 HEALTH = {'none', 'starting', 'healthy', 'unhealthy'}
 
 
+def resource_snapshot():
+    """Fixed numeric fields only; never expose paths, environment or raw file text."""
+    result = {}
+    count = os.cpu_count()
+    if count is not None:
+        result['cpu_count'] = count
+    try:
+        result['load_average'] = list(os.getloadavg())
+    except OSError:
+        pass
+    try:
+        disk = os.statvfs('.')
+        result['workspace_bytes_total'] = disk.f_blocks * disk.f_frsize
+        result['workspace_bytes_available'] = disk.f_bavail * disk.f_frsize
+        result['workspace_inodes_available'] = disk.f_favail
+    except OSError:
+        pass
+    memory = {}
+    wanted = {'MemTotal', 'MemAvailable', 'SwapTotal', 'SwapFree'}
+    try:
+        for line in pathlib.Path('/proc/meminfo').read_text().splitlines():
+            match = re.fullmatch(r'([A-Za-z]+):\s+(\d+) kB', line)
+            if match and match[1] in wanted:
+                memory[match[1]] = int(match[2]) * 1024
+    except (OSError, UnicodeError):
+        pass
+    if memory:
+        result['memory_bytes'] = memory
+    return result
+
+
 def collect(compose_file):
     deadline = time.monotonic() + BUDGET_SECONDS
-    result = {'containers': [], 'warnings': []}
+    result = {'containers': [], 'warnings': [], 'resources': resource_snapshot()}
 
     def run(args):
         remaining = deadline - time.monotonic()
