@@ -54,3 +54,20 @@ else: print('total: (statements) 62.3%')
         self.assertIn('name: unit-test-coverage', workflow)
         self.assertIn('path: test-artifacts/unit-coverage/', workflow)
         self.assertIn('run bash "${repo_root}/scripts/test-unit-coverage.sh"', (ROOT/'scripts/test-all-locally.sh').read_text())
+
+    def test_fast_gate_timing_preserves_failure(self):
+        script = (ROOT/'scripts/test-all-locally.sh').read_text()
+        function = script.split('run() {', 1)[1].split('\n}', 1)[0]
+        for status in (0, 23):
+            result = subprocess.run(['bash', '-c', 'set -euo pipefail; run() {' + function + '\n}; run bash -c "exit ' + str(status) + '"; echo reached'], capture_output=True, text=True)
+            self.assertEqual(result.returncode, status)
+            self.assertEqual('reached' in result.stdout, status == 0)
+            if status == 0:
+                self.assertIn('real', result.stderr)
+
+    def test_build_budget_remains_bounded(self):
+        workflow = (ROOT/'.github/workflows/test.yml').read_text()
+        build = workflow.split('  build-test:', 1)[1].split('  tofu-test-stable:', 1)[0]
+        self.assertIn('timeout-minutes: 30', build)
+        self.assertIn('run: bash ./scripts/test-all-locally.sh', build)
+        self.assertNotIn('continue-on-error:', build)

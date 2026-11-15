@@ -10,7 +10,7 @@ cd "${repo_root}"
 
 run() {
   echo "+ $*" >&2
-  "$@"
+  time "$@"
 }
 
 resolve_tool() {

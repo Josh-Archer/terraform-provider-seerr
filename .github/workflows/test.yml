@@ -35,7 +35,8 @@ jobs:
     runs-on: ${{ vars.TRUSTED_RUNNER_LABEL || (github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared') }}
     permissions:
       contents: read
-    timeout-minutes: 15
+    # Cold ephemeral runners compile docs tooling before tests; retain a bounded gate.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
