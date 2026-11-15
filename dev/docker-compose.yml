@@ -1,6 +1,6 @@
 services:
   seerr:
-    image: fallenbagel/jellyseerr:latest
+    image: ghcr.io/seerr-team/seerr:v3.5.0
     container_name: seerr-dev
     environment:
       - LOG_LEVEL=debug

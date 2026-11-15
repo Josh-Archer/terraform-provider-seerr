@@ -124,6 +124,16 @@ class ComposeAndScriptRegressionTests(unittest.TestCase):
         self.assertEqual(validate_compose_images(compose_text), [])
         self.assertIn(h.PINNED_MOCK_PYTHON_DIGEST, compose_text)
 
+    def test_dev_compose_pins_image_and_dependabot_tracks_compose(self):
+        dev_compose = (ROOT / "dev" / "docker-compose.yml").read_text(encoding="utf-8")
+        self.assertNotIn(":latest", dev_compose)
+        self.assertIn("ghcr.io/seerr-team/seerr:", dev_compose)
+
+        dependabot = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
+        self.assertIn("package-ecosystem: docker-compose", dependabot)
+        self.assertIn('"/dev"', dependabot)
+        self.assertIn('"/tests"', dependabot)
+
     def test_compose_validator_rejects_unpinned_python_alpine(self):
         bad_plain = "services:\n  plex-mock:\n    image: python:3.12-alpine\n"
         self.assertTrue(validate_compose_images(bad_plain))
