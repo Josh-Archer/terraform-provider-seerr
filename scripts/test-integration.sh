@@ -93,6 +93,10 @@ capture_diagnostics() {
     return 0
   fi
 
+  # Preserve only allowlisted state, never environment or health-check output.
+  python3 "${repo_root}/scripts/ci_container_health.py" "${tests_dir}/docker-compose.yml" \
+    >"${artifact_dir}/container-health.json" 2>/dev/null || true
+
   if command -v docker-compose >/dev/null 2>&1; then
     docker-compose -f "${tests_dir}/docker-compose.yml" logs --no-color >"${compose_log}" 2>&1 || true
   elif command -v docker >/dev/null 2>&1; then
