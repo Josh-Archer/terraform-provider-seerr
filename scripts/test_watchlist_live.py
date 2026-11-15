@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise watchlist pagination and drift against an isolated real Seerr 3.5.0."""
+"""Exercise watchlist pagination and drift against an isolated real Seerr 3.5.2."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ import uuid
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 COMPOSE_FILE = ROOT / "tests" / "docker-compose.watchlist-live.yml"
-IMAGE = "ghcr.io/seerr-team/seerr:v3.5.0"
+IMAGE = "ghcr.io/seerr-team/seerr:v3.5.2"
 API_KEY = "seerr-watchlist-live-ci-key"
 FIXTURE_COUNT = 42
 FIRST_TMDB_ID = 9_220_000
@@ -130,7 +130,7 @@ def seed_config_dir(config_dir: pathlib.Path) -> None:
         tables = {row[0].lower(): row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         table = tables.get("watchlist")
         if table is None:
-            raise IntegrationFailure("Seerr 3.5.0 database has no watchlist table")
+            raise IntegrationFailure("Seerr 3.5.2 database has no watchlist table")
         columns = {row[1] for row in db.execute(f'PRAGMA table_info("{table}")')}
         required = {"tmdbId", "mediaType", "title", "ratingKey", "requestedById"}
         missing = required - columns
@@ -237,7 +237,7 @@ def wait_for_server(base_url: str, container_id: str, *,
             pass
         attempt += 1
         if attempt in (25, 55):
-            print("Waiting for Seerr 3.5.0 startup migrations...")
+            print("Waiting for Seerr 3.5.2 startup migrations...")
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             break
