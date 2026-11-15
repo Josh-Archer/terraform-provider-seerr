@@ -89,6 +89,8 @@ jobs:
         run: python3 -m unittest discover -s tests -p test_upstream_watch.py
       - name: Test watchlist CI filter and seeding helpers
         run: python3 -m unittest discover -s tests -p 'test_watchlist_*.py'
+      - name: Test bounded container health diagnostics
+        run: python3 -m unittest discover -s tests -p test_ci_container_health.py
       - name: Test CI Docker image pinning and runner seeding
         run: python3 -m unittest discover -s tests -p test_ci_docker_setup.py
       - name: Test Compose installer environment handling
