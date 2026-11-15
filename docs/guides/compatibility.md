@@ -21,6 +21,8 @@ Pull requests run OpenTofu integration coverage against all three pinned images 
 
 The Seerr `v3.5.2` release OpenAPI specification was compared with `tools/openapi/seerr-api.yml`, and the provider's spec was updated to `v3.5.2` (upstream introduced `WatchlistRequest` and `201` on `POST /watchlist`, which `seerr_watchlist` already satisfies). Upstream `POST /overrideRule/advancedRequest` remains intentionally out of scope as an interactive preview calculation endpoint for user request form UI. Upstream settings additions (`hide_requested` on `seerr_main_settings` and `tags` on `ntfy` in `seerr_notification_agent`) are fully mapped to the provider's resources and data sources.
 
+Seerr `v3.5.2` also hardened `PUT /api/v1/user/{userId}` to return HTTP 403 when an authenticated user attempts to change their own `permissions` bitmask away from its current value. Because API-key authentication acts as the owner account (`user_id = 1`), configuring `seerr_user_permissions` for `user_id = 1` on `v3.5.2+` succeeds when `permissions` matches the owner's stored bitmask (`2` for `Permission.ADMIN` on fresh Seerr instances) and returns HTTP 403 if it differs; non-owner users (`user_id != 1`) remain unrestricted.
+
 Jellyseerr's GitHub repository was consolidated into Seerr after `v2.7.3`. GitHub's redirected `releases/latest` response therefore reports the current Seerr release and must not be interpreted as a new Jellyseerr release. The pinned `fallenbagel/jellyseerr:2.7.3` image is the legacy compatibility baseline.
 
 ### Upstream Feature Mapping & API Dialects
