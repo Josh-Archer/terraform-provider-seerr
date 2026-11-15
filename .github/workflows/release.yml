@@ -329,6 +329,13 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Require signing secrets on upstream repository
+        if: steps.release_state.outputs.published != 'true' && github.repository == 'Josh-Archer/terraform-provider-seerr' && steps.signing.outputs.enabled != 'true'
+        shell: bash
+        run: |
+          echo "::error::Refusing to publish an unsigned release on ${GITHUB_REPOSITORY}: GPG_PRIVATE_KEY and PASSPHRASE secrets are required." >&2
+          exit 1
+
       - name: Import GPG key
         if: steps.release_state.outputs.published != 'true' && steps.signing.outputs.enabled == 'true'
         uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
@@ -336,6 +343,13 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
+
+      - name: Require imported GPG key fingerprint
+        if: steps.release_state.outputs.published != 'true' && github.repository == 'Josh-Archer/terraform-provider-seerr' && steps.import_gpg.outputs.fingerprint == ''
+        shell: bash
+        run: |
+          echo "::error::Refusing to publish release ${RELEASE_TAG}: GPG key import did not yield a signing fingerprint." >&2
+          exit 1
 
       - name: Run GoReleaser (signed)
         if: steps.release_state.outputs.published != 'true' && steps.import_gpg.outputs.fingerprint != ''
@@ -348,8 +362,22 @@ jobs:
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
           GORELEASER_CURRENT_TAG: ${{ env.RELEASE_TAG }}
 
-      - name: Run GoReleaser (unsigned fallback)
-        if: steps.release_state.outputs.published != 'true' && steps.import_gpg.outputs.fingerprint == ''
+      - name: Verify signed checksums on release
+        if: steps.release_state.outputs.published != 'true' && github.repository == 'Josh-Archer/terraform-provider-seerr'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          assets="$(gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" --json assets --jq '.assets[].name')"
+          if ! printf '%s\n' "${assets}" | grep -Eq '_SHA256SUMS\.sig$'; then
+            echo "::error::Release ${RELEASE_TAG} is missing *_SHA256SUMS.sig after GoReleaser execution." >&2
+            exit 1
+          fi
+
+      - name: Run GoReleaser (unsigned fork fallback)
+        if: steps.release_state.outputs.published != 'true' && github.repository != 'Josh-Archer/terraform-provider-seerr' && steps.import_gpg.outputs.fingerprint == ''
         uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
           workdir: source

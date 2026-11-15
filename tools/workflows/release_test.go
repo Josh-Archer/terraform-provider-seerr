@@ -120,3 +120,24 @@ func TestPipelineOnlyChangesDoNotCreateProviderReleases(t *testing.T) {
 		require.False(t, sections[kind], "provider changes must still create releases")
 	}
 }
+
+func TestReleaseWorkflowsFailClosedWithoutSigningKeysOnUpstreamRepo(t *testing.T) {
+	releaseRaw, err := os.ReadFile("../../.github/workflows/release.yml")
+	require.NoError(t, err)
+	releaseContent := string(releaseRaw)
+	require.Contains(t, releaseContent, "Require signing secrets on upstream repository")
+	require.Contains(t, releaseContent, "Require imported GPG key fingerprint")
+	require.Contains(t, releaseContent, "Verify signed checksums on release")
+	require.NotContains(t, releaseContent, "Run GoReleaser (unsigned fallback)")
+
+	prereleaseRaw, err := os.ReadFile("../../.github/workflows/prerelease.yml")
+	require.NoError(t, err)
+	prereleaseContent := string(prereleaseRaw)
+	require.Contains(t, prereleaseContent, "Require signing secrets on upstream repository")
+	require.Contains(t, prereleaseContent, "Require imported GPG key fingerprint")
+	require.NotContains(t, prereleaseContent, "Run GoReleaser prerelease (unsigned fallback)")
+
+	testRaw, err := os.ReadFile("../../.github/workflows/test.yml")
+	require.NoError(t, err)
+	require.Contains(t, string(testRaw), "release --snapshot --clean --skip=sign")
+}
