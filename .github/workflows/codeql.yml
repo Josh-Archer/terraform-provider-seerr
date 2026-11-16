@@ -31,6 +31,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Ensure Go cache paths
+        if: matrix.language == 'go'
+        uses: ./.github/actions/ensure-go-cache
+
       - name: Set up Go
         if: matrix.language == 'go'
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0

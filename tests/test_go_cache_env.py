@@ -10,6 +10,13 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 class GoCacheEnvironmentTests(unittest.TestCase):
+    def test_codeql_bootstraps_cache_before_go_setup_and_extraction(self):
+        workflow = (ROOT / '.github/workflows/codeql.yml').read_text()
+        bootstrap = workflow.index('uses: ./.github/actions/ensure-go-cache')
+        self.assertLess(bootstrap, workflow.index('uses: actions/setup-go@'))
+        self.assertLess(bootstrap, workflow.index('uses: github/codeql-action/init@'))
+        self.assertIn("if: matrix.language == 'go'\n        uses: ./.github/actions/ensure-go-cache", workflow)
+
     def test_opentofu_uses_native_cli_without_node_wrapper(self):
         workflow = (ROOT / '.github/workflows/test.yml').read_text()
         setups = re.findall(r'uses: opentofu/setup-opentofu@[^\n]+\n        with:\n          tofu_version: [^\n]+\n          tofu_wrapper: false', workflow)

@@ -231,15 +231,24 @@ def pull_image_with_verification(
             file=sys.stderr,
             flush=True,
         )
-        completed = subprocess.run(
-            ["docker", "pull", image_ref],
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            check=False,
-            timeout=timeout,
-        )
-        output = (completed.stdout or "").strip()
+        try:
+            completed = subprocess.run(
+                ["docker", "pull", image_ref],
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=False,
+                timeout=timeout,
+            )
+            output = (completed.stdout or "").strip()
+        except subprocess.TimeoutExpired as exc:
+            # subprocess.run kills and waits for the timed-out CLI. Preserve any
+            # integrity evidence before applying the existing bounded retry policy.
+            partial = exc.stdout or ""
+            if isinstance(partial, bytes):
+                partial = partial.decode("utf-8", errors="replace")
+            output = f"{partial.strip()}\ndocker pull timed out after {timeout} seconds".strip()
+            completed = subprocess.CompletedProcess(["docker", "pull", image_ref], 124)
         if completed.returncode == 0:
             return verify_local_image(image_ref, expected_digest=expected_digest)
 
