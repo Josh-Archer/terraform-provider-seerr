@@ -7,7 +7,7 @@ exec 1>&2
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 tests_dir="${script_dir}/../tests"
 local_port="${SEERR_TEST_LOCAL_PORT:-15055}"
-seerr_image="${SEERR_TEST_IMAGE:-seerr/seerr:v3.5.0}"
+seerr_image="${SEERR_TEST_IMAGE:-seerr/seerr:v3.5.2}"
 api_key="${SEERR_BOOTSTRAP_API_KEY:-seerr-ci-api-key}"
 admin_email="${SEERR_TEST_ADMIN_EMAIL:-ci-admin@example.invalid}"
 admin_username="${SEERR_TEST_ADMIN_USERNAME:-ci-admin}"
