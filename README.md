@@ -24,26 +24,18 @@
 
 ## Roadmap
 
-The Next 1–3 milestones tracked in the [roadmap issue](https://github.com/Josh-Archer/terraform-provider-seerr/issues/360) are **complete**: every linked checklist issue is closed and implemented on `main`. Current work is the CI-hardening and docs follow-ups listed below and tracked on [#360](https://github.com/Josh-Archer/terraform-provider-seerr/issues/360) — see that issue for live status.
+Release **v2.4.4** is live on `main`. Both the original Next 1–3 milestones ([#360](https://github.com/Josh-Archer/terraform-provider-seerr/issues/360), closed) and the initial CI/docs hardening follow-ups ([#388](https://github.com/Josh-Archer/terraform-provider-seerr/issues/388), [#389](https://github.com/Josh-Archer/terraform-provider-seerr/issues/389), [#390](https://github.com/Josh-Archer/terraform-provider-seerr/issues/390), [#392](https://github.com/Josh-Archer/terraform-provider-seerr/issues/392), [#393](https://github.com/Josh-Archer/terraform-provider-seerr/issues/393), and [#405](https://github.com/Josh-Archer/terraform-provider-seerr/issues/405)) are **complete**.
 
-| Milestone | Work | Status |
-| :--- | :--- | :--- |
-| **Next 1: Release confidence** | Consumer replay / promotion gate [#351](https://github.com/Josh-Archer/terraform-provider-seerr/issues/351); request/issue lifecycle on Seerr 3.5.0 [#353](https://github.com/Josh-Archer/terraform-provider-seerr/issues/353); registry install CI [#354](https://github.com/Josh-Archer/terraform-provider-seerr/issues/354) (runner-flake follow-up [#387](https://github.com/Josh-Archer/terraform-provider-seerr/issues/387) also fixed and merged); public schema compare [#355](https://github.com/Josh-Archer/terraform-provider-seerr/issues/355). | ✅ Complete |
-| **Next 2: Safe adoption** | Importer secret references [#356](https://github.com/Josh-Archer/terraform-provider-seerr/issues/356); importer discovery / adoption proof [#357](https://github.com/Josh-Archer/terraform-provider-seerr/issues/357). | ✅ Complete |
-| **Next 3: Compatibility maintenance** | Terraform + OpenTofu lifecycle [#358](https://github.com/Josh-Archer/terraform-provider-seerr/issues/358); upstream watch idempotency [#359](https://github.com/Josh-Archer/terraform-provider-seerr/issues/359); upstream compatibility tracker [#314](https://github.com/Josh-Archer/terraform-provider-seerr/issues/314) (reopen decision rests with Josh). | ✅ Complete |
-
-### Current work (open follow-ups)
-
-These follow-ups are still **open**:
-
-- CI hardening: [#388](https://github.com/Josh-Archer/terraform-provider-seerr/issues/388) (CodeQL Go analysis fails — go not on PATH); [#389](https://github.com/Josh-Archer/terraform-provider-seerr/issues/389) (CodeQL actions analysis RAM setting); [#392](https://github.com/Josh-Archer/terraform-provider-seerr/issues/392) (audit uecb-shared workflows for undeclared gh/go dependencies).
-- Docs: [#390](https://github.com/Josh-Archer/terraform-provider-seerr/issues/390) (pin quickstart provider constraints to `~> 2.4`).
-
-The adopt-existing-instance runbook ([#393](https://github.com/Josh-Archer/terraform-provider-seerr/issues/393)) merged in [#401](https://github.com/Josh-Archer/terraform-provider-seerr/pull/401).
+| Phase / Horizon | Focus | Tracked Work | Status |
+| :--- | :--- | :--- | :--- |
+| **Next 1–3** ([#360](https://github.com/Josh-Archer/terraform-provider-seerr/issues/360)) | Release confidence, safe adoption, compatibility maintenance | [#351](https://github.com/Josh-Archer/terraform-provider-seerr/issues/351), [#353](https://github.com/Josh-Archer/terraform-provider-seerr/issues/353)–[#359](https://github.com/Josh-Archer/terraform-provider-seerr/issues/359), [#387](https://github.com/Josh-Archer/terraform-provider-seerr/issues/387), [#393](https://github.com/Josh-Archer/terraform-provider-seerr/issues/393), [#405](https://github.com/Josh-Archer/terraform-provider-seerr/issues/405) | ✅ Complete |
+| **Horizon 1 (Now)** | CI/release hardening & Seerr `v3.5.2` verification | [#406](https://github.com/Josh-Archer/terraform-provider-seerr/issues/406) (`v3.5.2` + watcher reopen/open), [#407](https://github.com/Josh-Archer/terraform-provider-seerr/issues/407) (ruleset/release-please CI alignment post-[#418](https://github.com/Josh-Archer/terraform-provider-seerr/pull/418)), [#408](https://github.com/Josh-Archer/terraform-provider-seerr/issues/408) (CI `golangci-lint`), [#409](https://github.com/Josh-Archer/terraform-provider-seerr/issues/409) (fail-closed signing gate), [#420](https://github.com/Josh-Archer/terraform-provider-seerr/issues/420) (`uecb-shared` Seerr test startup flake), [PR #417](https://github.com/Josh-Archer/terraform-provider-seerr/pull/417) (CodeQL Go cache bootstrap) | 🔄 Active |
+| **Horizon 2 (Next)** | Test coverage, dependency pins & client hygiene | [#421](https://github.com/Josh-Archer/terraform-provider-seerr/issues/421) (unit-test coverage reporting & CRUD edge paths), [#422](https://github.com/Josh-Archer/terraform-provider-seerr/issues/422) (pin `dev/docker-compose.yml` & Dependabot `docker`), [#423](https://github.com/Josh-Archer/terraform-provider-seerr/issues/423) (bound `io.ReadAll` & relocate root `*.ts` snapshots) | 📋 Planned |
+| **Horizon 3 (`v3.0.0` & Consumer Seam)** | Major-version cleanup & homelab single-writer handoff | [#424](https://github.com/Josh-Archer/terraform-provider-seerr/issues/424) (`v3.0.0` deprecation removals & Jellyseerr/Overseerr matrix sunset), plus consumer upgrades & Seerr job retirement in [Josh-Archer/home#4686](https://github.com/Josh-Archer/home/issues/4686) and [Josh-Archer/home#4691](https://github.com/Josh-Archer/home/issues/4691) | 📋 Planned |
 
 ### Completed foundation
 
-Phases 1–14 culminated in `v1.0.0`: core resources and data sources, typed notifications, imports, modules, lifecycle hardening, release automation, contributor tooling, and the [stability policy](docs/guides/stability-and-breaking-changes.md). That history is the foundation for this roadmap; current compatibility evidence is documented in the [compatibility guide](docs/guides/compatibility.md).
+Phases 1–14 culminated in `v1.0.0`, followed by Next 1–3 (`v2.4.x`): 50 resources, 69 data sources, typed notifications, bulk import CLI, live compatibility matrix, release automation, and the [stability policy](docs/guides/stability-and-breaking-changes.md). Current compatibility evidence is documented in the [compatibility guide](docs/guides/compatibility.md).
 
 New feature proposals should identify a concrete workflow, a verified upstream API, import/lifecycle behavior, and live acceptance criteria. Use [GitHub Discussion #161](https://github.com/Josh-Archer/terraform-provider-seerr/discussions/161) for proposals and priority feedback.
 
