@@ -450,5 +450,42 @@ class RunnerSeedingTests(unittest.TestCase):
                 self.assertEqual(kwargs.get("timeout"), h.DOCKER_IO_TIMEOUT_SECONDS)
 
 
+
+
+class PullTimeoutRegressionTests(unittest.TestCase):
+    def test_timeout_retries_then_verifies_success(self):
+        with patch.object(h.subprocess, 'run', side_effect=[subprocess.TimeoutExpired(['docker'], 300, output=b'waiting'), subprocess.CompletedProcess([], 0, stdout='pulled')]) as run, patch.object(h.time, 'sleep') as sleep, patch.object(h, 'verify_local_image', return_value='verified') as verify:
+            self.assertEqual(h.pull_image_with_verification('example:tag'), 'verified')
+            self.assertEqual(run.call_count, 2)
+            self.assertTrue(all(c.kwargs['timeout'] == 300 for c in run.call_args_list))
+            sleep.assert_called_once_with(2.0)
+            verify.assert_called_once_with('example:tag', expected_digest=None)
+
+    def test_repeated_timeouts_are_bounded_and_do_not_verify(self):
+        with patch.object(h.subprocess, 'run', side_effect=subprocess.TimeoutExpired(['docker'], 300)) as run, patch.object(h.time, 'sleep') as sleep, patch.object(h, 'verify_local_image') as verify:
+            with self.assertRaisesRegex(h.DockerCIError, 'after 3 attempt'):
+                h.pull_image_with_verification('example:tag')
+            self.assertEqual(run.call_count, 3)
+            self.assertEqual(sleep.call_count, 2)
+            verify.assert_not_called()
+
+    def test_timeout_integrity_output_never_retries(self):
+        for output in [b'checksum mismatch', 'digest mismatch', b'verification failed\xff']:
+            with self.subTest(output=output), patch.object(h.subprocess, 'run', side_effect=subprocess.TimeoutExpired(['docker'], 300, output=output)) as run, patch.object(h.time, 'sleep') as sleep, patch.object(h, 'verify_local_image') as verify:
+                with self.assertRaises(h.DockerCIError) as error:
+                    h.pull_image_with_verification('example:tag')
+                self.assertTrue(error.exception.checksum_mismatch)
+                self.assertEqual(run.call_count, 1)
+                sleep.assert_not_called()
+                verify.assert_not_called()
+
+    def test_verification_failure_after_timeout_is_not_retried(self):
+        with patch.object(h.subprocess, 'run', side_effect=[subprocess.TimeoutExpired(['docker'], 300), subprocess.CompletedProcess([], 0, stdout='pulled')]) as run, patch.object(h.time, 'sleep'), patch.object(h, 'verify_local_image', side_effect=h.DockerCIError('bad digest', checksum_mismatch=True)):
+            with self.assertRaises(h.DockerCIError) as error:
+                h.pull_image_with_verification('example@sha256:' + 'a' * 64)
+            self.assertTrue(error.exception.checksum_mismatch)
+            self.assertEqual(run.call_count, 2)
+
+
 if __name__ == "__main__":
     unittest.main()

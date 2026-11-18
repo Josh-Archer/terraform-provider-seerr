@@ -171,11 +171,56 @@ def reconcile_comment(body: str) -> str:
     return "created"
 
 
+def reconcile_issue_state(status: ReleaseStatus) -> str:
+    raw_issue = run_gh(["api", f"repos/{REPOSITORY}/issues/{TRACKING_ISSUE}"])
+    try:
+        issue = json.loads(raw_issue)
+        state = issue.get("state") if isinstance(issue, dict) else None
+    except json.JSONDecodeError as exc:
+        raise UpstreamCheckError(f"cannot read issue #{TRACKING_ISSUE}: {exc}") from exc
+
+    if state not in {"open", "closed"}:
+        raise UpstreamCheckError(f"issue #{TRACKING_ISSUE} returned unexpected state {state!r}")
+
+    if status.needs_verification and state == "closed":
+        run_gh(
+            [
+                "api",
+                f"repos/{REPOSITORY}/issues/{TRACKING_ISSUE}",
+                "-X",
+                "PATCH",
+                "-f",
+                "state=open",
+                "-f",
+                "state_reason=reopened",
+            ]
+        )
+        return "reopened"
+
+    if not status.needs_verification and state == "open":
+        run_gh(
+            [
+                "api",
+                f"repos/{REPOSITORY}/issues/{TRACKING_ISSUE}",
+                "-X",
+                "PATCH",
+                "-f",
+                "state=closed",
+                "-f",
+                "state_reason=completed",
+            ]
+        )
+        return "closed"
+
+    return "unchanged"
+
+
 def main() -> None:
     status = check_releases()
     body = render_status(status)
-    result = reconcile_comment(body)
-    print(f"Upstream status {result} on issue #{TRACKING_ISSUE}.")
+    comment_result = reconcile_comment(body)
+    issue_result = reconcile_issue_state(status)
+    print(f"Upstream status comment {comment_result}; issue #{TRACKING_ISSUE} {issue_result}.")
 
 
 if __name__ == "__main__":

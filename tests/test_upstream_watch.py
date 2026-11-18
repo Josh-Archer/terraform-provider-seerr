@@ -103,6 +103,57 @@ class UpstreamWatchTests(unittest.TestCase):
             upstream_watch.main()
         self.assertEqual(run.call_count, 1)
 
+    @patch.object(upstream_watch, "run_gh")
+    def test_reconcile_issue_state_reopens_closed_tracker_on_drift(self, run_gh):
+        run_gh.side_effect = [json.dumps({"state": "closed"}), "{}"]
+        result = upstream_watch.reconcile_issue_state(self.status(seerr="v3.5.2"))
+        self.assertEqual(result, "reopened")
+        self.assertEqual(
+            run_gh.call_args_list[1].args[0],
+            [
+                "api",
+                f"repos/{upstream_watch.REPOSITORY}/issues/{upstream_watch.TRACKING_ISSUE}",
+                "-X",
+                "PATCH",
+                "-f",
+                "state=open",
+                "-f",
+                "state_reason=reopened",
+            ],
+        )
+
+    @patch.object(upstream_watch, "run_gh")
+    def test_reconcile_issue_state_closes_open_tracker_when_current(self, run_gh):
+        run_gh.side_effect = [json.dumps({"state": "open"}), "{}"]
+        result = upstream_watch.reconcile_issue_state(self.status())
+        self.assertEqual(result, "closed")
+        self.assertEqual(
+            run_gh.call_args_list[1].args[0],
+            [
+                "api",
+                f"repos/{upstream_watch.REPOSITORY}/issues/{upstream_watch.TRACKING_ISSUE}",
+                "-X",
+                "PATCH",
+                "-f",
+                "state=closed",
+                "-f",
+                "state_reason=completed",
+            ],
+        )
+
+    @patch.object(upstream_watch, "run_gh")
+    def test_reconcile_issue_state_leaves_matching_state_unchanged_and_rejects_bad_state(self, run_gh):
+        run_gh.return_value = json.dumps({"state": "open"})
+        self.assertEqual(upstream_watch.reconcile_issue_state(self.status(seerr="v3.5.2")), "unchanged")
+        self.assertEqual(run_gh.call_count, 1)
+
+        run_gh.return_value = json.dumps({"state": "closed"})
+        self.assertEqual(upstream_watch.reconcile_issue_state(self.status()), "unchanged")
+
+        run_gh.return_value = json.dumps({"state": "invalid"})
+        with self.assertRaises(upstream_watch.UpstreamCheckError):
+            upstream_watch.reconcile_issue_state(self.status())
+
 
 if __name__ == "__main__":
     unittest.main()
