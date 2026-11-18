@@ -51,10 +51,12 @@ resource "seerr_main_settings" "main" {
   discover_region    = "US"
 }
 
+# Seerr v3.5.2+ forbids self-permission modifications (PUT /api/v1/user/1 returns
+# HTTP 403 when the requested bitmask differs from the owner's stored value).
+# Seerr initializes user 1 with Permission.ADMIN (2), which already implies
+# MANAGE_USERS and MANAGE_REQUESTS.
 data "seerr_permission_set" "admin" {
-  admin           = true
-  manage_users    = true
-  manage_requests = true
+  admin = true
 }
 
 data "seerr_permission_set" "standard_user" {
@@ -172,7 +174,7 @@ output "seerr_service_status" {
 }
 
 output "seerr_admin_permissions" {
-  description = "Bitmask composed by seerr_permission_set for the admin user (expected 26)."
+  description = "Bitmask composed by seerr_permission_set for the admin user (expected 2)."
   value       = data.seerr_permission_set.admin.permissions
 }
 

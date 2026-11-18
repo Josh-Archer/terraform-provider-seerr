@@ -311,7 +311,7 @@ The provider maintains continuous compatibility tracking with upstream media man
 
 | Target | Supported Versions | Tested CI Baseline |
 | :--- | :--- | :--- |
-| **Seerr (Unified)** | `v3.0.0` - `v3.5.0` | `seerr/seerr:v3.5.0` |
+| **Seerr (Unified)** | `v3.0.0` - `v3.5.2` | `seerr/seerr:v3.5.2` |
 | **Jellyseerr (legacy)** | `v1.7.0` - `v2.7.3` | `fallenbagel/jellyseerr:2.7.3` |
 | **Overseerr** | `v1.33.2` - `v1.35.0` | `sctx/overseerr:1.35.0` |
 | **OpenTofu** | `>= 1.6.0` (tested `1.8.x` - `1.11.x`) | Protocol 6.0 |

@@ -138,6 +138,12 @@ jobs:
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
+      - name: Require signing secrets on upstream repository
+        if: steps.skip.outputs.skip != 'true' && github.repository == 'Josh-Archer/terraform-provider-seerr' && steps.signing.outputs.enabled != 'true'
+        shell: bash
+        run: |
+          echo "::error::Refusing to publish an unsigned prerelease on ${GITHUB_REPOSITORY}: GPG_PRIVATE_KEY and PASSPHRASE secrets are required." >&2
+          exit 1
       - name: Import GPG key
         if: steps.skip.outputs.skip != 'true' && steps.signing.outputs.enabled == 'true'
         uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
@@ -145,6 +151,12 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
+      - name: Require imported GPG key fingerprint
+        if: steps.skip.outputs.skip != 'true' && github.repository == 'Josh-Archer/terraform-provider-seerr' && steps.import_gpg.outputs.fingerprint == ''
+        shell: bash
+        run: |
+          echo "::error::Refusing to publish prerelease ${RC_TAG}: GPG key import did not yield a signing fingerprint." >&2
+          exit 1
       - name: Run GoReleaser prerelease (signed)
         if: steps.skip.outputs.skip != 'true' && steps.import_gpg.outputs.fingerprint != ''
         uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
@@ -155,8 +167,8 @@ jobs:
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
           GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.rc_tag }}
 
-      - name: Run GoReleaser prerelease (unsigned fallback)
-        if: steps.skip.outputs.skip != 'true' && steps.import_gpg.outputs.fingerprint == ''
+      - name: Run GoReleaser prerelease (unsigned fork fallback)
+        if: steps.skip.outputs.skip != 'true' && github.repository != 'Josh-Archer/terraform-provider-seerr' && steps.import_gpg.outputs.fingerprint == ''
         uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
           args: release --clean --skip=sign
