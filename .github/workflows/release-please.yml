@@ -105,6 +105,32 @@ jobs:
             gh pr close "${pr_number}" --delete-branch || true
           fi
 
+      - name: Enable auto-merge on the release PR
+        if: ${{ steps.release.outputs.releases_created != 'true' && steps.gate.outputs.skip_pull_request != 'true' }}
+        env:
+          # Must be the PAT, not GITHUB_TOKEN: merges made by GITHUB_TOKEN do
+          # not trigger downstream workflows (release.yml, prerelease.yml).
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pr_number="$(gh pr list --head "release-please--branches--main--components--terraform-provider-seerr" --state open --json number --jq '.[0].number' 2>/dev/null || true)"
+          if [[ -z "${pr_number}" ]]; then
+            echo "No open release PR; nothing to auto-merge."
+            exit 0
+          fi
+          # --auto only works while required checks are still pending. Once the
+          # PR is already green ("clean"), GitHub rejects --auto, so merge it
+          # directly instead.
+          state="$(gh pr view "${pr_number}" --json mergeStateStatus --jq .mergeStateStatus)"
+          if [[ "${state}" == "CLEAN" ]]; then
+            echo "Release PR #${pr_number} is clean; merging now."
+            gh pr merge "${pr_number}" --squash
+          else
+            echo "Release PR #${pr_number} is ${state}; enabling squash auto-merge."
+            gh pr merge "${pr_number}" --auto --squash
+          fi
+
       - name: Guard candidate release PR against empty major bumps
         if: ${{ steps.release.outputs.releases_created != 'true' }}
         env:

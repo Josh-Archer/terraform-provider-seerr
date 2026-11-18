@@ -39,7 +39,14 @@ func (r *UserPermissionsResource) Metadata(_ context.Context, req resource.Metad
 
 func (r *UserPermissionsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manage Seerr user permissions via /api/v1/user/{userId}.",
+		MarkdownDescription: "Manage Seerr user permissions via `/api/v1/user/{userId}`.\n\n" +
+			"Starting in Seerr `v3.5.2`, `PUT /api/v1/user/{userId}` rejects self-permission modifications " +
+			"(`403 You do not have permission to modify this user`) when the requested `permissions` bitmask " +
+			"differs from the target user's stored permissions and the authenticated caller is that user. " +
+			"Because API-key authentication acts as the owner user (`user_id = 1`), targeting `user_id = 1` " +
+			"on Seerr `v3.5.2+` succeeds only when `permissions` matches the owner's stored value " +
+			"(`2` for `Permission.ADMIN` on fresh Seerr instances). Non-owner users (`user_id != 1`) can be " +
+			"updated normally.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
