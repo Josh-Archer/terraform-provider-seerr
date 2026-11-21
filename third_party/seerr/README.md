@@ -1,6 +1,15 @@
 # Upstream Seerr Reference Snapshots
 
-These TypeScript files are reference snapshots copied from upstream Seerr/Overseerr (`seerr-team/seerr`) to preserve API permission masks and user/settings type definitions:
+These files match [Seerr commit ff4ab21](https://github.com/seerr-team/seerr/tree/ff4ab21a9e664082feb954c6f482b512475f1fa6)
+after normalizing text encoding, line endings, and trailing whitespace.
 
-- `seerr_permissions.ts` — source input for `go generate ./...` (`tools/gen_permissions.go` -> `internal/provider/permissions_gen.go`).
-- `UserSettings.ts`, `userInterfaces.ts`, `seerr_userSettingsInterfaces.ts`, `seerr_user_routes.ts`, `seerr_usersettings_routes.ts` — type/route reference snapshots retained alongside OpenAPI specs.
+| Snapshot | Upstream path |
+| --- | --- |
+| `UserSettings.ts` | `server/entity/UserSettings.ts` |
+| `userInterfaces.ts` | `server/interfaces/api/userInterfaces.ts` |
+| `seerr_permissions.ts` | `server/lib/permissions.ts` |
+| `seerr_userSettingsInterfaces.ts` | `server/interfaces/api/userSettingsInterfaces.ts` |
+| `seerr_usersettings_routes.ts` | `server/routes/user/usersettings.ts` |
+
+`tools/gen_permissions.go` reads `seerr_permissions.ts` when running
+`go generate ./...` to update `internal/provider/permissions_gen.go`.
