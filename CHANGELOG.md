@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.6](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.5...v2.4.6) (2026-11-21)
+
+
+### Miscellaneous Chores
+
+* **docker:** pin dev compose image and track compose in Dependabot ([#426](https://github.com/Josh-Archer/terraform-provider-seerr/issues/426)) ([2124185](https://github.com/Josh-Archer/terraform-provider-seerr/commit/2124185504769dcba60ccfbead8c8001039bb3ff))
+
+
+### Code Refactoring
+
+* **client:** bound HTTP response body reads and organize TS fixtures ([#428](https://github.com/Josh-Archer/terraform-provider-seerr/issues/428)) ([e34a255](https://github.com/Josh-Archer/terraform-provider-seerr/commit/e34a2551e7a216b0902a4a855b88d9f3d03529cd))
+
 ## [2.4.5](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.4...v2.4.5) (2026-11-21)
 
 
