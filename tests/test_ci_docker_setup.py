@@ -160,6 +160,32 @@ class ComposeAndScriptRegressionTests(unittest.TestCase):
 
 
 class DockerPullAndCacheTests(unittest.TestCase):
+    def test_mock_python_runtime_retries_timeout_without_network_or_pull(self):
+        ref = h.LOCAL_CACHED_MOCK_PYTHON_TAG
+        timeout = subprocess.TimeoutExpired("docker run", h.DOCKER_IO_TIMEOUT_SECONDS)
+        with (
+            patch.object(h, "run_cmd", side_effect=[timeout, None]) as mock_run,
+            patch.object(h.time, "sleep") as mock_sleep,
+        ):
+            h.verify_mock_python_runtime(ref)
+
+        self.assertEqual(mock_run.call_count, 2)
+        for call in mock_run.call_args_list:
+            self.assertIn("--network=none", call.args[0])
+            self.assertIn("--pull=never", call.args[0])
+            self.assertEqual(call.kwargs["timeout"], h.DOCKER_IO_TIMEOUT_SECONDS)
+        mock_sleep.assert_called_once_with(h.DEFAULT_RETRY_DELAY_SECONDS)
+
+    def test_mock_python_runtime_fails_after_second_timeout(self):
+        timeout = subprocess.TimeoutExpired("docker run", h.DOCKER_IO_TIMEOUT_SECONDS)
+        with (
+            patch.object(h, "run_cmd", side_effect=timeout) as mock_run,
+            patch.object(h.time, "sleep"),
+        ):
+            with self.assertRaisesRegex(h.DockerCIError, "timed out.*on both attempts"):
+                h.verify_mock_python_runtime(h.LOCAL_CACHED_MOCK_PYTHON_TAG)
+        self.assertEqual(mock_run.call_count, 2)
+
     def test_pull_retries_transient_short_read_and_verifies_digest(self):
         attempts = [
             subprocess.CompletedProcess(

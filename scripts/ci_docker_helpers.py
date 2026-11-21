@@ -197,19 +197,27 @@ def verify_local_image(image_ref: str, *, expected_digest: str | None = None) ->
 
 def verify_mock_python_runtime(image_ref: str) -> None:
     """Verify the mock Python image can run the stdlib HTTP server used by tests/fixtures."""
-    run_cmd(
-        [
-            "docker",
-            "run",
-            "--rm",
-            image_ref,
-            "python3",
-            "-c",
-            "import http.server, json, os; print('ok')",
-        ],
-        capture=True,
-        timeout=DOCKER_IO_TIMEOUT_SECONDS,
-    )
+    command = [
+        "docker",
+        "run",
+        "--rm",
+        "--pull=never",
+        "--network=none",
+        image_ref,
+        "python3",
+        "-c",
+        "import http.server, json, os; print('ok')",
+    ]
+    for attempt in range(1, 3):
+        try:
+            run_cmd(command, capture=True, timeout=DOCKER_IO_TIMEOUT_SECONDS)
+            return
+        except subprocess.TimeoutExpired as error:
+            message = f"Mock Python runtime check for {image_ref} timed out after {error.timeout}s"
+            if attempt == 2:
+                raise DockerCIError(f"{message} on both attempts") from error
+            print(f"{message}; retrying once", file=sys.stderr, flush=True)
+            time.sleep(DEFAULT_RETRY_DELAY_SECONDS)
 
 
 def pull_image_with_verification(
