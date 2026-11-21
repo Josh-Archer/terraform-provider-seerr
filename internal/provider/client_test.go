@@ -359,3 +359,37 @@ func TestClientLockEndpoint(t *testing.T) {
 		t.Fatalf("expected count 50, got %d (mutex race detected)", count)
 	}
 }
+
+func TestReadResponseBodyRespectsLimit(t *testing.T) {
+	body, err := readResponseBody(strings.NewReader("abcd"), 4)
+	if err != nil {
+		t.Fatalf("unexpected error reading exact limit: %v", err)
+	}
+	if string(body) != "abcd" {
+		t.Fatalf("expected abcd, got %q", string(body))
+	}
+
+	if _, err := readResponseBody(strings.NewReader("abcde"), 4); err == nil {
+		t.Fatalf("expected error when response exceeds safety limit")
+	}
+}
+
+func TestClientRequestRejectsOversizedResponseBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.Copy(w, io.LimitReader(strings.NewReader(strings.Repeat("x", maxResponseBodyBytes+1)), int64(maxResponseBodyBytes+1)))
+	}))
+	defer srv.Close()
+
+	base, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client := NewClient(base, "abc123", "test-agent", false, 45*time.Second, 0, 0)
+	if _, err := client.Request(context.Background(), "GET", "/api/v1/status", "", nil); err == nil {
+		t.Fatalf("expected error for oversized HTTP response body")
+	} else if !strings.Contains(err.Error(), "exceeded") {
+		t.Fatalf("expected safety limit error, got: %v", err)
+	}
+}
