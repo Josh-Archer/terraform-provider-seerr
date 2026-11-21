@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.5](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.4...v2.4.5) (2026-11-21)
+
+
+### Bug Fixes
+
+* **ci:** auto-merge the release-please PR ([#435](https://github.com/Josh-Archer/terraform-provider-seerr/issues/435)) ([320c433](https://github.com/Josh-Archer/terraform-provider-seerr/commit/320c433baf1b878376e6d6acf7e2d1e080fdae5e))
+* **ci:** bootstrap CodeQL Go cache on headless runners ([#417](https://github.com/Josh-Archer/terraform-provider-seerr/issues/417)) ([bcd5094](https://github.com/Josh-Archer/terraform-provider-seerr/commit/bcd5094eada5a8bb936a4f6139a74c5b64202ea1))
+* **ci:** bound pull-timeout retries and capture safe startup health ([#433](https://github.com/Josh-Archer/terraform-provider-seerr/issues/433)) ([4f1bead](https://github.com/Josh-Archer/terraform-provider-seerr/commit/4f1bead7b3084d302f2bae2c1f9dee5e4a111cc4))
+
+
+### Documentation
+
+* refresh roadmap status for v2.4.4 and post-[#360](https://github.com/Josh-Archer/terraform-provider-seerr/issues/360) backlog ([#425](https://github.com/Josh-Archer/terraform-provider-seerr/issues/425)) ([b345eb5](https://github.com/Josh-Archer/terraform-provider-seerr/commit/b345eb546c8d3d2d42015055b5be000c65da6114))
+
+
+### Tests
+
+* cover job schedule read state and error paths offline ([#432](https://github.com/Josh-Archer/terraform-provider-seerr/issues/432)) ([c0e0082](https://github.com/Josh-Archer/terraform-provider-seerr/commit/c0e00829d5c3ce0958297b77c27df0f3f729b3c1))
+* exercise backup settings data source Read offline ([#434](https://github.com/Josh-Archer/terraform-provider-seerr/issues/434)) ([2a0dec4](https://github.com/Josh-Archer/terraform-provider-seerr/commit/2a0dec455312bdc674898ab3a578cbe19e5085f9))
+* publish offline unit coverage and exercise about read errors ([#431](https://github.com/Josh-Archer/terraform-provider-seerr/issues/431)) ([debc78a](https://github.com/Josh-Archer/terraform-provider-seerr/commit/debc78a61e91c1d43944ef7554a0860f1cdebac8))
+
 ## [2.4.4](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.3...v2.4.4) (2026-11-14)
 
 
