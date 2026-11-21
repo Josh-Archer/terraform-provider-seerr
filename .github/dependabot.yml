@@ -27,6 +27,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # The mock Python image digest is pinned in scripts/ci_docker_helpers.py
+      # and the ensure-mock-python-image cache key; bump them together by hand.
+      - dependency-name: "library/python"
     groups:
       docker-compose:
         patterns:
