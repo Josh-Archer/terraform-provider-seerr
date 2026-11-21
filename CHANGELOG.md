@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.7](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.6...v2.4.7) (2026-11-21)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump actions/setup-go ([#438](https://github.com/Josh-Archer/terraform-provider-seerr/issues/438)) ([d0f06e5](https://github.com/Josh-Archer/terraform-provider-seerr/commit/d0f06e567f1be0b9707402a658ff1e1e51128347))
+* **deps:** bump the docker-compose group across 2 directories with 2 updates ([#437](https://github.com/Josh-Archer/terraform-provider-seerr/issues/437)) ([664ad9b](https://github.com/Josh-Archer/terraform-provider-seerr/commit/664ad9b28eb3a64f8993c08e5e1ea46fc0abea17))
+
 ## [2.4.6](https://github.com/Josh-Archer/terraform-provider-seerr/compare/v2.4.5...v2.4.6) (2026-11-21)
 
 
