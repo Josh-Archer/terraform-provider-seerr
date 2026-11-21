@@ -31,9 +31,9 @@ data "seerr_permission_set" "test" {
 }
 
 func TestPermissionSet_Consistency(t *testing.T) {
-	content, err := os.ReadFile("../../seerr_permissions.ts")
+	content, err := os.ReadFile("../../third_party/seerr/seerr_permissions.ts")
 	if err != nil {
-		t.Fatalf("failed to read seerr_permissions.ts: %v", err)
+		t.Fatalf("failed to read third_party/seerr/seerr_permissions.ts: %v", err)
 	}
 
 	contentStr := string(content)

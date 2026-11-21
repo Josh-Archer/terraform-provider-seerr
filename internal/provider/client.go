@@ -18,6 +18,8 @@ import (
 	"time"
 )
 
+const maxResponseBodyBytes = 10 << 20 // 10 MiB
+
 type APIClient struct {
 	baseURL       *url.URL
 	userAgent     string
@@ -245,7 +247,7 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 			}
 			return nil, err
 		}
-		respBody, err := io.ReadAll(res.Body)
+		respBody, err := readResponseBody(res.Body, maxResponseBodyBytes)
 		res.Body.Close()
 		if err != nil {
 			return nil, err
@@ -267,6 +269,20 @@ func (c *APIClient) Request(ctx context.Context, method, path string, body strin
 	}
 
 	return nil, lastErr
+}
+
+func readResponseBody(body io.Reader, maxBytes int64) ([]byte, error) {
+	if maxBytes <= 0 {
+		return nil, fmt.Errorf("invalid max response body limit %d", maxBytes)
+	}
+	data, err := io.ReadAll(io.LimitReader(body, maxBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > maxBytes {
+		return nil, fmt.Errorf("response body exceeded %d byte limit", maxBytes)
+	}
+	return data, nil
 }
 
 func shouldRetryMethod(method string) bool {
