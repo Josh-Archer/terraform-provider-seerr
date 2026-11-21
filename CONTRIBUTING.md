@@ -103,11 +103,21 @@ go run ./tools/openapi diff
 ```
 
 ### Local Live Testing Target
-You can launch a local Jellyseerr instance using Docker Compose:
+You can launch a local Seerr instance using Docker Compose:
 ```bash
 docker compose -f dev/docker-compose.yml up -d
 ```
 Access the server at `http://localhost:5055` to test real provider configurations.
+
+If you reuse a Jellyseerr development volume, stop the service and back up its
+config before the first Seerr startup. If the volume is owned by root, update its
+ownership so Seerr can read and write it as UID 1000:
+
+```bash
+docker compose -f dev/docker-compose.yml stop seerr
+docker compose -f dev/docker-compose.yml run --rm --no-deps --user 0 \
+  --entrypoint chown seerr -R 1000:1000 /app/config
+```
 
 ### Consumer Replay
 

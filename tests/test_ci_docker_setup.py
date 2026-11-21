@@ -124,6 +124,16 @@ class ComposeAndScriptRegressionTests(unittest.TestCase):
         self.assertEqual(validate_compose_images(compose_text), [])
         self.assertIn(h.PINNED_MOCK_PYTHON_DIGEST, compose_text)
 
+    def test_dev_compose_pins_image_and_dependabot_tracks_compose(self):
+        dev_compose = (ROOT / "dev" / "docker-compose.yml").read_text(encoding="utf-8")
+        self.assertNotIn(":latest", dev_compose)
+        self.assertIn("ghcr.io/seerr-team/seerr:", dev_compose)
+
+        dependabot = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
+        self.assertIn("package-ecosystem: docker-compose", dependabot)
+        self.assertIn('"/dev"', dependabot)
+        self.assertIn('"/tests"', dependabot)
+
     def test_compose_validator_rejects_unpinned_python_alpine(self):
         bad_plain = "services:\n  plex-mock:\n    image: python:3.12-alpine\n"
         self.assertTrue(validate_compose_images(bad_plain))
@@ -150,6 +160,32 @@ class ComposeAndScriptRegressionTests(unittest.TestCase):
 
 
 class DockerPullAndCacheTests(unittest.TestCase):
+    def test_mock_python_runtime_retries_timeout_without_network_or_pull(self):
+        ref = h.LOCAL_CACHED_MOCK_PYTHON_TAG
+        timeout = subprocess.TimeoutExpired("docker run", h.DOCKER_IO_TIMEOUT_SECONDS)
+        with (
+            patch.object(h, "run_cmd", side_effect=[timeout, None]) as mock_run,
+            patch.object(h.time, "sleep") as mock_sleep,
+        ):
+            h.verify_mock_python_runtime(ref)
+
+        self.assertEqual(mock_run.call_count, 2)
+        for call in mock_run.call_args_list:
+            self.assertIn("--network=none", call.args[0])
+            self.assertIn("--pull=never", call.args[0])
+            self.assertEqual(call.kwargs["timeout"], h.DOCKER_IO_TIMEOUT_SECONDS)
+        mock_sleep.assert_called_once_with(h.DEFAULT_RETRY_DELAY_SECONDS)
+
+    def test_mock_python_runtime_fails_after_second_timeout(self):
+        timeout = subprocess.TimeoutExpired("docker run", h.DOCKER_IO_TIMEOUT_SECONDS)
+        with (
+            patch.object(h, "run_cmd", side_effect=timeout) as mock_run,
+            patch.object(h.time, "sleep"),
+        ):
+            with self.assertRaisesRegex(h.DockerCIError, "timed out.*on both attempts"):
+                h.verify_mock_python_runtime(h.LOCAL_CACHED_MOCK_PYTHON_TAG)
+        self.assertEqual(mock_run.call_count, 2)
+
     def test_pull_retries_transient_short_read_and_verifies_digest(self):
         attempts = [
             subprocess.CompletedProcess(
