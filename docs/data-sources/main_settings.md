@@ -26,6 +26,7 @@ data "seerr_main_settings" "example" {
 - `application_url` (String) The application URL.
 - `cache_images` (Boolean) Whether Seerr caches proxied images.
 - `csrf_protection` (Boolean, Deprecated) Whether CSRF protection is enabled.
+- `default_permissions` (Number) Numeric permissions bitmask applied to new users. Combine flags with the `seerr_permission_set` data source. Matches the Seerr `defaultPermissions` setting.
 - `discover_region` (String) The Discover region used by Seerr.
 - `enable_report_an_issue` (Boolean, Deprecated) Whether the 'Report an Issue' feature is enabled.
 - `hide_available` (Boolean) Whether to hide available media.
@@ -48,3 +49,4 @@ data "seerr_main_settings" "example" {
 - `status_code` (Number) HTTP status code.
 - `streaming_region` (String) The streaming region used by Seerr.
 - `trust_proxy` (Boolean, Deprecated) Whether to trust the proxy.
+- `version_check` (Boolean) Whether Seerr checks for newer application versions. Matches the Seerr `versionCheck` setting.

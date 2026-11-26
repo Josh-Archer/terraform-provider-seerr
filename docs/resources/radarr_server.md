@@ -18,6 +18,7 @@ resource "seerr_radarr_server" "example" {
   hostname           = "radarr.local"
   port               = 7878
   api_key            = "your-radarr-api-key"
+  external_url       = "http://radarr.example.com"
   quality_profile_id = 1
   active_directory   = "/movies"
   is_default         = true
@@ -37,6 +38,7 @@ resource "seerr_radarr_server" "example" {
 
 - `base_url` (String)
 - `enable_scan` (Boolean)
+- `external_url` (String) Public URL for this Radarr server, used in links shown to users. Matches the Seerr `externalUrl` setting. This is separate from `base_url`, which is the reverse-proxy path used to connect to Radarr.
 - `extra_payload_json` (String)
 - `hostname` (String)
 - `is_4k` (Boolean)

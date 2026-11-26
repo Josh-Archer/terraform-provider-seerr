@@ -36,6 +36,8 @@ type MainSettingsDataSourceModel struct {
 	MediaServerLogin      types.Bool   `tfsdk:"media_server_login"`
 	NewPlexLogin          types.Bool   `tfsdk:"new_plex_login"`
 	PlexLogin             types.Bool   `tfsdk:"plex_login"`
+	DefaultPermissions    types.Int64  `tfsdk:"default_permissions"`
+	VersionCheck          types.Bool   `tfsdk:"version_check"`
 	MovieRequestsEnabled  types.Bool   `tfsdk:"movie_requests_enabled"`
 	SeriesRequestsEnabled types.Bool   `tfsdk:"series_requests_enabled"`
 	EnableReportAnIssue   types.Bool   `tfsdk:"enable_report_an_issue"`
@@ -129,6 +131,14 @@ func (d *MainSettingsDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 			},
 			"new_plex_login": schema.BoolAttribute{
 				MarkdownDescription: "Whether the new Plex login is enabled.",
+				Computed:            true,
+			},
+			"default_permissions": schema.Int64Attribute{
+				MarkdownDescription: "Numeric permissions bitmask applied to new users. Combine flags with the `seerr_permission_set` data source. Matches the Seerr `defaultPermissions` setting.",
+				Computed:            true,
+			},
+			"version_check": schema.BoolAttribute{
+				MarkdownDescription: "Whether Seerr checks for newer application versions. Matches the Seerr `versionCheck` setting.",
 				Computed:            true,
 			},
 			"plex_login": schema.BoolAttribute{
@@ -231,6 +241,8 @@ func (d *MainSettingsDataSource) Read(ctx context.Context, req datasource.ReadRe
 	data.MediaServerLogin = values.MediaServerLogin
 	data.NewPlexLogin = values.NewPlexLogin
 	data.PlexLogin = values.PlexLogin
+	data.DefaultPermissions = values.DefaultPermissions
+	data.VersionCheck = values.VersionCheck
 	data.MovieRequestsEnabled = values.MovieRequestsEnabled
 	data.SeriesRequestsEnabled = values.SeriesRequestsEnabled
 	data.EnableReportAnIssue = values.EnableReportAnIssue

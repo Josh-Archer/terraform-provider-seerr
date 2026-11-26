@@ -18,6 +18,7 @@ resource "seerr_sonarr_server" "example" {
   hostname           = "sonarr.local"
   port               = 8989
   api_key            = "your-sonarr-api-key"
+  external_url       = "http://sonarr.example.com"
   quality_profile_id = 1
   active_directory   = "/tv"
   is_default         = true
@@ -40,6 +41,7 @@ resource "seerr_sonarr_server" "example" {
 - `base_url` (String)
 - `enable_scan` (Boolean)
 - `enable_season_folders` (Boolean)
+- `external_url` (String) Public URL for this Sonarr server, used in links shown to users. Matches the Seerr `externalUrl` setting. This is separate from `base_url`, which is the reverse-proxy path used to connect to Sonarr.
 - `extra_payload_json` (String)
 - `hostname` (String)
 - `is_4k` (Boolean)

@@ -30,6 +30,7 @@ data "seerr_radarr_server" "example" {
 - `api_key` (String, Sensitive) The Radarr API key reported by Seerr.
 - `base_url` (String) The Radarr base URL reported by Seerr.
 - `enable_scan` (Boolean) Whether scan is enabled for the Radarr server.
+- `external_url` (String) Public URL for this Radarr server, used in links shown to users. Matches the Seerr `externalUrl` setting. This is separate from `base_url`, which is the reverse-proxy path used to connect to Radarr.
 - `hostname` (String) The Radarr hostname reported by Seerr.
 - `id` (String) The ID of the matched Radarr server.
 - `is_4k` (Boolean) Whether the Radarr server is configured for 4K.

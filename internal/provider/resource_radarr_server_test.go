@@ -10,7 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
 // TestReadRadarrStateFromJSON_AllFields verifies that every API-mapped field is
@@ -23,6 +26,7 @@ func TestReadRadarrStateFromJSON_AllFields(t *testing.T) {
 		"port":                7878,
 		"useSsl":              true,
 		"baseUrl":             "/radarr",
+		"externalUrl":         "http://radarr.example.com",
 		"activeProfileId":     3,
 		"activeProfileName":   "HD-1080p",
 		"activeDirectory":     "/movies",
@@ -65,6 +69,7 @@ func TestReadRadarrStateFromJSON_AllFields(t *testing.T) {
 	checkInt("Port", data.Port, 7878)
 	checkBool("UseSSL", data.UseSSL, true)
 	check("BaseURL", data.BaseURL.ValueString(), "/radarr")
+	check("ExternalURL", data.ExternalURL.ValueString(), "http://radarr.example.com")
 	checkInt("QualityProfileID", data.QualityProfileID, 3)
 	check("QualityProfileName", data.QualityProfileName.ValueString(), "HD-1080p")
 	check("ActiveDirectory", data.ActiveDirectory.ValueString(), "/movies")
@@ -221,6 +226,7 @@ func TestReadRadarrStateFromJSON_NullValuesPreserved(t *testing.T) {
 		"port":                null,
 		"useSsl":              null,
 		"baseUrl":             null,
+		"externalUrl":         null,
 		"is4k":                null,
 		"minimumAvailability": null,
 		"isDefault":           null,
@@ -238,6 +244,7 @@ func TestReadRadarrStateFromJSON_NullValuesPreserved(t *testing.T) {
 		Port:                types.Int64Value(7878),
 		UseSSL:              types.BoolValue(true),
 		BaseURL:             types.StringValue("/prior"),
+		ExternalURL:         types.StringValue("http://prior.example"),
 		Is4K:                types.BoolValue(true),
 		MinimumAvailability: types.StringValue("released"),
 		IsDefault:           types.BoolValue(true),
@@ -266,6 +273,9 @@ func TestReadRadarrStateFromJSON_NullValuesPreserved(t *testing.T) {
 	}
 	if !data.BaseURL.IsNull() {
 		t.Errorf("BaseURL should be null, got %v", data.BaseURL)
+	}
+	if !data.ExternalURL.IsNull() {
+		t.Errorf("ExternalURL should be null, got %v", data.ExternalURL)
 	}
 	if !data.Is4K.IsNull() {
 		t.Errorf("Is4K should be null, got %v", data.Is4K)
@@ -448,5 +458,106 @@ func TestReadRadarrStateFromJSON_ArrayResponse(t *testing.T) {
 	}
 	if got := data.Port.ValueInt64(); got != 7879 {
 		t.Fatalf("expected port 7879, got %d", got)
+	}
+}
+
+func TestRadarrServerPayloadIncludesExternalURLWhenSet(t *testing.T) {
+	res := &RadarrServerResource{}
+	tagsVal, diags := types.ListValueFrom(context.Background(), types.Int64Type, []int64{})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	model := RadarrServerModel{
+		Name:               types.StringValue("Radarr"),
+		Hostname:           types.StringValue("radarr"),
+		Port:               types.Int64Value(7878),
+		APIKey:             types.StringValue("secret-radarr-key"),
+		QualityProfileID:   types.Int64Value(1),
+		QualityProfileName: types.StringValue("HD-1080p"),
+		ActiveDirectory:    types.StringValue("/movies"),
+		Tags:               tagsVal,
+		ExternalURL:        types.StringValue("http://radarr.example.com"),
+	}
+
+	_, payloadStr, err := res.payload(context.Background(), model)
+	if err != nil {
+		t.Fatalf("payload() failed: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(payloadStr), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if got := payload["externalUrl"]; got != "http://radarr.example.com" {
+		t.Fatalf("externalUrl: got %#v", got)
+	}
+
+	model.ExternalURL = types.StringNull()
+	_, payloadStr, err = res.payload(context.Background(), model)
+	if err != nil {
+		t.Fatalf("payload() failed: %v", err)
+	}
+	payload = map[string]any{}
+	if err := json.Unmarshal([]byte(payloadStr), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := payload["externalUrl"]; ok {
+		t.Fatalf("expected externalUrl to be omitted when unset, got %#v", payload["externalUrl"])
+	}
+}
+
+func TestRadarrServerDataSourceReadsExternalURL(t *testing.T) {
+	ctx := context.Background()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/settings/radarr" {
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[{
+			"id": 1,
+			"name": "Radarr",
+			"hostname": "radarr.local",
+			"port": 7878,
+			"externalUrl": "http://radarr.example.com",
+			"tags": []
+		}]`))
+	}))
+	defer srv.Close()
+
+	baseURL, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := &RadarrServerDataSource{client: NewClient(baseURL, "test-key", "test-agent", false, defaultRequestTimeout, 0, 0)}
+	var schemaResp datasource.SchemaResponse
+	d.Schema(ctx, datasource.SchemaRequest{}, &schemaResp)
+	if _, ok := schemaResp.Schema.Attributes["external_url"]; !ok {
+		t.Fatal("radarr server data source missing external_url")
+	}
+	typ, ok := schemaResp.Schema.Type().TerraformType(ctx).(tftypes.Object)
+	if !ok {
+		t.Fatal("expected object schema type")
+	}
+	vals := map[string]tftypes.Value{}
+	for name, attrType := range typ.AttributeTypes {
+		if name == "server_id" {
+			vals[name] = tftypes.NewValue(attrType, int64(1))
+			continue
+		}
+		vals[name] = tftypes.NewValue(attrType, nil)
+	}
+	req := datasource.ReadRequest{Config: tfsdk.Config{Schema: schemaResp.Schema, Raw: tftypes.NewValue(typ, vals)}}
+	resp := datasource.ReadResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
+	d.Read(ctx, req, &resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("read failed: %v", resp.Diagnostics)
+	}
+	var got RadarrServerDataSourceModel
+	if diags := resp.State.Get(ctx, &got); diags.HasError() {
+		t.Fatal(diags)
+	}
+	if got.ExternalURL.ValueString() != "http://radarr.example.com" {
+		t.Fatalf("external_url: got %q", got.ExternalURL.ValueString())
 	}
 }

@@ -33,6 +33,7 @@ data "seerr_sonarr_server" "example" {
 - `base_url` (String) The Sonarr base URL reported by Seerr.
 - `enable_scan` (Boolean) Whether scan is enabled for the Sonarr server.
 - `enable_season_folders` (Boolean) Whether season folders are enabled for the Sonarr server.
+- `external_url` (String) Public URL for this Sonarr server, used in links shown to users. Matches the Seerr `externalUrl` setting. This is separate from `base_url`, which is the reverse-proxy path used to connect to Sonarr.
 - `hostname` (String) The Sonarr hostname reported by Seerr.
 - `id` (String) The ID of the matched Sonarr server.
 - `is_4k` (Boolean) Whether the Sonarr server is configured for 4K.
