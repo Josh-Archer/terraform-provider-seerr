@@ -338,6 +338,8 @@ func (imp *Importer) discoverMain(ctx context.Context) []DiscoveredResource {
 	}
 	putBool(attrs, m, "localLogin", "local_login")
 	putBool(attrs, m, "newPlexLogin", "new_plex_login")
+	putInt(attrs, m, "defaultPermissions", "default_permissions")
+	putBool(attrs, m, "versionCheck", "version_check")
 	putBool(attrs, m, "movieRequestsEnabled", "movie_requests_enabled")
 	putBool(attrs, m, "seriesRequestsEnabled", "series_requests_enabled")
 	putBool(attrs, m, "enableReportAnIssue", "enable_report_an_issue")
@@ -491,6 +493,7 @@ func (imp *Importer) discoverArr(ctx context.Context, apiPath, resourceType, nam
 		putInt(attrs, server, "port", "port")
 		putBool(attrs, server, "useSsl", "use_ssl")
 		putString(attrs, server, "baseUrl", "base_url")
+		putString(attrs, server, "externalUrl", "external_url")
 		putInt(attrs, server, "activeProfileId", "quality_profile_id")
 		putString(attrs, server, "activeProfileName", "quality_profile_name")
 		putString(attrs, server, "activeDirectory", "active_directory")

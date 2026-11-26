@@ -24,6 +24,8 @@ func TestMainSettingsApplyDecodedSettingsClearsMissingValues(t *testing.T) {
 		MovieRequestsEnabled:  types.BoolValue(true),
 		SeriesRequestsEnabled: types.BoolValue(true),
 		TrustProxy:            types.BoolValue(false),
+		DefaultPermissions:    types.Int64Value(32),
+		VersionCheck:          types.BoolValue(true),
 	}
 
 	r.applyDecodedSettings(&data, map[string]any{
@@ -44,6 +46,12 @@ func TestMainSettingsApplyDecodedSettingsClearsMissingValues(t *testing.T) {
 	}
 	if got := data.ApplicationURL.ValueString(); got != "https://jellyseerr.example" {
 		t.Fatalf("expected application url to be updated, got %q", got)
+	}
+	if !data.DefaultPermissions.IsNull() {
+		t.Fatalf("expected default permissions to become null when omitted from response")
+	}
+	if !data.VersionCheck.IsNull() {
+		t.Fatalf("expected version check to become null when omitted from response")
 	}
 }
 
@@ -66,6 +74,8 @@ func TestMainSettingsApplyDecodedSettingsReadsSeerrV3Keys(t *testing.T) {
 		"mediaServerLogin":       true,
 		"newPlexLogin":           true,
 		"mediaServerType":        float64(2),
+		"defaultPermissions":     32,
+		"versionCheck":           false,
 	})
 
 	if got := data.AppTitle.ValueString(); got != "Seerr" {
@@ -101,6 +111,12 @@ func TestMainSettingsApplyDecodedSettingsReadsSeerrV3Keys(t *testing.T) {
 	if !data.TrustProxy.IsNull() {
 		t.Fatalf("expected moved trust_proxy to remain null from v3 main settings")
 	}
+	if got := data.DefaultPermissions.ValueInt64(); got != 32 {
+		t.Fatalf("expected default permissions 32, got %d", got)
+	}
+	if data.VersionCheck.IsNull() || data.VersionCheck.ValueBool() {
+		t.Fatalf("expected version check false, got %#v", data.VersionCheck)
+	}
 }
 
 func TestMainSettingsBuildPayloadUsesSeerrV3Keys(t *testing.T) {
@@ -124,6 +140,8 @@ func TestMainSettingsBuildPayloadUsesSeerrV3Keys(t *testing.T) {
 		CSRFProtection:        types.BoolValue(false),
 		MovieRequestsEnabled:  types.BoolValue(true),
 		SeriesRequestsEnabled: types.BoolValue(true),
+		DefaultPermissions:    types.Int64Value(32),
+		VersionCheck:          types.BoolValue(true),
 	})
 
 	if got := payload["applicationTitle"]; got != "Seerr" {
@@ -149,6 +167,12 @@ func TestMainSettingsBuildPayloadUsesSeerrV3Keys(t *testing.T) {
 	}
 	if got := payload["mediaServerLogin"]; got != true {
 		t.Fatalf("expected mediaServerLogin true from plex_login alias, got %#v", got)
+	}
+	if got := payload["defaultPermissions"]; got != int64(32) {
+		t.Fatalf("expected defaultPermissions 32, got %#v", got)
+	}
+	if got := payload["versionCheck"]; got != true {
+		t.Fatalf("expected versionCheck true, got %#v", got)
 	}
 	for _, key := range []string{"trustProxy", "csrfProtection", "movieRequestsEnabled", "seriesRequestsEnabled"} {
 		if _, ok := payload[key]; ok {
@@ -185,7 +209,9 @@ func TestMainSettingsRefreshStateReadsCanonicalValues(t *testing.T) {
 			"seriesRequestsEnabled":true,
 			"enableReportAnIssue":false,
 			"movieRequestLimit":7,
-			"seriesRequestLimit":11
+			"seriesRequestLimit":11,
+			"defaultPermissions":32,
+			"versionCheck":false
 		}`))
 	}))
 	defer srv.Close()
@@ -224,6 +250,12 @@ func TestMainSettingsRefreshStateReadsCanonicalValues(t *testing.T) {
 	}
 	if got := data.SeriesRequestLimit.ValueInt64(); got != 11 {
 		t.Fatalf("expected series request limit 11, got %d", got)
+	}
+	if got := data.DefaultPermissions.ValueInt64(); got != 32 {
+		t.Fatalf("expected default permissions 32, got %d", got)
+	}
+	if data.VersionCheck.IsNull() || data.VersionCheck.ValueBool() {
+		t.Fatalf("expected version check false, got %#v", data.VersionCheck)
 	}
 }
 
@@ -406,4 +438,45 @@ func TestMainSettingsDataSourceReadMediaServerType(t *testing.T) {
 	var got MainSettingsDataSourceModel
 	require.False(t, resp.State.Get(ctx, &got).HasError())
 	require.Equal(t, "plex", got.MediaServerType.ValueString())
+}
+
+func TestMainSettingsDataSourceReadsDefaultPermissionsAndVersionCheck(t *testing.T) {
+	ctx := context.Background()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method)
+		require.Equal(t, "/api/v1/settings/main", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+			"applicationTitle": "Seerr",
+			"defaultPermissions": 32,
+			"versionCheck": true
+		}`))
+	}))
+	defer srv.Close()
+
+	d := &MainSettingsDataSource{client: testAPIClient(t, srv.URL)}
+	var schemaResp datasource.SchemaResponse
+	d.Schema(ctx, datasource.SchemaRequest{}, &schemaResp)
+	for _, name := range []string{"default_permissions", "version_check"} {
+		attr, ok := schemaResp.Schema.Attributes[name]
+		require.Truef(t, ok, "data source schema missing %s", name)
+		require.Truef(t, attr.IsComputed(), "%s should be computed", name)
+		require.Falsef(t, attr.IsOptional(), "%s should not be optional on the data source", name)
+	}
+
+	typ, ok := schemaResp.Schema.Type().TerraformType(ctx).(tftypes.Object)
+	require.True(t, ok)
+	vals := map[string]tftypes.Value{}
+	for name, attrType := range typ.AttributeTypes {
+		vals[name] = tftypes.NewValue(attrType, nil)
+	}
+	req := datasource.ReadRequest{Config: tfsdk.Config{Schema: schemaResp.Schema, Raw: tftypes.NewValue(typ, vals)}}
+	resp := datasource.ReadResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
+	d.Read(ctx, req, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	var got MainSettingsDataSourceModel
+	require.False(t, resp.State.Get(ctx, &got).HasError())
+	require.Equal(t, int64(32), got.DefaultPermissions.ValueInt64())
+	require.True(t, got.VersionCheck.ValueBool())
 }

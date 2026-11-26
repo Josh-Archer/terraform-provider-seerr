@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	boolvalidator "github.com/hashicorp/terraform-plugin-framework-validators/boolvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	stringvalidator "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -47,6 +48,8 @@ type MainSettingsModel struct {
 	MediaServerLogin      types.Bool   `tfsdk:"media_server_login"`
 	NewPlexLogin          types.Bool   `tfsdk:"new_plex_login"`
 	PlexLogin             types.Bool   `tfsdk:"plex_login"`
+	DefaultPermissions    types.Int64  `tfsdk:"default_permissions"`
+	VersionCheck          types.Bool   `tfsdk:"version_check"`
 	MovieRequestsEnabled  types.Bool   `tfsdk:"movie_requests_enabled"`
 	SeriesRequestsEnabled types.Bool   `tfsdk:"series_requests_enabled"`
 	EnableReportAnIssue   types.Bool   `tfsdk:"enable_report_an_issue"`
@@ -198,6 +201,23 @@ func (r *MainSettingsResource) Schema(_ context.Context, _ resource.SchemaReques
 				Computed:            true,
 				PlanModifiers:       useStateForUnknownBool(),
 			},
+			"default_permissions": schema.Int64Attribute{
+				MarkdownDescription: "Numeric permissions bitmask applied to new users. Combine flags with the `seerr_permission_set` data source. Matches the Seerr `defaultPermissions` setting.",
+				Optional:            true,
+				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.Int64{
+					int64validator.AtLeast(0),
+				},
+			},
+			"version_check": schema.BoolAttribute{
+				MarkdownDescription: "Whether Seerr checks for newer application versions. Matches the Seerr `versionCheck` setting.",
+				Optional:            true,
+				Computed:            true,
+				PlanModifiers:       useStateForUnknownBool(),
+			},
 			"plex_login": schema.BoolAttribute{
 				MarkdownDescription: "Whether Plex login is enabled.",
 				Optional:            true,
@@ -328,6 +348,8 @@ func (r *MainSettingsResource) buildPayload(data *MainSettingsModel) map[string]
 			payload["mediaServerType"] = 3
 		}
 	}
+	setOptionalInt64(payload, "defaultPermissions", data.DefaultPermissions)
+	setOptionalBool(payload, "versionCheck", data.VersionCheck)
 
 	return payload
 }
@@ -352,6 +374,8 @@ type mainSettingsDecodedValues struct {
 	MediaServerLogin      types.Bool
 	NewPlexLogin          types.Bool
 	PlexLogin             types.Bool
+	DefaultPermissions    types.Int64
+	VersionCheck          types.Bool
 	MovieRequestsEnabled  types.Bool
 	SeriesRequestsEnabled types.Bool
 	EnableReportAnIssue   types.Bool
@@ -408,6 +432,8 @@ func decodeMainSettings(decoded map[string]any) mainSettingsDecodedValues {
 		MediaServerLogin:      types.BoolNull(),
 		NewPlexLogin:          types.BoolNull(),
 		PlexLogin:             types.BoolNull(),
+		DefaultPermissions:    types.Int64Null(),
+		VersionCheck:          types.BoolNull(),
 		MovieRequestsEnabled:  types.BoolNull(),
 		SeriesRequestsEnabled: types.BoolNull(),
 		EnableReportAnIssue:   types.BoolNull(),
@@ -480,6 +506,12 @@ func decodeMainSettings(decoded map[string]any) mainSettingsDecodedValues {
 	if v, ok := boolValueFromAny(decoded["newPlexLogin"]); ok {
 		values.NewPlexLogin = types.BoolValue(v)
 	}
+	if v, ok := int64ValueFromAny(decoded["defaultPermissions"]); ok {
+		values.DefaultPermissions = types.Int64Value(v)
+	}
+	if v, ok := boolValueFromAny(decoded["versionCheck"]); ok {
+		values.VersionCheck = types.BoolValue(v)
+	}
 	if v, ok := boolValueFromAny(decoded["movieRequestsEnabled"]); ok {
 		values.MovieRequestsEnabled = types.BoolValue(v)
 	}
@@ -520,6 +552,8 @@ func (r *MainSettingsResource) applyDecodedSettings(data *MainSettingsModel, dec
 	data.MediaServerLogin = values.MediaServerLogin
 	data.NewPlexLogin = values.NewPlexLogin
 	data.PlexLogin = values.PlexLogin
+	data.DefaultPermissions = values.DefaultPermissions
+	data.VersionCheck = values.VersionCheck
 	data.MovieRequestsEnabled = values.MovieRequestsEnabled
 	data.SeriesRequestsEnabled = values.SeriesRequestsEnabled
 	data.EnableReportAnIssue = values.EnableReportAnIssue

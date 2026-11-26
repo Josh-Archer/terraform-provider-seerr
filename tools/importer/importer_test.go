@@ -46,6 +46,7 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 			"applicationUrl":     "https://seerr.homelab.local",
 			"csrfProtection":     true,
 			"defaultPermissions": 32,
+			"versionCheck":       true,
 			"hideAvailable":      false,
 			"localLogin":         true,
 			"locale":             "en",
@@ -67,6 +68,7 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 				"activeProfileId":   4,
 				"activeProfileName": "HD-1080p",
 				"activeDirectory":   "/movies",
+				"externalUrl":       "http://radarr.example.com",
 				"apiKey":            "unit-test-radarr-api-key-canary",
 			},
 		})
@@ -135,8 +137,14 @@ func TestImporterDiscoveryAndGeneration(t *testing.T) {
 	if !strings.Contains(hcl, "quality_profile_id") || !strings.Contains(hcl, "quality_profile_name") {
 		t.Errorf("Expected Radarr profile attributes that match the provider schema, got:\n%s", hcl)
 	}
-	if strings.Contains(hcl, "active_profile_name") || strings.Contains(hcl, "default_permissions") {
+	if strings.Contains(hcl, "active_profile_name") {
 		t.Errorf("Generated HCL contains attributes that are not in the provider schema:\n%s", hcl)
+	}
+	if !strings.Contains(hcl, "default_permissions") || !strings.Contains(hcl, "version_check") {
+		t.Errorf("Expected main settings default_permissions and version_check, got:\n%s", hcl)
+	}
+	if !strings.Contains(hcl, "external_url") || !strings.Contains(hcl, `"http://radarr.example.com"`) {
+		t.Errorf("Expected Radarr external_url, got:\n%s", hcl)
 	}
 	if strings.Contains(hcl, "unit-test-radarr-api-key-canary") {
 		t.Errorf("Radarr API key was written into HCL:\n%s", hcl)

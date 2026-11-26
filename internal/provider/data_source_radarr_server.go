@@ -24,6 +24,7 @@ type RadarrServerDataSourceModel struct {
 	APIKey              types.String `tfsdk:"api_key"`
 	UseSSL              types.Bool   `tfsdk:"use_ssl"`
 	BaseURL             types.String `tfsdk:"base_url"`
+	ExternalURL         types.String `tfsdk:"external_url"`
 	QualityProfileID    types.Int64  `tfsdk:"quality_profile_id"`
 	QualityProfileName  types.String `tfsdk:"quality_profile_name"`
 	ActiveDirectory     types.String `tfsdk:"active_directory"`
@@ -78,6 +79,10 @@ func (d *RadarrServerDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 			},
 			"base_url": schema.StringAttribute{
 				MarkdownDescription: "The Radarr base URL reported by Seerr.",
+				Computed:            true,
+			},
+			"external_url": schema.StringAttribute{
+				MarkdownDescription: "Public URL for this Radarr server, used in links shown to users. Matches the Seerr `externalUrl` setting. This is separate from `base_url`, which is the reverse-proxy path used to connect to Radarr.",
 				Computed:            true,
 			},
 			"quality_profile_id": schema.Int64Attribute{
@@ -181,6 +186,7 @@ func (d *RadarrServerDataSource) Read(ctx context.Context, req datasource.ReadRe
 	data.APIKey = state.APIKey
 	data.UseSSL = state.UseSSL
 	data.BaseURL = state.BaseURL
+	data.ExternalURL = state.ExternalURL
 	data.QualityProfileID = state.QualityProfileID
 	data.QualityProfileName = state.QualityProfileName
 	data.ActiveDirectory = state.ActiveDirectory

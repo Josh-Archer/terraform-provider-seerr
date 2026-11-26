@@ -38,6 +38,7 @@ type SonarrServerModel struct {
 	APIKey               types.String `tfsdk:"api_key"`
 	UseSSL               types.Bool   `tfsdk:"use_ssl"`
 	BaseURL              types.String `tfsdk:"base_url"`
+	ExternalURL          types.String `tfsdk:"external_url"`
 	QualityProfileID     types.Int64  `tfsdk:"quality_profile_id"`
 	QualityProfileName   types.String `tfsdk:"quality_profile_name"`
 	ActiveDirectory      types.String `tfsdk:"active_directory"`
@@ -126,6 +127,14 @@ func (r *SonarrServerResource) Schema(_ context.Context, _ resource.SchemaReques
 			"base_url": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"external_url": schema.StringAttribute{
+				MarkdownDescription: "Public URL for this Sonarr server, used in links shown to users. Matches the Seerr `externalUrl` setting. This is separate from `base_url`, which is the reverse-proxy path used to connect to Sonarr.",
+				Optional:            true,
+				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -432,6 +441,7 @@ func (r *SonarrServerResource) payload(ctx context.Context, data SonarrServerMod
 		"tagRequests":          tagRequests,
 	}
 	setOptionalBool(base, "enableScan", data.EnableScan)
+	setOptionalString(base, "externalUrl", data.ExternalURL)
 	merged, err := mergeJSON(base, data.ExtraPayloadJSON.ValueString())
 	if err != nil {
 		return data, "", err
@@ -546,6 +556,13 @@ func readSonarrStateFromJSON(ctx context.Context, item []byte, data *SonarrServe
 			data.BaseURL = types.StringValue(v)
 		} else if val == nil {
 			data.BaseURL = types.StringNull()
+		}
+	}
+	if val, ok := m["externalUrl"]; ok {
+		if v, ok := val.(string); ok {
+			data.ExternalURL = types.StringValue(v)
+		} else if val == nil {
+			data.ExternalURL = types.StringNull()
 		}
 	}
 	if val, ok := m["activeProfileId"]; ok {
@@ -695,6 +712,9 @@ func readSonarrStateFromJSON(ctx context.Context, item []byte, data *SonarrServe
 	}
 	if data.BaseURL.IsUnknown() {
 		data.BaseURL = types.StringNull()
+	}
+	if data.ExternalURL.IsUnknown() {
+		data.ExternalURL = types.StringNull()
 	}
 	if data.QualityProfileID.IsUnknown() {
 		data.QualityProfileID = types.Int64Null()
