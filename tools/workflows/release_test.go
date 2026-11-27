@@ -70,6 +70,9 @@ func TestReleasePleaseGuardsAgainstDraftReleasePRRace(t *testing.T) {
 	require.Contains(t, content, "has_draft=")
 	require.Contains(t, content, "Closing premature candidate release PR")
 	require.Contains(t, content, "Guard candidate release PR against empty major bumps")
+	require.Contains(t, content, "GH_REPO: ${{ github.repository }}", "gh runs without a checkout")
+	require.Less(t, strings.Index(content, "Guard candidate release PR against empty major bumps"), strings.Index(content, "Enable auto-merge on the release PR"), "guard must run before auto-merge")
+	require.NotContains(t, content, "--state open --json number --jq '.[0].number' 2>/dev/null || true", "lookup errors must not masquerade as a missing PR")
 
 	releaseRaw, err := os.ReadFile("../../.github/workflows/release.yml")
 	require.NoError(t, err)
