@@ -30,6 +30,9 @@ jobs:
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'uecb-shared' }}
+    # This privileged job intentionally has no checkout, so gh needs context.
+    env:
+      GH_REPO: ${{ github.repository }}
     steps:
       # Do not checkout. TestReleasePleaseSurvivesSuppressedBotPush forbids
       # actions/checkout so this privileged workflow_run handler cannot be
@@ -105,6 +108,49 @@ jobs:
             gh pr close "${pr_number}" --delete-branch || true
           fi
 
+      - name: Guard candidate release PR against empty major bumps
+        if: ${{ steps.release.outputs.releases_created != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
+        run: |
+          set -euo pipefail
+          pr_json="$(gh pr list --head "release-please--branches--main--components--terraform-provider-seerr" --json number,title --jq '.[0]')"
+          if [[ -z "${pr_json}" || "${pr_json}" == "null" ]]; then
+            exit 0
+          fi
+
+          pr_num="$(echo "${pr_json}" | jq -r '.number')"
+          pr_title="$(echo "${pr_json}" | jq -r '.title')"
+
+          if [[ ! "${pr_title}" =~ release[[:space:]]+([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+            echo "::error::Cannot parse the release PR version"
+            exit 1
+          fi
+
+          new_major="${BASH_REMATCH[1]}"
+          latest_stable="$(gh api "repos/${GITHUB_REPOSITORY}/releases" --jq '[.[] | select(.draft == false and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")))] | .[0].tag_name')"
+          if [[ -z "${latest_stable}" || "${latest_stable}" == "null" ]]; then
+            echo "::error::Cannot determine the latest stable release"
+            exit 1
+          fi
+
+          latest_major="${latest_stable#v}"
+          latest_major="${latest_major%%.*}"
+
+          if (( new_major > latest_major )); then
+            compare_breaking="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${latest_stable}...${DEFAULT_BRANCH}" \
+              --jq '[.commits[].commit.message | select(test("(BREAKING CHANGE:|^[a-zA-Z]+(\\([^)]+\\))?!:)"))] | length')"
+
+            if [[ "${compare_breaking}" -eq 0 ]]; then
+              echo "Detected empty major release PR #${pr_num} (${pr_title}) with 0 breaking changes since ${latest_stable}."
+              echo "Closing premature empty major PR..."
+              gh pr close "${pr_num}" \
+                --comment "Automatically closed: candidate major release PR proposed without any breaking changes since ${latest_stable}." \
+                --delete-branch
+            fi
+          fi
+
       - name: Enable auto-merge on the release PR
         if: ${{ steps.release.outputs.releases_created != 'true' && steps.gate.outputs.skip_pull_request != 'true' }}
         env:
@@ -114,7 +160,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pr_number="$(gh pr list --head "release-please--branches--main--components--terraform-provider-seerr" --state open --json number --jq '.[0].number' 2>/dev/null || true)"
+          pr_number="$(gh pr list --head "release-please--branches--main--components--terraform-provider-seerr" --state open --json number --jq '.[0].number')"
           if [[ -z "${pr_number}" ]]; then
             echo "No open release PR; nothing to auto-merge."
             exit 0
@@ -129,44 +175,4 @@ jobs:
           else
             echo "Release PR #${pr_number} is ${state}; enabling squash auto-merge."
             gh pr merge "${pr_number}" --auto --squash
-          fi
-
-      - name: Guard candidate release PR against empty major bumps
-        if: ${{ steps.release.outputs.releases_created != 'true' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
-        run: |
-          pr_json="$(gh pr list --head "release-please--branches--main--components--terraform-provider-seerr" --json number,title --jq '.[0]' 2>/dev/null || true)"
-          if [[ -z "${pr_json}" || "${pr_json}" == "null" ]]; then
-            exit 0
-          fi
-
-          pr_num="$(echo "${pr_json}" | jq -r '.number')"
-          pr_title="$(echo "${pr_json}" | jq -r '.title')"
-
-          if [[ ! "${pr_title}" =~ release[[:space:]]+([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
-            exit 0
-          fi
-
-          new_major="${BASH_REMATCH[1]}"
-          latest_stable="$(gh api "repos/${GITHUB_REPOSITORY}/releases" --jq '[.[] | select(.draft == false and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")))] | .[0].tag_name' 2>/dev/null || true)"
-          if [[ -z "${latest_stable}" ]]; then
-            exit 0
-          fi
-
-          latest_major="${latest_stable#v}"
-          latest_major="${latest_major%%.*}"
-
-          if (( new_major > latest_major )); then
-            compare_breaking="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${latest_stable}...${DEFAULT_BRANCH}" \
-              --jq '[.commits[].commit.message | select(test("(BREAKING CHANGE:|^[a-zA-Z]+(\\([^)]+\\))?!:)"))] | length' 2>/dev/null || echo "0")"
-
-            if [[ "${compare_breaking}" -eq 0 ]]; then
-              echo "Detected empty major release PR #${pr_num} (${pr_title}) with 0 breaking changes since ${latest_stable}."
-              echo "Closing premature empty major PR..."
-              gh pr close "${pr_num}" \
-                --comment "Automatically closed: candidate major release PR proposed without any breaking changes since ${latest_stable}." \
-                --delete-branch || true
-            fi
           fi
